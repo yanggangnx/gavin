@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>要求越多</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Serif+SC:wght@600;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&text=%E6%88%91%E6%9C%8B%E5%8F%8B%E4%BB%AC%E5%B1%B1%E9%A1%B6&display=swap">
+<style>
+/* Layout: the 1080×1920 stage scaled to fit on the left, storyboard + export panel on the right; stacks on phones. */
+:root {
+  --bg: #E8ECF0;
+  --surface: #FFFFFF;
+  --fg: #141A26;
+  --muted: #5B6476;
+  --line: #D2D8E0;
+  --accent: #2F4BFF;
+  --accent-fg: #FFFFFF;
+  --accent-soft: rgba(47, 75, 255, .08);
+  --shadow: rgba(20, 26, 38, .22);
+
+  /* Stage palette — the video has one fixed look, independent of the page theme. */
+  --s-sky: #CFE6F5;
+  --s-sun: #FFC23D;
+  --s-ink: #121A2B;
+  --s-coral: #FF7A59;
+  --s-paper: #FCFBF8;
+  --s-evf: #0B0F17;
+  --s-white: #F4F6FA;
+  --s-cobalt: #2F4BFF;
+  --s-rec: #FF3B30;
+  --s-steel: #6F7890;
+
+  --f-voice: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --f-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans SC", monospace;
+  --f-hand: "Long Cang", "Noto Serif SC", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C0F14; --surface: #151A22; --fg: #E6E9EF; --muted: #8E97A8; --line: #252C38;
+    --accent: #8394FF; --accent-fg: #0C0F14; --accent-soft: rgba(131, 148, 255, .12); --shadow: rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C0F14; --surface: #151A22; --fg: #E6E9EF; --muted: #8E97A8; --line: #252C38;
+  --accent: #8394FF; --accent-fg: #0C0F14; --accent-soft: rgba(131, 148, 255, .12); --shadow: rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 15px; line-height: 1.6; }
+
+/* ---------- page chrome ---------- */
+.app {
+  display: grid; grid-template-columns: auto minmax(0, 400px); justify-content: center; align-items: start;
+  gap: 40px; padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.viewer { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.stage-box {
+  position: relative; overflow: hidden; border-radius: 14px; background: #000;
+  box-shadow: 0 40px 80px -40px var(--shadow), 0 0 0 1px var(--line);
+}
+.poster-play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px 14px 20px;
+  border: 0; border-radius: 999px; background: var(--s-white); color: var(--s-ink);
+  font: 700 16px/1 var(--f-ui); cursor: pointer; box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+}
+.poster-play svg { width: 18px; height: 18px; }
+.poster-play:focus-visible, .btn:focus-visible, .beats button:focus-visible, #scrub:focus-visible, .copy-btn:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.controls { display: flex; align-items: center; gap: 12px; }
+.btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); font: 600 14px/1 var(--f-ui); cursor: pointer;
+}
+.btn svg { width: 14px; height: 14px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); min-width: 84px; }
+#scrub { flex: 1; min-width: 0; accent-color: var(--accent); }
+.clock { flex: none; font: 500 13px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+
+.panel { display: flex; flex-direction: column; gap: 28px; min-width: 0; padding-top: 4px; }
+.panel h1 { margin: 0; font: 900 44px/1.1 var(--f-voice); letter-spacing: .02em; text-wrap: balance; }
+.eyebrow { margin: 0 0 10px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.meta { margin: 12px 0 0; font: 500 13px/1.4 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.quote { margin: 0; padding: 16px 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font: 600 16px/1.85 var(--f-voice); }
+.panel h2 { margin: 0 0 10px; font: 700 13px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
+.beats { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.beats li { border-bottom: 1px solid var(--line); }
+.beats button {
+  width: 100%; display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; row-gap: 2px;
+  padding: 10px 8px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; border-radius: 8px;
+}
+.beats button:hover { background: var(--accent-soft); }
+.beats .bt { grid-row: span 2; font: 500 12px/1.9 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.beats .bc { font: 700 15px/1.5 var(--f-voice); }
+.beats .bd { font-size: 13px; line-height: 1.5; color: var(--muted); }
+.beats li.on button { background: var(--accent-soft); }
+.beats li.on .bt { color: var(--accent); font-weight: 700; }
+.panel p { margin: 0 0 12px; color: var(--muted); max-width: 65ch; }
+.panel code { font-family: var(--f-mono); font-size: .92em; }
+.code { position: relative; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 500 13px/1.7 var(--f-mono); }
+.copy-btn {
+  position: absolute; right: 8px; top: 8px; height: 28px; padding: 0 10px; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 600 12px/1 var(--f-ui); cursor: pointer;
+}
+.hint { font-size: 13px; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .viewer { align-items: center; }
+  .panel h1 { font-size: 36px; }
+}
+
+/* ---------- render mode: just the stage, 1:1 ---------- */
+html.render, html.render body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+html.render .app { display: block; padding: 0; }
+html.render .panel, html.render .controls, html.render .poster-play { display: none; }
+html.render .stage-box { width: 1080px; height: 1920px; border-radius: 0; box-shadow: none; }
+html.render .stage { transform: none !important; }
+
+/* ---------- stage ---------- */
+.stage {
+  position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden;
+  transform-origin: 0 0; background: var(--s-sky); color: var(--s-ink); font-family: var(--f-ui);
+  font-size: 32px; line-height: 1.2;
+}
+.stage * { box-sizing: border-box; }
+.scene, .layer { position: absolute; inset: 0; }
+.obj { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; }
+svg.obj { overflow: visible; }
+
+.bg-sky { position: absolute; inset: 0; background: linear-gradient(180deg, #BADBF0 0%, #D6EAF6 55%, #E8F3FA 100%); }
+.sun { width: 300px; height: 300px; border-radius: 50%; background: var(--s-sun); opacity: 1;
+  box-shadow: 0 0 0 34px rgba(255, 194, 61, .22), 0 0 0 82px rgba(255, 194, 61, .1); }
+.hills { position: absolute; left: 0; top: 1400px; width: 1080px; height: 520px; }
+
+/* polaroids */
+.polaroid { width: 300px; height: 372px; padding: 18px 18px 0; background: var(--s-paper);
+  box-shadow: 0 2px 0 rgba(18, 26, 43, .08), 0 26px 44px -12px rgba(18, 26, 43, .38); }
+.polaroid .photo { position: relative; width: 264px; height: 264px; overflow: hidden; background: #20242C; }
+.polaroid .photo svg { display: block; }
+.polaroid .dev { position: absolute; inset: 0; background: #2A2E36; }
+.polaroid .date { position: absolute; right: 10px; bottom: 7px; font: 700 17px/1 var(--f-mono); letter-spacing: .06em;
+  color: #FF8A2A; text-shadow: 0 0 6px rgba(255, 120, 30, .75); }
+.polaroid .cap { height: 90px; display: grid; place-items: center; font: 400 50px/1 var(--f-hand); color: var(--s-ink); }
+
+/* review cards */
+.card { width: 440px; background: #FFFFFF; border-radius: 20px; overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(18, 26, 43, .5), 0 2px 6px rgba(18, 26, 43, .12); }
+.thumb { position: relative; height: 248px; display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(135deg, var(--c1), var(--c2)); }
+.thumb::before { content: ""; position: absolute; right: -60px; top: -50px; width: 270px; height: 270px; border-radius: 50%;
+  border: 28px solid rgba(255, 255, 255, .08); }
+.thumb .tt { position: relative; font: 900 76px/1 var(--f-ui); color: #FFE14D; text-shadow: 5px 5px 0 #000; transform: rotate(-3deg); white-space: nowrap; }
+.thumb .dur { position: absolute; right: 12px; bottom: 17px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(0, 0, 0, .72); color: #FFFFFF; font: 700 22px/1 var(--f-mono); }
+.thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--s-rec); }
+.card .info { padding: 16px 20px 20px; }
+.card .ti { margin: 0; font: 700 30px/1.3 var(--f-ui); color: var(--s-ink); }
+.card .me { margin: 8px 0 0; font: 500 22px/1.2 var(--f-ui); color: #6B7385; }
+
+/* shutter + EVF */
+.bg-evf { position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse 70% 45% at 50% 58%, #172033 0%, #0B0F17 62%, #06080D 100%); }
+.blades i { position: absolute; left: 0; top: 0; width: 1080px; height: 540px; background: var(--s-evf);
+  border-bottom: 4px solid #2B3344; transform: translateY(-600px); }
+.grid { position: absolute; inset: 0; opacity: 0; }
+.grid i { position: absolute; background: rgba(244, 246, 250, .07); }
+.grid i:nth-child(1) { left: 359px; top: 0; bottom: 0; width: 2px; }
+.grid i:nth-child(2) { left: 719px; top: 0; bottom: 0; width: 2px; }
+.grid i:nth-child(3) { top: 639px; left: 0; right: 0; height: 2px; }
+.grid i:nth-child(4) { top: 1279px; left: 0; right: 0; height: 2px; }
+
+/* rig */
+.rig { position: absolute; inset: 0; transform-origin: 540px 1110px; }
+#bodyPro, #cage { filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)); }
+#lens { filter: drop-shadow(0 26px 36px rgba(0, 0, 0, .6)); }
+.mono-svg { font-family: var(--f-mono); }
+.ui-svg { font-family: var(--f-ui); }
+.monitor { width: 214px; height: 150px; padding: 10px; border-radius: 14px; background: #151A24; border: 4px solid #3A4256;
+  box-shadow: 0 20px 30px rgba(0, 0, 0, .5); }
+.monitor svg { display: block; border-radius: 4px; }
+
+.chips { position: absolute; left: 96px; top: 1392px; width: 888px; display: flex; flex-wrap: wrap; gap: 12px; }
+.chips span { opacity: 0; padding: 8px 16px; border: 2px solid rgba(233, 237, 245, .5); border-radius: 6px;
+  background: rgba(233, 237, 245, .05); color: #E9EDF5; font: 500 28px/1.2 var(--f-mono); white-space: nowrap; }
+.chips span.hot { background: var(--s-sun); border-color: var(--s-sun); color: var(--s-ink); font-weight: 700; }
+
+.meter { position: absolute; left: 96px; top: 1606px; width: 888px; opacity: 0; color: #E9EDF5; }
+.m-row { display: flex; align-items: baseline; gap: 20px; }
+.m-lbl { font: 700 30px/1 var(--f-ui); color: #8C95A8; }
+.m-val { font: 700 66px/1 var(--f-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.m-w { margin-left: auto; font: 500 30px/1 var(--f-mono); color: #8C95A8; }
+.m-w b { color: #E9EDF5; font-weight: 700; }
+.m-track { position: relative; height: 14px; margin-top: 22px; border-radius: 7px; background: rgba(233, 237, 245, .12); }
+.m-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 7px 0 0 7px; background: var(--s-cobalt); }
+.m-over { position: absolute; left: 888px; top: 0; bottom: 0; width: 0; background: var(--s-rec); }
+.m-budget { position: absolute; left: 82px; top: -10px; width: 4px; height: 34px; border-radius: 2px; background: var(--s-sun); }
+.m-note { position: absolute; left: 76px; top: 34px; font: 500 22px/1 var(--f-mono); color: var(--s-sun); white-space: nowrap; }
+
+.hud { position: absolute; inset: 0; opacity: 0; color: var(--s-white); font-family: var(--f-mono); }
+.hud .cn { position: absolute; width: 92px; height: 92px; border: 0 solid rgba(244, 246, 250, .92); }
+.hud .tl { left: 56px; top: 56px; border-left-width: 5px; border-top-width: 5px; }
+.hud .tr { right: 56px; top: 56px; border-right-width: 5px; border-top-width: 5px; }
+.hud .bl { left: 56px; bottom: 56px; border-left-width: 5px; border-bottom-width: 5px; }
+.hud .br { right: 56px; bottom: 56px; border-right-width: 5px; border-bottom-width: 5px; }
+.h-top { position: absolute; left: 100px; right: 100px; top: 92px; height: 44px; display: flex; align-items: center; justify-content: space-between;
+  font: 700 30px/1 var(--f-mono); letter-spacing: .04em; }
+.h-left { position: relative; width: 440px; height: 44px; }
+.h-left > span { position: absolute; left: 0; top: 0; height: 44px; display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.h-rec { opacity: 0; }
+.h-rec i { width: 22px; height: 22px; border-radius: 50%; background: var(--s-rec); }
+.h-rec b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.h-bat { position: relative; display: flex; gap: 4px; padding: 4px; border: 3px solid currentColor; border-radius: 6px; }
+.h-bat i { width: 16px; height: 22px; background: currentColor; }
+.h-bat::after { content: ""; position: absolute; right: -10px; top: 9px; width: 5px; height: 12px; border-radius: 0 2px 2px 0; background: currentColor; }
+.h-bat.low { color: var(--s-rec); }
+.h-bot { position: absolute; left: 0; right: 0; bottom: 92px; text-align: center; font: 500 28px/1 var(--f-mono);
+  letter-spacing: .05em; color: rgba(244, 246, 250, .82); }
+
+/* text */
+.txt { position: absolute; inset: 0; }
+.ln { position: absolute; left: 96px; white-space: nowrap; opacity: 0; }
+.ln.shown { opacity: 1; }
+.ch { display: inline-block; will-change: transform, opacity; }
+.v-s { font: 600 58px/1.3 var(--f-voice); }
+.v-xl { font: 900 108px/1.2 var(--f-voice); }
+.v-xxl { font: 900 124px/1.2 var(--f-voice); color: var(--s-white); }
+.cob { color: var(--s-cobalt); }
+.mark, .mark2 { position: relative; z-index: 0; display: inline-block; }
+.mark::before { content: ""; position: absolute; left: -6px; right: -6px; bottom: .1em; height: .34em; border-radius: 4px; z-index: -1;
+  background: var(--s-sun); transform-origin: 0 50%; transform: scaleX(var(--k, 0)); }
+.mark2::before { content: ""; position: absolute; left: -8px; right: -3px; top: 6px; bottom: 2px; border-radius: 6px; z-index: -1;
+  background: var(--s-cobalt); transform-origin: 0 50%; transform: scaleX(var(--k, 0)); }
+.cnt { font: 500 32px/1.4 var(--f-mono); color: var(--s-ink); }
+.cnt b { color: var(--s-cobalt); font-weight: 700; font-variant-numeric: tabular-nums; }
+.row { position: absolute; left: 96px; display: flex; align-items: center; gap: 26px; opacity: 0;
+  font: 900 56px/1.2 var(--f-ui); color: var(--s-white); white-space: nowrap; }
+.row .box { width: 54px; height: 54px; flex: none; }
+
+.dim { position: absolute; inset: 0; background: #06080D; opacity: 0; }
+.flash { position: absolute; inset: 0; background: #FFFFFF; opacity: 0; }
+.grain { position: absolute; left: -256px; top: -256px; width: 1592px; height: 2432px; opacity: .08; mix-blend-mode: overlay; }
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-play { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="viewer" aria-label="动效预览">
+    <div class="stage-box" id="stageBox">
+      <div class="stage" id="stage" aria-hidden="true">
+        <div class="scene" id="scene">
+
+          <!-- S1: sunny day -->
+          <div class="bg-sky"></div>
+          <div class="sun obj" id="sun"></div>
+          <svg class="hills" id="hills" viewBox="0 0 1080 520" preserveAspectRatio="none">
+            <path d="M0 210 C 200 110 380 130 560 210 S 900 290 1080 170 V520 H0Z" fill="#9BD4B6"/>
+            <path d="M0 330 C 180 262 360 270 540 330 S 860 400 1080 300 V520 H0Z" fill="#5FAF8E"/>
+          </svg>
+
+          <div class="polaroid obj" id="p1">
+            <div class="photo">
+              <svg viewBox="0 0 264 264" width="264" height="264">
+                <defs><linearGradient id="g-p1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86C8EE"/><stop offset="1" stop-color="#E3F2FA"/></linearGradient></defs>
+                <rect width="264" height="264" fill="url(#g-p1)"/>
+                <circle cx="206" cy="60" r="26" fill="#FFC23D"/>
+                <rect y="178" width="264" height="86" fill="#3E9BD1"/>
+                <path d="M0 184 Q33 176 66 184 T132 184 T198 184 T264 184 V194 H0Z" fill="#8ACDEE"/>
+                <path d="M86 264 V222 Q86 190 118 190 H146 Q178 190 178 222 V264Z" fill="#FF7A59"/>
+                <path d="M172 206 L194 168" stroke="#F3C9A6" stroke-width="13" stroke-linecap="round"/>
+                <path d="M194 168 L188 150 M194 168 L204 152" stroke="#F3C9A6" stroke-width="7" stroke-linecap="round"/>
+                <circle cx="132" cy="158" r="28" fill="#F3C9A6"/>
+                <path d="M104 157 Q104 126 132 126 Q160 126 160 157 Q152 140 134 141 Q114 141 104 157Z" fill="#2B2420"/>
+              </svg>
+              <div class="dev"></div>
+              <span class="date">'26 10 16</span>
+            </div>
+            <div class="cap">我</div>
+          </div>
+
+          <div class="polaroid obj" id="p2">
+            <div class="photo">
+              <svg viewBox="0 0 264 264" width="264" height="264">
+                <defs><linearGradient id="g-p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFAE7A"/><stop offset="1" stop-color="#FFE3BD"/></linearGradient></defs>
+                <rect width="264" height="264" fill="url(#g-p2)"/>
+                <circle cx="132" cy="112" r="72" fill="#FFF2D9" opacity=".55"/>
+                <rect y="214" width="264" height="50" fill="#E7926A"/>
+                <path d="M30 264 V228 Q30 202 56 202 H72 Q98 202 98 228 V264Z" fill="#2F4BFF"/>
+                <circle cx="64" cy="174" r="24" fill="#E8B48E"/>
+                <path d="M40 172 Q40 148 64 148 Q88 148 88 172 Q80 160 64 161 Q48 160 40 172Z" fill="#2B2420"/>
+                <path d="M96 264 V214 Q96 186 124 186 H140 Q168 186 168 214 V264Z" fill="#3E8F72"/>
+                <path d="M104 190 Q100 128 132 126 Q164 128 160 190 Z" fill="#3A2A22"/>
+                <circle cx="132" cy="156" r="27" fill="#F3C9A6"/>
+                <path d="M105 152 Q108 128 132 128 Q156 128 159 152 Q146 138 132 140 Q118 138 105 152Z" fill="#3A2A22"/>
+                <path d="M166 264 V232 Q166 208 190 208 H210 Q234 208 234 232 V264Z" fill="#FFFFFF"/>
+                <circle cx="200" cy="180" r="23" fill="#F6D2B5"/>
+                <path d="M176 176 Q178 154 200 154 Q222 154 224 176 Z" fill="#FF7A59"/>
+                <rect x="196" y="170" width="38" height="8" rx="4" fill="#FF7A59"/>
+              </svg>
+              <div class="dev"></div>
+              <span class="date">'26 10 16</span>
+            </div>
+            <div class="cap">朋友们</div>
+          </div>
+
+          <div class="polaroid obj" id="p3">
+            <div class="photo">
+              <svg viewBox="0 0 264 264" width="264" height="264">
+                <defs><linearGradient id="g-p3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9DFF5"/><stop offset="1" stop-color="#F2F9FD"/></linearGradient></defs>
+                <rect width="264" height="264" fill="url(#g-p3)"/>
+                <circle cx="70" cy="70" r="24" fill="#FFC23D"/>
+                <g fill="#FFFFFF" opacity=".9"><ellipse cx="190" cy="54" rx="30" ry="12"/><ellipse cx="208" cy="46" rx="18" ry="12"/></g>
+                <path d="M0 200 L70 120 L120 170 L180 96 L264 190 V264 H0Z" fill="#8CCBA9"/>
+                <path d="M180 96 L201 119.5 L192 114 L183 122 L174 113 L165 114.5Z" fill="#FFFFFF"/>
+                <path d="M0 232 Q66 206 132 228 T264 222 V264 H0Z" fill="#3E8F72"/>
+              </svg>
+              <div class="dev"></div>
+              <span class="date">'26 10 16</span>
+            </div>
+            <div class="cap">山顶</div>
+          </div>
+
+          <!-- S2: review cards (filled by script) -->
+          <div class="layer" id="cards"></div>
+
+          <!-- shutter curtain into the viewfinder -->
+          <div class="bg-evf" id="bgEvf"></div>
+          <div class="layer blades" id="blades"><i></i><i></i><i></i><i></i></div>
+          <div class="grid" id="evfGrid"><i></i><i></i><i></i><i></i></div>
+
+          <!-- the camera, from compact to full rig -->
+          <div class="rig" id="rig">
+            <svg class="obj" id="cage" viewBox="0 0 680 500" width="680" height="500">
+              <rect x="10" y="10" width="660" height="480" rx="26" fill="none" stroke="#5E677D" stroke-width="18"/>
+              <rect x="10" y="10" width="660" height="480" rx="26" fill="none" stroke="#9AA3B8" stroke-width="2" opacity=".6"/>
+              <g id="cageHoles" fill="#0B0F17"></g>
+            </svg>
+            <svg class="obj" id="handle" viewBox="0 0 400 120" width="400" height="120">
+              <path d="M40 120 V56 Q40 22 74 22 H326 Q360 22 360 56 V120" fill="none" stroke="#5E677D" stroke-width="22" stroke-linejoin="round"/>
+              <rect x="110" y="8" width="180" height="30" rx="12" fill="#2A3142" stroke="#8C95A8" stroke-width="3"/>
+            </svg>
+            <svg class="obj" id="mic" viewBox="0 0 380 72" width="380" height="72">
+              <rect x="150" y="50" width="70" height="20" rx="4" fill="#2A3142" stroke="#5E677D" stroke-width="2"/>
+              <rect x="10" y="12" width="330" height="40" rx="20" fill="#1A1F2B" stroke="#8C95A8" stroke-width="3"/>
+              <g stroke="#3A4256" stroke-width="3"><path d="M44 20 V44 M58 20 V44 M72 20 V44 M86 20 V44 M100 20 V44 M114 20 V44 M128 20 V44 M142 20 V44 M156 20 V44 M170 20 V44"/></g>
+              <rect x="330" y="18" width="42" height="28" rx="10" fill="#2A3142" stroke="#8C95A8" stroke-width="3"/>
+            </svg>
+            <div class="monitor obj" id="monitor">
+              <svg viewBox="0 0 186 122" width="186" height="122">
+                <rect width="186" height="122" fill="#86C8EE"/>
+                <circle cx="146" cy="32" r="13" fill="#FFC23D"/>
+                <path d="M0 86 Q46 64 93 84 T186 76 V122 H0Z" fill="#5FAF8E"/>
+                <rect x="8" y="8" width="54" height="18" rx="3" fill="rgba(0,0,0,.5)"/>
+                <circle cx="17" cy="17" r="4.5" fill="#FF3B30"/>
+                <text x="26" y="22" font-size="12" font-weight="700" fill="#FFFFFF" class="mono-svg">REC</text>
+                <text x="178" y="114" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="end" class="mono-svg">4K60</text>
+              </svg>
+            </div>
+
+            <svg class="obj" id="bodyPro" viewBox="0 0 600 420" width="600" height="420">
+              <defs>
+                <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3446"/><stop offset="1" stop-color="#161B26"/></linearGradient>
+                <linearGradient id="g-sensor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7461E0"/><stop offset=".5" stop-color="#2E8C9E"/><stop offset="1" stop-color="#8A44A8"/></linearGradient>
+              </defs>
+              <rect x="66" y="58" width="78" height="30" rx="6" fill="#232A39" stroke="#465069" stroke-width="2"/>
+              <rect x="452" y="54" width="88" height="34" rx="8" fill="#232A39" stroke="#465069" stroke-width="2"/>
+              <path d="M250 92 L268 24 Q272 14 284 14 H376 Q388 14 392 24 L410 92Z" fill="url(#g-body)" stroke="#465069" stroke-width="3"/>
+              <rect x="20" y="84" width="560" height="316" rx="40" fill="url(#g-body)" stroke="#465069" stroke-width="3"/>
+              <path d="M20 124 Q20 84 60 84 H150 Q172 84 172 106 V378 Q172 400 150 400 H60 Q20 400 20 360Z" fill="#10141C"/>
+              <g stroke="#1D2330" stroke-width="3"><path d="M52 130 V360 M76 130 V360 M100 130 V360 M124 130 V360 M148 130 V360"/></g>
+              <circle cx="198" cy="128" r="9" fill="#3A1F1F" stroke="#5A6378" stroke-width="2"/>
+              <circle cx="330" cy="244" r="132" fill="#0E121A" stroke="#C3CAD6" stroke-width="10"/>
+              <g fill="none" stroke="#7D8597" stroke-width="10" stroke-linecap="round">
+                <path d="M330 122 A122 122 0 0 1 418 160"/><path d="M436 300 A122 122 0 0 1 384 354"/><path d="M226 308 A122 122 0 0 1 216 196"/>
+              </g>
+              <circle cx="330" cy="244" r="112" fill="#06080C"/>
+              <rect id="sensor" x="273.6" y="206.55" width="112.8" height="74.9" rx="3" fill="url(#g-sensor)" opacity="0"/>
+              <text id="sensorLabel" x="330" y="255" text-anchor="middle" font-size="32" font-weight="900" fill="rgba(255,255,255,.92)" class="ui-svg" opacity="0">APS-C</text>
+              <circle cx="482" cy="304" r="13" fill="#232A39" stroke="#5A6378" stroke-width="2"/>
+            </svg>
+
+            <svg class="obj" id="lens" viewBox="-210 -210 420 420" width="420" height="420">
+              <defs>
+                <radialGradient id="g-glass" cx=".4" cy=".36" r=".72"><stop offset="0" stop-color="#3D52B0"/><stop offset=".45" stop-color="#1A2252"/><stop offset="1" stop-color="#070918"/></radialGradient>
+                <path id="lensRing" d="M0,-150 A150,150 0 1,1 0,150 A150,150 0 1,1 0,-150"/>
+              </defs>
+              <circle r="204" fill="#10141C" stroke="#39425A" stroke-width="4"/>
+              <circle r="186" fill="none" stroke="#1C2230" stroke-width="26"/>
+              <circle r="186" fill="none" stroke="#2E3649" stroke-width="22" stroke-dasharray="3 6"/>
+              <circle r="168" fill="#141924" stroke="rgba(255,255,255,.5)" stroke-width="2"/>
+              <g id="lensText" opacity="0">
+                <text font-size="17" font-weight="700" letter-spacing="3" fill="#C9D0DC" class="mono-svg"><textPath href="#lensRing">ZOOM 24–70mm 1:2.8 · Ø82mm · ASPH · ED · ZOOM 24–70mm 1:2.8 · Ø82mm · ASPH ·</textPath></text>
+              </g>
+              <circle r="128" fill="url(#g-glass)" stroke="#2A3248" stroke-width="6"/>
+              <circle r="98" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
+              <circle r="62" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="2"/>
+              <ellipse cx="-44" cy="-52" rx="40" ry="22" fill="#5CE0B2" opacity=".22" transform="rotate(-35 -44 -52)"/>
+              <ellipse cx="52" cy="40" rx="26" ry="14" fill="#D46BFF" opacity=".24" transform="rotate(-35 52 40)"/>
+              <path d="M -90 -40 A 98 98 0 0 1 -30 -94" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="6" fill="none" stroke-linecap="round"/>
+            </svg>
+
+            <svg class="obj" id="compact" viewBox="0 0 380 250" width="380" height="250">
+              <defs><radialGradient id="g-cglass" cx=".38" cy=".34" r=".75"><stop offset="0" stop-color="#5D74C9"/><stop offset=".5" stop-color="#22305F"/><stop offset="1" stop-color="#0B1022"/></radialGradient></defs>
+              <rect x="246" y="14" width="64" height="32" rx="10" fill="#FFC23D" stroke="#121A2B" stroke-width="7"/>
+              <rect x="64" y="22" width="44" height="22" rx="6" fill="#121A2B"/>
+              <rect x="4" y="68" width="18" height="28" rx="5" fill="#121A2B"/>
+              <rect x="358" y="68" width="18" height="28" rx="5" fill="#121A2B"/>
+              <rect x="18" y="38" width="344" height="196" rx="36" fill="#FFFFFF"/>
+              <path d="M18 150 H362 V198 Q362 234 326 234 H54 Q18 234 18 198Z" fill="#FF7A59"/>
+              <rect x="18" y="38" width="344" height="196" rx="36" fill="none" stroke="#121A2B" stroke-width="7"/>
+              <rect x="44" y="64" width="78" height="44" rx="10" fill="#FFF3C9" stroke="#121A2B" stroke-width="6"/>
+              <rect id="cFlash" x="47" y="67" width="72" height="38" rx="8" fill="#FFFFFF" opacity="0"/>
+              <rect x="276" y="64" width="58" height="38" rx="9" fill="#24304F" stroke="#121A2B" stroke-width="6"/>
+              <circle cx="190" cy="140" r="82" fill="#121A2B"/>
+              <circle cx="190" cy="140" r="64" fill="#2B3655"/>
+              <circle cx="190" cy="140" r="52" fill="url(#g-cglass)"/>
+              <circle cx="190" cy="140" r="22" fill="#070A14"/>
+              <ellipse cx="168" cy="116" rx="16" ry="10" fill="#FFFFFF" opacity=".75" transform="rotate(-35 168 116)"/>
+              <circle cx="212" cy="160" r="5" fill="#FFFFFF" opacity=".5"/>
+            </svg>
+          </div>
+
+          <div class="chips" id="chips">
+            <span data-t="9.65">23.5×15.6 → 36×24 mm</span>
+            <span data-t="9.8">面积 ×2.36</span>
+            <span data-t="10.85">4K 60p</span>
+            <span data-t="11.0">10-bit 4:2:2</span>
+            <span data-t="11.15">Log</span>
+            <span data-t="11.3">不限时录制</span>
+            <span data-t="12.85" class="hot">大三元</span>
+            <span data-t="13.0">24–70mm F2.8</span>
+            <span data-t="13.15">恒定光圈</span>
+            <span data-t="13.3">Ø82 mm</span>
+          </div>
+
+          <div class="meter" id="meter">
+            <div class="m-row"><span class="m-lbl">预算</span><span class="m-val" id="mVal">¥2,999</span><span class="m-w">重量 <b id="mW">0.32</b> kg</span></div>
+            <div class="m-track"><i class="m-fill" id="mFill"></i><i class="m-over" id="mOver"></i><i class="m-budget"></i><span class="m-note">原本预算 ¥3,000</span></div>
+          </div>
+
+          <div class="hud" id="hud">
+            <i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>
+            <div class="h-top">
+              <div class="h-left"><span id="hMode">AUTO</span><span class="h-rec" id="hRec"><i id="hDot"></i>REC <b id="hTc">00:00:00:00</b></span></div>
+              <span class="h-bat" id="hBat"><i></i><i></i><i></i></span>
+            </div>
+            <div class="h-bot" id="hBot">1/250 · F2.8 · ISO 100 · ±0.0</div>
+          </div>
+
+          <!-- copy -->
+          <div class="txt">
+            <div class="ln v-s" id="l1" style="top:214px">本来就想出去玩的时候，</div>
+            <div class="ln v-xl" id="l2" style="top:300px">给自己、给朋友</div>
+            <div class="ln v-xl" id="l3" style="top:432px">拍点<span class="mark" id="mk1">好看的照片</span>。</div>
+            <div class="ln v-xl" id="lb" style="top:250px">结果越看<span class="cob">测评</span>，</div>
+            <div class="ln cnt" id="cnt" style="top:404px">已看测评 <b id="cntN">0</b> 条 · 累计 <b id="cntT">00:00:00</b></div>
+            <div class="ln v-xxl" id="lc" style="top:196px">要求越多：</div>
+            <div class="row" id="r1" style="top:386px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>要全画幅，</span></div>
+            <div class="row" id="r2" style="top:481px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>要专业视频，</span></div>
+            <div class="row" id="r3" style="top:576px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>镜头最好也<span class="mark2" id="mk3">一步到位</span>。</span></div>
+          </div>
+        </div>
+
+        <div class="dim" id="dim"></div>
+        <div class="layer" id="endLayer"></div>
+        <div class="flash" id="flash"></div>
+        <div class="grain" id="grain"></div>
+      </div>
+      <button class="poster-play" id="posterPlay" type="button"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2.5 L15.5 9 L4 15.5Z" fill="currentColor"/></svg>从头播放</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="btnPlay" type="button"><svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" d="M3 1.5 L12 7 L3 12.5Z" fill="currentColor"/></svg><span id="playLabel">播放</span></button>
+      <input id="scrub" type="range" min="0" max="18" step="0.001" value="16.6" aria-label="时间轴">
+      <output class="clock" id="clock">00:16.6 / 00:18.0</output>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <header>
+      <p class="eyebrow">竖屏动效短片</p>
+      <h1>要求越多</h1>
+      <p class="meta">1080 × 1920 · 30 fps · 18 秒 · 逐帧可导出</p>
+    </header>
+
+    <p class="quote">本来就想出去玩的时候，给自己、给朋友拍点好看的照片。结果越看测评，要求越多：要全画幅，要专业视频，镜头最好也一步到位。</p>
+
+    <section>
+      <h2>分镜 · 点击跳转</h2>
+      <ol class="beats" id="beats">
+        <li><button type="button" data-t="0"><span class="bt">0:00.0</span><span class="bc">本来就想出去玩的时候，</span><span class="bd">晴天，太阳升起，小相机跳出来</span></button></li>
+        <li><button type="button" data-t="1.35"><span class="bt">0:01.4</span><span class="bc">给自己、给朋友</span><span class="bd">闪光两下，拍立得弹出、慢慢显影</span></button></li>
+        <li><button type="button" data-t="2.5"><span class="bt">0:02.5</span><span class="bc">拍点好看的照片。</span><span class="bd">第三张落地，“好看的照片”划上记号</span></button></li>
+        <li><button type="button" data-t="4.6"><span class="bt">0:04.6</span><span class="bc">结果越看测评，</span><span class="bd">测评视频越堆越快，计数涨到 47 条</span></button></li>
+        <li><button type="button" data-t="7.2"><span class="bt">0:07.2</span><span class="bc">（转场）</span><span class="bd">快门帘幕落下，画面进入取景器</span></button></li>
+        <li><button type="button" data-t="7.6"><span class="bt">0:07.6</span><span class="bc">要求越多：</span><span class="bd">网格线、电量、拍摄参数亮起</span></button></li>
+        <li><button type="button" data-t="8.5"><span class="bt">0:08.5</span><span class="bc">要全画幅，</span><span class="bd">机身变大，传感器 23.5×15.6 → 36×24 mm</span></button></li>
+        <li><button type="button" data-t="10.2"><span class="bt">0:10.2</span><span class="bc">要专业视频，</span><span class="bd">REC 开始计时，兔笼、提手、麦克风、监视器装上</span></button></li>
+        <li><button type="button" data-t="12.2"><span class="bt">0:12.2</span><span class="bc">镜头最好也一步到位。</span><span class="bd">镜头越换越大，预算条冲出画面</span></button></li>
+        <li><button type="button" data-t="15.1"><span class="bt">0:15.1</span><span class="bc">（收尾）</span><span class="bd">第一张照片落回画面，其余压暗</span></button></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>导出 MP4</h2>
+      <p>画面里没有 CSS 动画和定时器，每一帧都由时间 <code>t</code> 算出来。导出时脚本逐帧跳到 <code>t</code>、截图，再交给 ffmpeg 合成，帧率不受电脑快慢影响。在仓库目录运行：</p>
+      <div class="code"><pre id="cmd">npm install
+npx playwright install chromium
+npm run render</pre><button class="copy-btn" id="copyBtn" type="button">复制</button></div>
+      <p class="hint">需要本机装有 ffmpeg。输出到 <code>out/yaoqiu-yueduo.mp4</code>；加 <code>-- --fps 60</code> 出 60 帧。</p>
+    </section>
+  </aside>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const DUR = 18, POSTER = 16.6, W = 1080, H = 1920;
+  const RENDER = document.documentElement.classList.contains('render');
+  const $ = (s) => document.getElementById(s);
+
+  // ---------- easing + timing helpers ----------
+  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const E = {
+    lin: (k) => k,
+    out: (k) => 1 - (1 - k) ** 3,
+    out4: (k) => 1 - (1 - k) ** 4,
+    in: (k) => k * k * k,
+    io: (k) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2),
+    expo: (k) => (k >= 1 ? 1 : 1 - 2 ** (-10 * k)),
+    back: (k) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * (k - 1) ** 3 + c1 * (k - 1) ** 2; },
+  };
+  // progress of a segment that starts at t0 and lasts d seconds
+  const P = (t, t0, d, e = E.out) => e(clamp((t - t0) / d));
+  const on = (t, t0, d = 0.08) => clamp((t - t0) / d);
+
+  // place an absolutely positioned element by its centre
+  function put(el, x, y, s = 1, r = 0, o = 1, blur = 0) {
+    el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%) rotate(${r}deg) scale(${s})`;
+    el.style.opacity = o;
+    el.style.filter = blur > 0.05 ? `blur(${blur}px)` : '';
+  }
+  // offset an element from where CSS put it
+  function nudge(el, dx = 0, dy = 0, s = 1, o = 1, blur = 0) {
+    el.style.transform = `translate(${dx}px,${dy}px) scale(${s})`;
+    el.style.opacity = o;
+    el.style.filter = blur > 0.05 ? `blur(${blur}px)` : '';
+  }
+  // wrap every character in a span so lines can be staggered
+  function split(el) {
+    const out = [];
+    (function walk(n) {
+      [...n.childNodes].forEach((c) => {
+        if (c.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          for (const ch of c.textContent) {
+            const s = document.createElement('span');
+            s.className = 'ch'; s.textContent = ch; frag.appendChild(s); out.push(s);
+          }
+          c.replaceWith(frag);
+        } else if (c.nodeType === 1) walk(c);
+      });
+    })(el);
+    el.classList.add('shown');
+    return out;
+  }
+  function charsIn(chs, t, t0, st, d = 0.55, dy = 48, blur = 10) {
+    for (let i = 0; i < chs.length; i++) {
+      const k = P(t, t0 + i * st, d, E.out4);
+      const c = chs[i];
+      c.style.transform = `translateY(${(1 - k) * dy}px)`;
+      c.style.opacity = k;
+      c.style.filter = k < 0.999 && k > 0 ? `blur(${(1 - k) * blur}px)` : '';
+    }
+  }
+  const pad = (n) => String(n).padStart(2, '0');
+  const money = (n) => '¥' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const hash = (n) => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+  // ---------- build ----------
+  const stage = $('stage'), scene = $('scene'), rig = $('rig');
+
+  const CARDS = [
+    ['别买错！', '买相机前一定要看的 10 个坑', '46.2万次观看', '18:07', '#1B2A4E', '#6B2D5C', 290, 850, -7],
+    ['全画幅？', 'APS-C 还是全画幅？看完不纠结', '31.8万次观看', '22:41', '#0E3B43', '#1F7A6C', 800, 800, 6],
+    ['4K 实测', '拍视频到底要看哪些参数', '12.5万次观看', '15:12', '#3A1F14', '#B4532A', 560, 1030, -3],
+    ['半年后悔', '用了半年，后悔没一步到位', '58.0万次观看', '11:36', '#25243A', '#5B4B8A', 250, 1230, 5],
+    ['画质横评', '9 台相机画质横评', '20.3万次观看', '34:50', '#13293D', '#2F6690', 830, 1200, -6],
+    ['大三元', '大三元到底值不值', '9.7万次观看', '19:28', '#2B2B2B', '#6A6A6A', 540, 1410, 2],
+    ['买前必看', '新手第一台相机怎么选', '102万次观看', '16:03', '#3D1E1E', '#A33B3B', 330, 1010, 9],
+    ['说点实话', '这钱该不该花？说点实话', '7.4万次观看', '13:55', '#1D3A2A', '#3E7A55', 770, 1020, -9],
+    ['10-bit', '8-bit 和 10-bit 差在哪', '5.1万次观看', '09:47', '#1F2235', '#3D4A8F', 280, 1490, -4],
+    ['一步到位', '镜头一步到位，反而省钱？', '26.9万次观看', '21:19', '#3A2A10', '#9A6B1F', 820, 1470, 7],
+    ['防抖实测', '手持拍视频，防抖够不够', '8.8万次观看', '12:22', '#102C35', '#2A7F8F', 540, 830, -1],
+    ['终极推荐', '2026 年相机终极推荐', '77.1万次观看', '41:05', '#24122B', '#7A2E6F', 540, 1180, 0],
+  ];
+  const cardWrap = $('cards');
+  const cards = CARDS.map((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'card obj';
+    el.style.setProperty('--c1', c[4]); el.style.setProperty('--c2', c[5]);
+    el.innerHTML = `<div class="thumb"><span class="tt">${c[0]}</span><span class="dur">${c[3]}</span><span class="prog"></span></div>` +
+      `<div class="info"><p class="ti">${c[1]}</p><p class="me">${c[2]}</p></div>`;
+    cardWrap.appendChild(el);
+    // cadence speeds up: gaps shrink as the pile grows
+    const t0 = 5.05 + 2.1 * (i / (CARDS.length - 1)) ** 0.62;
+    const dx = c[6] - 540, dy = c[7] - 1150, len = Math.hypot(dx, dy) || 1;
+    return { el, t0, x: c[6], y: c[7], r: c[8], ox: c[6] + (dx / len) * 1150, oy: c[7] + (dy / len) * 1150 + (len < 60 ? 900 : 0),
+      s: i === CARDS.length - 1 ? 1.08 : 1, spin: i % 2 ? 26 : -26 };
+  });
+
+  const holes = $('cageHoles');
+  for (let x = 60; x <= 620; x += 40) {
+    for (const y of [10, 490]) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 4.5); holes.appendChild(c);
+    }
+  }
+
+  // the first photo comes back at the end, above the dimmer
+  const pEnd = $('p1').cloneNode(true);
+  pEnd.id = 'pEnd';
+  pEnd.querySelector('.dev').remove();
+  $('endLayer').appendChild(pEnd);
+
+  // film grain tile, seeded so every render is identical
+  (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d'), img = g.createImageData(256, 256);
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 128 + (rnd() - 0.5) * 255;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    $('grain').style.background = `url(${c.toDataURL()}) repeat`;
+  })();
+
+  const L1 = split($('l1')), L2 = split($('l2')), L3 = split($('l3')), LB = split($('lb')), LC = split($('lc'));
+  const lines = { l1: $('l1'), l2: $('l2'), l3: $('l3'), lb: $('lb'), lc: $('lc') };
+  const polas = [
+    { el: $('p1'), t0: 1.65, x: 230, y: 1420, r: -9 },
+    { el: $('p2'), t0: 2.25, x: 850, y: 1380, r: 8 },
+    { el: $('p3'), t0: 3.0, x: 560, y: 1585, r: -3 },
+  ].map((p) => ({ ...p, dev: p.el.querySelector('.dev') }));
+  const FLASHES = [1.6, 2.2, 2.95];
+  const rows = [
+    { el: $('r1'), t0: 8.5 }, { el: $('r2'), t0: 10.2 }, { el: $('r3'), t0: 12.2 },
+  ].map((r) => ({ ...r, tick: r.el.querySelector('.tick') }));
+  const chips = [...$('chips').children].map((el) => ({ el, t0: parseFloat(el.dataset.t) }));
+  const blades = [...$('blades').children];
+  const bladeY = [0, 460, 920, 1380];
+  const batBars = [...$('hBat').children];
+  const PRICE = [[9.0, 0.6, 14999], [11.0, 0.6, 22300], [13.0, 0.8, 36800]];
+  const WEIGHT = [[9.0, 0.6, 0.74], [11.0, 0.6, 1.46], [13.0, 0.8, 2.36]];
+  const HITS = [[9.0, 10], [11.05, 12], [12.7, 8], [13.5, 14], [13.8, 20]];
+  const TRACK = 888, SCALE_MAX = 32000;
+
+  const el = {
+    sun: $('sun'), hills: $('hills'), compact: $('compact'), cFlash: $('cFlash'), flash: $('flash'),
+    cnt: $('cnt'), cntN: $('cntN'), cntT: $('cntT'), bgEvf: $('bgEvf'), grid: $('evfGrid'), hud: $('hud'),
+    hMode: $('hMode'), hRec: $('hRec'), hDot: $('hDot'), hTc: $('hTc'), hBat: $('hBat'), hBot: $('hBot'),
+    bodyPro: $('bodyPro'), sensor: $('sensor'), sensorLabel: $('sensorLabel'), cage: $('cage'), handle: $('handle'),
+    mic: $('mic'), monitor: $('monitor'), lens: $('lens'), lensText: $('lensText'), meter: $('meter'),
+    mVal: $('mVal'), mW: $('mW'), mFill: $('mFill'), mOver: $('mOver'), mk1: $('mk1'), mk3: $('mk3'),
+    dim: $('dim'), grain: $('grain'),
+  };
+  const setText = (node, s) => { if (node.textContent !== s) node.textContent = s; };
+
+  // ---------- the whole film as a function of t ----------
+  function render(t) {
+    t = clamp(t, 0, DUR);
+
+    // S1 · sunny day ------------------------------------------------
+    const sunK = P(t, -0.5, 1.3);
+    put(el.sun, 870, lerp(430, 330, sunK), lerp(0.86, 1, sunK));
+    nudge(el.hills, 0, lerp(70, 0, P(t, -0.4, 1.2)));
+
+    charsIn(L1, t, 0.25, 0.035);
+    charsIn(L2, t, 1.35, 0.07);
+    charsIn(L3, t, 2.5, 0.06);
+    el.mk1.style.setProperty('--k', P(t, 3.3, 0.45, E.io));
+    ['l1', 'l2', 'l3'].forEach((id, i) => {
+      const k = P(t, 4.4 + i * 0.05, 0.38, E.in);
+      nudge(lines[id], 0, -44 * k, 1, 1 - k, 8 * k);
+    });
+
+    let fl = 0, squash = 0;
+    for (const f of FLASHES) {
+      const d = t - f;
+      if (d >= 0 && d < 0.35) fl = Math.max(fl, d < 0.04 ? d / 0.04 : 1 - (d - 0.04) / 0.31);
+      if (d >= 0 && d < 0.3) squash += Math.sin((d / 0.3) * Math.PI) * 0.06;
+    }
+    el.flash.style.opacity = fl * 0.6;
+    el.cFlash.setAttribute('opacity', fl);
+
+    const drift = P(t, 4.45, 0.6, E.io);
+    for (const p of polas) {
+      if (t < p.t0) { p.el.style.opacity = 0; continue; }
+      const k = P(t, p.t0, 0.7, E.out4), kr = P(t, p.t0, 0.85, E.back);
+      put(p.el, lerp(540, p.x, k), lerp(960, p.y, k) - Math.sin(Math.PI * k) * 150 + drift * 70,
+        lerp(0.25, 1, k), lerp(0, p.r, kr) + drift * (p.r > 0 ? 3 : -3), on(t, p.t0));
+      p.dev.style.opacity = 1 - P(t, p.t0 + 0.35, 1.3, E.io);
+    }
+
+    // the compact camera: S1 hero, hides in S2, returns in S3 and turns into the pro body
+    const camIn = P(t, 0.7, 0.55, E.back);
+    const camHide = P(t, 5.1, 0.4, E.in);
+    const camBack = P(t, 7.75, 0.5, E.back);
+    const morph = P(t, 8.6, 0.45, E.in);
+    if (t < 7.6) {
+      put(el.compact, 540, 960 + Math.sin(t * 2.4) * 6, camIn * (1 - squash) * (1 - 0.1 * camHide), 0,
+        t < 0.7 ? 0 : 1 - camHide);
+    } else {
+      put(el.compact, 540, 1110, lerp(0.6, 1, camBack) * lerp(1, 1.45, morph), 0, on(t, 7.75, 0.12) * (1 - morph), morph * 8);
+    }
+
+    // S2 · reviews pile up ------------------------------------------
+    charsIn(LB, t, 4.7, 0.045);
+    const bOut = P(t, 7.12, 0.3, E.in);
+    nudge(lines.lb, 0, -44 * bOut, 1, 1 - bOut, 8 * bOut);
+    const cIn = P(t, 5.0, 0.4);
+    nudge(el.cnt, 0, (1 - cIn) * 20, 1, cIn * (1 - bOut));
+    const n = Math.round(47 * P(t, 5.05, 2.15, (k) => k ** 1.8));
+    setText(el.cntN, String(n));
+    const secs = n * 1049;
+    setText(el.cntT, `${pad(Math.floor(secs / 3600))}:${pad(Math.floor(secs / 60) % 60)}:${pad(secs % 60)}`);
+    for (const c of cards) {
+      if (t < c.t0) { c.el.style.opacity = 0; continue; }
+      const k = P(t, c.t0, 0.5, E.expo);
+      put(c.el, lerp(c.ox, c.x, k), lerp(c.oy, c.y, k), lerp(1.25, c.s, k), lerp(c.r + c.spin, c.r, k), 1);
+    }
+
+    // shutter curtain → viewfinder ----------------------------------
+    blades.forEach((b, i) => {
+      const k = P(t, 7.28, 0.32, E.io);
+      b.style.transform = `translateY(${lerp(-600, bladeY[i], k)}px)`;
+      b.style.opacity = t > 7.64 ? 0 : 1;
+    });
+    el.bgEvf.style.opacity = t >= 7.6 ? 1 : 0;
+    const hk = P(t, 7.6, 0.3);
+    const flick = t < 7.6 ? 0 : t < 7.66 ? 0.6 : t < 7.71 ? 0.15 : 1;
+    el.hud.style.opacity = flick;
+    el.hud.style.transform = `scale(${lerp(1.04, 1, hk)})`;
+    el.grid.style.opacity = flick;
+
+    const recT = 10.3, recOn = t >= recT;
+    el.hMode.style.opacity = recOn ? 0 : 1;
+    el.hRec.style.opacity = recOn ? 1 : 0;
+    el.hDot.style.opacity = recOn && Math.floor((t - recT) * 2) % 2 === 0 ? 1 : 0.2;
+    const fr = Math.floor(Math.max(0, t - recT) * 30);
+    setText(el.hTc, `00:00:${pad(Math.floor(fr / 30))}:${pad(fr % 30)}`);
+    setText(el.hBot, recOn ? '4K 60p · 10-bit · 1/120 · F2.8 · ISO 800' : '1/250 · F2.8 · ISO 100 · ±0.0');
+    const bars = t < 10.4 ? 3 : t < 12.4 ? 2 : 1;
+    const low = t >= 14.5;
+    el.hBat.classList.toggle('low', low);
+    batBars.forEach((b, i) => { b.style.opacity = i < bars ? (low && Math.floor(t * 2.5) % 2 ? 0.15 : 1) : 0; });
+
+    // S3 · 要求越多 ---------------------------------------------------
+    charsIn(LC, t, 7.65, 0.06, 0.5);
+    for (const r of rows) {
+      const k = P(t, r.t0, 0.45, E.out4);
+      nudge(r.el, lerp(-60, 0, k), 0, 1, k, (1 - k) * 8);
+      r.tick.style.strokeDashoffset = 1 - P(t, r.t0 + 0.25, 0.3);
+    }
+    el.mk3.style.setProperty('--k', P(t, 13.0, 0.4, E.io));
+
+    // R1 · full frame
+    put(el.bodyPro, 540, 1110, lerp(0.78, 1, P(t, 8.6, 0.5, E.back)), 0, on(t, 8.6, 0.15));
+    const g = P(t, 9.35, 0.55, E.expo);
+    const sw = lerp(112.8, 172.8, g), sh = lerp(74.9, 115.2, g);
+    el.sensor.setAttribute('width', sw); el.sensor.setAttribute('height', sh);
+    el.sensor.setAttribute('x', 330 - sw / 2); el.sensor.setAttribute('y', 244 - sh / 2);
+    const so = on(t, 9.1, 0.2);
+    el.sensor.setAttribute('opacity', so);
+    el.sensorLabel.setAttribute('opacity', so);
+    setText(el.sensorLabel, g < 0.5 ? 'APS-C' : '全画幅');
+
+    // R2 · pro video
+    const ck = P(t, 10.4, 0.4, E.out4);
+    put(el.cage, 540, 1110, lerp(1.15, 1, ck), 0, ck);
+    put(el.handle, 540, lerp(560, 812, P(t, 10.6, 0.4, E.back)), 1, 0, on(t, 10.6));
+    put(el.mic, 540, lerp(470, 722, P(t, 10.75, 0.4, E.back)), 1, 0, on(t, 10.75));
+    const mk = P(t, 10.9, 0.45, E.back);
+    put(el.monitor, lerp(1320, 905, mk), 845, 1, lerp(14, 0, mk), on(t, 10.9));
+
+    // R3 · the lens, then a bigger lens
+    const l1 = P(t, 12.3, 0.4, E.back), l2 = P(t, 12.9, 0.6, E.back);
+    put(el.lens, 570, 1144, 0.6 * l1 + 0.4 * l2, 0, on(t, 12.3, 0.05));
+    el.lensText.setAttribute('opacity', P(t, 13.0, 0.4));
+    el.lensText.setAttribute('transform', `rotate(${Math.max(0, t - 12.3) * 9})`);
+
+    for (const c of chips) {
+      const k = P(t, c.t0, 0.35, E.back);
+      nudge(c.el, 0, (1 - k) * 16, lerp(0.7, 1, k), on(t, c.t0, 0.12));
+    }
+
+    // budget meter
+    const mi = P(t, 8.0, 0.4);
+    nudge(el.meter, 0, (1 - mi) * 30, 1, mi);
+    let price = 2999, kg = 0.32;
+    for (const [a, d, to] of PRICE) price = lerp(price, to, P(t, a, d, E.io));
+    for (const [a, d, to] of WEIGHT) kg = lerp(kg, to, P(t, a, d, E.io));
+    const px = (price / SCALE_MAX) * TRACK;
+    setText(el.mVal, money(price));
+    setText(el.mW, kg.toFixed(2));
+    el.mVal.style.color = px > TRACK ? 'var(--s-rec)' : '';
+    el.mFill.style.width = Math.min(px, TRACK) + 'px';
+    el.mOver.style.width = Math.max(0, px - TRACK) + 'px';
+
+    // weight lands with a thud
+    let sx = 0, sy = 0;
+    for (const [h, a] of HITS) {
+      const d = t - h;
+      if (d > 0 && d < 0.6) { const e = Math.exp(-d * 9) * a; sx += Math.sin(d * 55) * e; sy += Math.cos(d * 47) * e * 0.6; }
+    }
+    scene.style.transform = sx || sy ? `translate(${sx.toFixed(2)}px,${sy.toFixed(2)}px)` : '';
+    rig.style.transform = `scale(${1 + 0.035 * P(t, 14.0, 4.0, E.io)})`;
+
+    // S4 · back to the first photo ----------------------------------
+    const ek = P(t, 15.1, 0.75, E.out4), er = P(t, 15.1, 0.9, E.back);
+    put(pEnd, lerp(980, 840, ek), lerp(2250, 1420, ek), 0.92, lerp(-24, 8, er), t < 15.1 ? 0 : 1);
+    el.dim.style.opacity = 0.42 * P(t, 15.3, 0.8, E.io);
+
+    const gf = Math.floor(t * 24);
+    el.grain.style.transform = `translate(${Math.floor(hash(gf) * 256)}px,${Math.floor(hash(gf + 99) * 256)}px)`;
+  }
+
+  // ---------- player ----------
+  let cur = POSTER, playing = false, started = false, last = 0;
+  const btnPlay = $('btnPlay'), playLabel = $('playLabel'), playIcon = $('playIcon'), scrub = $('scrub'), clock = $('clock');
+  const posterPlay = $('posterPlay'), stageBox = $('stageBox');
+  const beatBtns = [...document.querySelectorAll('#beats button')];
+  const beatTimes = beatBtns.map((b) => parseFloat(b.dataset.t));
+  const fmt = (s) => `${pad(Math.floor(s / 60))}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+
+  function syncUI() {
+    if (RENDER) return;
+    scrub.value = cur;
+    clock.textContent = `${fmt(cur)} / ${fmt(DUR)}`;
+    playLabel.textContent = playing ? '暂停' : cur >= DUR ? '重播' : '播放';
+    playIcon.setAttribute('d', playing ? 'M3 1.5 H6 V12.5 H3Z M8 1.5 H11 V12.5 H8Z' : 'M3 1.5 L12 7 L3 12.5Z');
+    let active = 0;
+    beatTimes.forEach((bt, i) => { if (cur >= bt) active = i; });
+    beatBtns.forEach((b, i) => b.parentElement.classList.toggle('on', started && i === active));
+    posterPlay.hidden = started;
+  }
+  function tick(now) {
+    if (!playing) return;
+    cur = Math.min(DUR, cur + (now - last) / 1000);
+    last = now;
+    render(cur);
+    if (cur >= DUR) playing = false;
+    syncUI();
+    if (playing) requestAnimationFrame(tick);
+  }
+  function play(from) {
+    started = true;
+    if (typeof from === 'number') cur = from;
+    else if (cur >= DUR - 0.01) cur = 0;
+    playing = true; last = performance.now();
+    render(cur); syncUI();
+    requestAnimationFrame(tick);
+  }
+  function pause() { playing = false; syncUI(); }
+  function seek(t) { cur = clamp(t, 0, DUR); render(cur); syncUI(); }
+
+  function fit() {
+    if (RENDER) return;
+    const vw = document.documentElement.clientWidth;
+    const wide = vw > 860;
+    const availW = wide ? vw - 400 - 40 - 48 : vw - 32;
+    const availH = Math.max(420, window.innerHeight - 110);
+    const s = Math.min(availW / W, availH / H);
+    stageBox.style.width = `${W * s}px`;
+    stageBox.style.height = `${H * s}px`;
+    stage.style.transform = `scale(${s})`;
+    document.querySelector('.controls').style.width = `${W * s}px`;
+  }
+
+  if (!RENDER) {
+    posterPlay.addEventListener('click', () => play(0));
+    btnPlay.addEventListener('click', () => (playing ? pause() : play(started ? undefined : 0)));
+    scrub.addEventListener('input', () => { started = true; pause(); seek(parseFloat(scrub.value)); });
+    beatBtns.forEach((b) => b.addEventListener('click', () => play(parseFloat(b.dataset.t))));
+    document.addEventListener('keydown', (e) => {
+      const tag = e.target.tagName;
+      if (e.key === ' ' && tag !== 'BUTTON' && tag !== 'INPUT') { e.preventDefault(); playing ? pause() : play(started ? undefined : 0); }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && tag !== 'INPUT') {
+        e.preventDefault(); started = true; pause();
+        seek(cur + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 1 : 1 / 30));
+      }
+    });
+    $('copyBtn').addEventListener('click', () => {
+      const text = $('cmd').textContent;
+      const done = () => { $('copyBtn').textContent = '已复制'; setTimeout(() => ($('copyBtn').textContent = '复制'), 1600); };
+      const fallback = () => { const r = document.createRange(); r.selectNodeContents($('cmd')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+      try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+    });
+    window.addEventListener('resize', fit);
+    fit();
+  }
+
+  // ---------- render hook for render.mjs ----------
+  const ready = (async () => {
+    if (document.readyState !== 'complete') await new Promise((r) => addEventListener('load', r, { once: true }));
+    const text = [...new Set(stage.textContent + '0123456789:,.¥×–→·')].join('');
+    const faces = ['600 58px "Noto Serif SC"', '900 108px "Noto Serif SC"', '500 30px "Noto Sans SC"', '700 30px "Noto Sans SC"',
+      '900 56px "Noto Sans SC"', '500 30px "JetBrains Mono"', '700 30px "JetBrains Mono"', '400 50px "Long Cang"'];
+    try {
+      await Promise.race([Promise.all(faces.map((f) => document.fonts.load(f, text))), new Promise((r) => setTimeout(r, 12000))]);
+    } catch (err) { /* fall back to system fonts */ }
+    await document.fonts.ready;
+    render(cur);
+    return true;
+  })();
+  window.__motion = { duration: DUR, poster: POSTER, width: W, height: H, ready, seek: (t) => { cur = t; render(t); } };
+
+  render(cur);
+  syncUI();
+})();
+</script>
+</body>
+</html>
