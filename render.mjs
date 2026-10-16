@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Render index.html to an MP4, one frame at a time:
-// open the page in headless Chromium, seek the timeline to t = i / fps,
-// screenshot the 1080×1920 stage, and pipe the PNGs into ffmpeg.
+// serve this folder over HTTP, open the page in headless Chromium, seek the
+// timeline to t = i / fps, screenshot the stage, and pipe the images into ffmpeg.
 //
 //   node render.mjs                         → out/yaoqiu-yueduo.mp4 (30 fps)
 //   node render.mjs --fps 60 --out a.mp4    → 60 fps to a.mp4
-//   node render.mjs --from 7 --to 10        → render only 7s–10s
-//   node render.mjs --still 16.6            → one PNG of the frame at 16.6s
+//   node render.mjs --from 9 --to 12        → render only 9s–12s
+//   node render.mjs --still 19.6            → one PNG of the frame at 19.6s
 //   node render.mjs --format png            → lossless PNG frames (slower; default is JPEG q95)
 //
 // Needs ffmpeg on PATH (or set FFMPEG=/path/to/ffmpeg).
@@ -14,9 +14,11 @@
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFile } from 'node:fs/promises';
+import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -34,14 +36,37 @@ for (let i = 0; i < argv.length; i++) {
   opts[key] = ['fps', 'still', 'from', 'to', 'crf'].includes(key) ? Number(val) : val;
 }
 
-async function launch() {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
+// ES modules (three.js) do not load from file://, so serve the folder locally.
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.css': 'text/css' };
+const server = createServer(async (req, res) => {
   try {
-    return await chromium.launch({ proxy });
+    const path = normalize(join(here, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
+    if (!path.startsWith(here)) throw new Error('outside');
+    const body = await readFile(path);
+    res.writeHead(200, { 'content-type': TYPES[extname(path)] || 'application/octet-stream' });
+    res.end(body);
+  } catch {
+    res.writeHead(404);
+    res.end();
+  }
+});
+server.listen(0, '127.0.0.1');
+await once(server, 'listening');
+const base = `http://127.0.0.1:${server.address().port}/`;
+
+async function launch() {
+  const args = [
+    '--ignore-gpu-blocklist',
+    '--enable-unsafe-swiftshader', // software WebGL when there is no GPU (servers, CI)
+  ];
+  // Fonts come from Google Fonts; send that through HTTPS_PROXY if one is set, but keep the local server direct.
+  if (process.env.HTTPS_PROXY) args.push(`--proxy-server=${process.env.HTTPS_PROXY}`, '--proxy-bypass-list=127.0.0.1;localhost');
+  try {
+    return await chromium.launch({ args });
   } catch (err) {
     // No Playwright browser downloaded? Fall back to the installed Google Chrome.
     try {
-      return await chromium.launch({ channel: 'chrome', proxy });
+      return await chromium.launch({ channel: 'chrome', args });
     } catch {
       throw err;
     }
@@ -50,11 +75,16 @@ async function launch() {
 
 const browser = await launch();
 try {
-  const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
-  const url = pathToFileURL(resolve(here, opts.page)).href + '?render';
-  await page.goto(url, { waitUntil: 'networkidle' });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+  page.on('pageerror', (err) => console.error(`页面错误：${err.message}`));
+  await page.goto(`${base}${opts.page}?render`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__motion, null, { timeout: 60000 });
   await page.evaluate(() => window.__motion.ready);
-  const { duration } = await page.evaluate(() => ({ duration: window.__motion.duration }));
+  const { duration, width, height } = await page.evaluate(() => {
+    const m = window.__motion;
+    return { duration: m.duration, width: m.width, height: m.height };
+  });
+  await page.setViewportSize({ width, height });
 
   if (opts.still != null && !Number.isNaN(opts.still)) {
     const out = resolve(here, opts.out ?? `out/still-${opts.still}.png`);
@@ -69,7 +99,7 @@ try {
     const to = Math.min(duration, opts.to ?? duration);
     const frames = Math.round((to - from) * opts.fps);
     const png = opts.format === 'png';
-    // In render mode the stage sits at 0,0 and fills the 1080×1920 viewport, so a page shot is the frame.
+    // In render mode the stage sits at 0,0 and fills the viewport, so a page shot is the frame.
     const shoot = () => page.screenshot(png ? { type: 'png' } : { type: 'jpeg', quality: 95 });
 
     const ffmpeg = spawn(process.env.FFMPEG || 'ffmpeg', [
@@ -89,7 +119,8 @@ try {
       await page.evaluate((tt) => window.__motion.seek(tt), t);
       if (!ffmpeg.stdin.write(await shoot())) await once(ffmpeg.stdin, 'drain');
       if (i % 10 === 0 || i === frames - 1) {
-        process.stdout.write(`\r第 ${i + 1}/${frames} 帧  t=${t.toFixed(2)}s`);
+        const left = ((Date.now() - started) / (i + 1)) * (frames - i - 1) / 1000;
+        process.stdout.write(`\r第 ${i + 1}/${frames} 帧  t=${t.toFixed(2)}s  预计还需 ${Math.ceil(left)} 秒   `);
       }
     }
     ffmpeg.stdin.end();
@@ -99,4 +130,5 @@ try {
   }
 } finally {
   await browser.close();
+  server.close();
 }

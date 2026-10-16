@@ -8,934 +8,840 @@
 <script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Serif+SC:wght@600;900&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&text=%E6%88%91%E6%9C%8B%E5%8F%8B%E4%BB%AC%E5%B1%B1%E9%A1%B6&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600&display=swap">
 <style>
-/* Layout: the 1080×1920 stage scaled to fit on the left, storyboard + export panel on the right; stacks on phones. */
+/* Layout: a 1920×1080 stage scaled to the column width, controls under it, storyboard and export notes below. */
 :root {
-  --bg: #E8ECF0;
-  --surface: #FFFFFF;
-  --fg: #141A26;
-  --muted: #5B6476;
-  --line: #D2D8E0;
-  --accent: #2F4BFF;
-  --accent-fg: #FFFFFF;
-  --accent-soft: rgba(47, 75, 255, .08);
-  --shadow: rgba(20, 26, 38, .22);
-
-  /* Stage palette — the video has one fixed look, independent of the page theme. */
-  --s-sky: #CFE6F5;
-  --s-sun: #FFC23D;
-  --s-ink: #121A2B;
-  --s-coral: #FF7A59;
-  --s-paper: #FCFBF8;
-  --s-evf: #0B0F17;
-  --s-white: #F4F6FA;
-  --s-cobalt: #2F4BFF;
-  --s-rec: #FF3B30;
-  --s-steel: #6F7890;
+  --bg: #ECEDEE;
+  --surface: #F7F7F8;
+  --fg: #17191C;
+  --muted: #696E76;
+  --line: #D6D8DB;
+  --accent: #17191C;
+  --accent-fg: #F7F7F8;
+  --soft: rgba(23, 25, 28, .05);
+  --shadow: rgba(16, 18, 22, .25);
 
   --f-voice: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  --f-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans SC", monospace;
-  --f-hand: "Long Cang", "Noto Serif SC", cursive;
+  --f-ui: "Noto Serif SC", "Songti SC", serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0C0F14; --surface: #151A22; --fg: #E6E9EF; --muted: #8E97A8; --line: #252C38;
-    --accent: #8394FF; --accent-fg: #0C0F14; --accent-soft: rgba(131, 148, 255, .12); --shadow: rgba(0, 0, 0, .6);
+    --bg: #0E0F11; --surface: #16181B; --fg: #E8E9EB; --muted: #8B9097; --line: #25282C;
+    --accent: #E8E9EB; --accent-fg: #0E0F11; --soft: rgba(232, 233, 235, .06); --shadow: rgba(0, 0, 0, .6);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0C0F14; --surface: #151A22; --fg: #E6E9EF; --muted: #8E97A8; --line: #252C38;
-  --accent: #8394FF; --accent-fg: #0C0F14; --accent-soft: rgba(131, 148, 255, .12); --shadow: rgba(0, 0, 0, .6);
+  --bg: #0E0F11; --surface: #16181B; --fg: #E8E9EB; --muted: #8B9097; --line: #25282C;
+  --accent: #E8E9EB; --accent-fg: #0E0F11; --soft: rgba(232, 233, 235, .06); --shadow: rgba(0, 0, 0, .6);
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 15px; line-height: 1.6; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 15px; line-height: 1.7; }
 
 /* ---------- page chrome ---------- */
 .app {
-  display: grid; grid-template-columns: auto minmax(0, 400px); justify-content: center; align-items: start;
-  gap: 40px; padding-block: 24px;
+  max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; padding-block: 28px 56px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.viewer { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.stage-box {
-  position: relative; overflow: hidden; border-radius: 14px; background: #000;
-  box-shadow: 0 40px 80px -40px var(--shadow), 0 0 0 1px var(--line);
-}
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.top h1 { margin: 0; font: 600 26px/1.2 var(--f-voice); letter-spacing: .12em; }
+.meta { margin: 0; font: 400 12px/1.4 var(--f-mono); letter-spacing: .08em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.viewer { display: flex; flex-direction: column; gap: 12px; align-items: center; min-width: 0; }
+.stage-box { position: relative; overflow: hidden; border-radius: 10px; background: #0A0B0D; box-shadow: 0 40px 80px -48px var(--shadow), 0 0 0 1px var(--line); }
 .poster-play {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px 14px 20px;
-  border: 0; border-radius: 999px; background: var(--s-white); color: var(--s-ink);
-  font: 700 16px/1 var(--f-ui); cursor: pointer; box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px 12px 18px; border: 0; border-radius: 999px;
+  background: rgba(247, 247, 248, .92); color: #17191C; font: 600 15px/1 var(--f-ui); letter-spacing: .08em; cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25); backdrop-filter: blur(6px);
 }
-.poster-play svg { width: 18px; height: 18px; }
-.poster-play:focus-visible, .btn:focus-visible, .beats button:focus-visible, #scrub:focus-visible, .copy-btn:focus-visible {
-  outline: 3px solid var(--accent); outline-offset: 2px;
-}
-.controls { display: flex; align-items: center; gap: 12px; }
+.poster-play svg { width: 14px; height: 14px; }
+.poster-play:focus-visible, .btn:focus-visible, .beats button:focus-visible, #scrub:focus-visible, .copy-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.controls { display: flex; align-items: center; gap: 14px; width: 100%; }
 .btn {
-  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line);
-  background: var(--surface); color: var(--fg); font: 600 14px/1 var(--f-ui); cursor: pointer;
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; min-width: 82px; padding: 0 14px;
+  border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-fg); font: 600 13px/1 var(--f-ui); letter-spacing: .08em; cursor: pointer;
 }
-.btn svg { width: 14px; height: 14px; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); min-width: 84px; }
-#scrub { flex: 1; min-width: 0; accent-color: var(--accent); }
-.clock { flex: none; font: 500 13px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.btn svg { width: 12px; height: 12px; }
+#scrub { flex: 1; min-width: 0; accent-color: var(--fg); }
+.clock { flex: none; font: 400 12px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.gl-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #E8E9EB; font: 400 15px/1.7 var(--f-ui); }
 
-.panel { display: flex; flex-direction: column; gap: 28px; min-width: 0; padding-top: 4px; }
-.panel h1 { margin: 0; font: 900 44px/1.1 var(--f-voice); letter-spacing: .02em; text-wrap: balance; }
-.eyebrow { margin: 0 0 10px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-.meta { margin: 12px 0 0; font: 500 13px/1.4 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.quote { margin: 0; padding: 16px 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font: 600 16px/1.85 var(--f-voice); }
-.panel h2 { margin: 0 0 10px; font: 700 13px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
+.notes { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 48px; padding-top: 12px; }
+.notes h2 { margin: 0 0 12px; font: 400 12px/1 var(--f-mono); letter-spacing: .14em; color: var(--muted); }
+.quote { margin: 0 0 28px; font: 400 17px/2 var(--f-voice); letter-spacing: .04em; max-width: 40em; }
 .beats { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .beats li { border-bottom: 1px solid var(--line); }
 .beats button {
-  width: 100%; display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; row-gap: 2px;
-  padding: 10px 8px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; border-radius: 8px;
+  width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; padding: 11px 8px; border: 0; border-radius: 6px;
+  background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit;
 }
-.beats button:hover { background: var(--accent-soft); }
-.beats .bt { grid-row: span 2; font: 500 12px/1.9 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.beats .bc { font: 700 15px/1.5 var(--f-voice); }
-.beats .bd { font-size: 13px; line-height: 1.5; color: var(--muted); }
-.beats li.on button { background: var(--accent-soft); }
-.beats li.on .bt { color: var(--accent); font-weight: 700; }
-.panel p { margin: 0 0 12px; color: var(--muted); max-width: 65ch; }
-.panel code { font-family: var(--f-mono); font-size: .92em; }
-.code { position: relative; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
-.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 500 13px/1.7 var(--f-mono); }
-.copy-btn {
-  position: absolute; right: 8px; top: 8px; height: 28px; padding: 0 10px; border-radius: 7px;
-  border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 600 12px/1 var(--f-ui); cursor: pointer;
-}
-.hint { font-size: 13px; }
-
-@media (max-width: 860px) {
-  .app { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-  .viewer { align-items: center; }
-  .panel h1 { font-size: 36px; }
-}
+.beats button:hover { background: var(--soft); }
+.beats .bt { grid-row: span 2; font: 400 12px/2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.beats .bc { font: 600 15px/1.6 var(--f-voice); letter-spacing: .04em; }
+.beats .bd { font-size: 13px; line-height: 1.6; color: var(--muted); }
+.beats li.on button { background: var(--soft); }
+.beats li.on .bt { color: var(--fg); }
+.notes p { margin: 0 0 14px; color: var(--muted); max-width: 60ch; }
+.notes code { font-family: var(--f-mono); font-size: .9em; }
+.code { position: relative; margin-bottom: 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 400 13px/1.8 var(--f-mono); }
+.copy-btn { position: absolute; right: 8px; top: 8px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--fg); font: 400 12px/1 var(--f-ui); cursor: pointer; }
+@media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
 
 /* ---------- render mode: just the stage, 1:1 ---------- */
 html.render, html.render body { margin: 0; padding: 0; background: #000; overflow: hidden; }
-html.render .app { display: block; padding: 0; }
-html.render .panel, html.render .controls, html.render .poster-play { display: none; }
-html.render .stage-box { width: 1080px; height: 1920px; border-radius: 0; box-shadow: none; }
+html.render .app { display: block; max-width: none; padding: 0; }
+html.render .top, html.render .notes, html.render .controls, html.render .poster-play { display: none; }
+html.render .stage-box { width: 1920px; height: 1080px; border-radius: 0; box-shadow: none; }
 html.render .stage { transform: none !important; }
 
 /* ---------- stage ---------- */
 .stage {
-  position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden;
-  transform-origin: 0 0; background: var(--s-sky); color: var(--s-ink); font-family: var(--f-ui);
-  font-size: 32px; line-height: 1.2;
+  --tx: #1C1E22; --mu: #6E737B;
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0;
+  background: #E9EAEB; color: var(--tx); font-family: var(--f-voice);
 }
-.stage * { box-sizing: border-box; }
-.scene, .layer { position: absolute; inset: 0; }
-.obj { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; }
-svg.obj { overflow: visible; }
+#gl { position: absolute; inset: 0; width: 1920px; height: 1080px; display: block; }
+.vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 80% at 60% 48%, transparent 55%, rgba(0, 0, 0, var(--vig, .1)) 100%); }
+.dims { position: absolute; inset: 0; width: 1920px; height: 1080px; opacity: 0; overflow: visible; }
+.dims path { fill: none; stroke: rgba(236, 237, 239, .78); stroke-width: 1.25; }
+.dims .d-big { font: 400 22px/1 var(--f-mono); letter-spacing: .06em; fill: #ECEDEF; }
+.dims .d-small { font: 400 15px/1 var(--f-voice); letter-spacing: .2em; fill: rgba(236, 237, 239, .62); }
 
-.bg-sky { position: absolute; inset: 0; background: linear-gradient(180deg, #BADBF0 0%, #D6EAF6 55%, #E8F3FA 100%); }
-.sun { width: 300px; height: 300px; border-radius: 50%; background: var(--s-sun); opacity: 1;
-  box-shadow: 0 0 0 34px rgba(255, 194, 61, .22), 0 0 0 82px rgba(255, 194, 61, .1); }
-.hills { position: absolute; left: 0; top: 1400px; width: 1080px; height: 520px; }
+.copy { position: absolute; inset: 0; pointer-events: none; }
+.ln { position: absolute; left: 168px; margin: 0; white-space: nowrap; opacity: 0;
+  font: 400 44px/1.3 var(--f-voice); letter-spacing: .1em; color: var(--tx); }
+.hd { font-weight: 600; font-size: 60px; letter-spacing: .12em; }
+.sub { position: absolute; left: 170px; margin: 0; white-space: nowrap; opacity: 0;
+  font: 400 20px/1.4 var(--f-mono); letter-spacing: .08em; color: var(--mu); font-variant-numeric: tabular-nums; }
+.sub b { font-weight: 500; color: var(--tx); }
+.item .ln { font-size: 38px; }
+.rule { position: absolute; left: 170px; top: 812px; width: 300px; height: 1px; background: var(--mu); opacity: 0; transform-origin: 0 50%; }
 
-/* polaroids */
-.polaroid { width: 300px; height: 372px; padding: 18px 18px 0; background: var(--s-paper);
-  box-shadow: 0 2px 0 rgba(18, 26, 43, .08), 0 26px 44px -12px rgba(18, 26, 43, .38); }
-.polaroid .photo { position: relative; width: 264px; height: 264px; overflow: hidden; background: #20242C; }
-.polaroid .photo svg { display: block; }
-.polaroid .dev { position: absolute; inset: 0; background: #2A2E36; }
-.polaroid .date { position: absolute; right: 10px; bottom: 7px; font: 700 17px/1 var(--f-mono); letter-spacing: .06em;
-  color: #FF8A2A; text-shadow: 0 0 6px rgba(255, 120, 30, .75); }
-.polaroid .cap { height: 90px; display: grid; place-items: center; font: 400 50px/1 var(--f-hand); color: var(--s-ink); }
-
-/* review cards */
-.card { width: 440px; background: #FFFFFF; border-radius: 20px; overflow: hidden;
-  box-shadow: 0 30px 60px -20px rgba(18, 26, 43, .5), 0 2px 6px rgba(18, 26, 43, .12); }
-.thumb { position: relative; height: 248px; display: grid; place-items: center; overflow: hidden;
-  background: linear-gradient(135deg, var(--c1), var(--c2)); }
-.thumb::before { content: ""; position: absolute; right: -60px; top: -50px; width: 270px; height: 270px; border-radius: 50%;
-  border: 28px solid rgba(255, 255, 255, .08); }
-.thumb .tt { position: relative; font: 900 76px/1 var(--f-ui); color: #FFE14D; text-shadow: 5px 5px 0 #000; transform: rotate(-3deg); white-space: nowrap; }
-.thumb .dur { position: absolute; right: 12px; bottom: 17px; padding: 3px 8px; border-radius: 6px;
-  background: rgba(0, 0, 0, .72); color: #FFFFFF; font: 700 22px/1 var(--f-mono); }
-.thumb .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--s-rec); }
-.card .info { padding: 16px 20px 20px; }
-.card .ti { margin: 0; font: 700 30px/1.3 var(--f-ui); color: var(--s-ink); }
-.card .me { margin: 8px 0 0; font: 500 22px/1.2 var(--f-ui); color: #6B7385; }
-
-/* shutter + EVF */
-.bg-evf { position: absolute; inset: 0; opacity: 0;
-  background: radial-gradient(ellipse 70% 45% at 50% 58%, #172033 0%, #0B0F17 62%, #06080D 100%); }
-.blades i { position: absolute; left: 0; top: 0; width: 1080px; height: 540px; background: var(--s-evf);
-  border-bottom: 4px solid #2B3344; transform: translateY(-600px); }
-.grid { position: absolute; inset: 0; opacity: 0; }
-.grid i { position: absolute; background: rgba(244, 246, 250, .07); }
-.grid i:nth-child(1) { left: 359px; top: 0; bottom: 0; width: 2px; }
-.grid i:nth-child(2) { left: 719px; top: 0; bottom: 0; width: 2px; }
-.grid i:nth-child(3) { top: 639px; left: 0; right: 0; height: 2px; }
-.grid i:nth-child(4) { top: 1279px; left: 0; right: 0; height: 2px; }
-
-/* rig */
-.rig { position: absolute; inset: 0; transform-origin: 540px 1110px; }
-#bodyPro, #cage { filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)); }
-#lens { filter: drop-shadow(0 26px 36px rgba(0, 0, 0, .6)); }
-.mono-svg { font-family: var(--f-mono); }
-.ui-svg { font-family: var(--f-ui); }
-.monitor { width: 214px; height: 150px; padding: 10px; border-radius: 14px; background: #151A24; border: 4px solid #3A4256;
-  box-shadow: 0 20px 30px rgba(0, 0, 0, .5); }
-.monitor svg { display: block; border-radius: 4px; }
-
-.chips { position: absolute; left: 96px; top: 1392px; width: 888px; display: flex; flex-wrap: wrap; gap: 12px; }
-.chips span { opacity: 0; padding: 8px 16px; border: 2px solid rgba(233, 237, 245, .5); border-radius: 6px;
-  background: rgba(233, 237, 245, .05); color: #E9EDF5; font: 500 28px/1.2 var(--f-mono); white-space: nowrap; }
-.chips span.hot { background: var(--s-sun); border-color: var(--s-sun); color: var(--s-ink); font-weight: 700; }
-
-.meter { position: absolute; left: 96px; top: 1606px; width: 888px; opacity: 0; color: #E9EDF5; }
-.m-row { display: flex; align-items: baseline; gap: 20px; }
-.m-lbl { font: 700 30px/1 var(--f-ui); color: #8C95A8; }
-.m-val { font: 700 66px/1 var(--f-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.m-w { margin-left: auto; font: 500 30px/1 var(--f-mono); color: #8C95A8; }
-.m-w b { color: #E9EDF5; font-weight: 700; }
-.m-track { position: relative; height: 14px; margin-top: 22px; border-radius: 7px; background: rgba(233, 237, 245, .12); }
-.m-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 7px 0 0 7px; background: var(--s-cobalt); }
-.m-over { position: absolute; left: 888px; top: 0; bottom: 0; width: 0; background: var(--s-rec); }
-.m-budget { position: absolute; left: 82px; top: -10px; width: 4px; height: 34px; border-radius: 2px; background: var(--s-sun); }
-.m-note { position: absolute; left: 76px; top: 34px; font: 500 22px/1 var(--f-mono); color: var(--s-sun); white-space: nowrap; }
-
-.hud { position: absolute; inset: 0; opacity: 0; color: var(--s-white); font-family: var(--f-mono); }
-.hud .cn { position: absolute; width: 92px; height: 92px; border: 0 solid rgba(244, 246, 250, .92); }
-.hud .tl { left: 56px; top: 56px; border-left-width: 5px; border-top-width: 5px; }
-.hud .tr { right: 56px; top: 56px; border-right-width: 5px; border-top-width: 5px; }
-.hud .bl { left: 56px; bottom: 56px; border-left-width: 5px; border-bottom-width: 5px; }
-.hud .br { right: 56px; bottom: 56px; border-right-width: 5px; border-bottom-width: 5px; }
-.h-top { position: absolute; left: 100px; right: 100px; top: 92px; height: 44px; display: flex; align-items: center; justify-content: space-between;
-  font: 700 30px/1 var(--f-mono); letter-spacing: .04em; }
-.h-left { position: relative; width: 440px; height: 44px; }
-.h-left > span { position: absolute; left: 0; top: 0; height: 44px; display: flex; align-items: center; gap: 12px; white-space: nowrap; }
-.h-rec { opacity: 0; }
-.h-rec i { width: 22px; height: 22px; border-radius: 50%; background: var(--s-rec); }
-.h-rec b { font-weight: 500; font-variant-numeric: tabular-nums; }
-.h-bat { position: relative; display: flex; gap: 4px; padding: 4px; border: 3px solid currentColor; border-radius: 6px; }
-.h-bat i { width: 16px; height: 22px; background: currentColor; }
-.h-bat::after { content: ""; position: absolute; right: -10px; top: 9px; width: 5px; height: 12px; border-radius: 0 2px 2px 0; background: currentColor; }
-.h-bat.low { color: var(--s-rec); }
-.h-bot { position: absolute; left: 0; right: 0; bottom: 92px; text-align: center; font: 500 28px/1 var(--f-mono);
-  letter-spacing: .05em; color: rgba(244, 246, 250, .82); }
-
-/* text */
-.txt { position: absolute; inset: 0; }
-.ln { position: absolute; left: 96px; white-space: nowrap; opacity: 0; }
-.ln.shown { opacity: 1; }
-.ch { display: inline-block; will-change: transform, opacity; }
-.v-s { font: 600 58px/1.3 var(--f-voice); }
-.v-xl { font: 900 108px/1.2 var(--f-voice); }
-.v-xxl { font: 900 124px/1.2 var(--f-voice); color: var(--s-white); }
-.cob { color: var(--s-cobalt); }
-.mark, .mark2 { position: relative; z-index: 0; display: inline-block; }
-.mark::before { content: ""; position: absolute; left: -6px; right: -6px; bottom: .1em; height: .34em; border-radius: 4px; z-index: -1;
-  background: var(--s-sun); transform-origin: 0 50%; transform: scaleX(var(--k, 0)); }
-.mark2::before { content: ""; position: absolute; left: -8px; right: -3px; top: 6px; bottom: 2px; border-radius: 6px; z-index: -1;
-  background: var(--s-cobalt); transform-origin: 0 50%; transform: scaleX(var(--k, 0)); }
-.cnt { font: 500 32px/1.4 var(--f-mono); color: var(--s-ink); }
-.cnt b { color: var(--s-cobalt); font-weight: 700; font-variant-numeric: tabular-nums; }
-.row { position: absolute; left: 96px; display: flex; align-items: center; gap: 26px; opacity: 0;
-  font: 900 56px/1.2 var(--f-ui); color: var(--s-white); white-space: nowrap; }
-.row .box { width: 54px; height: 54px; flex: none; }
-
-.dim { position: absolute; inset: 0; background: #06080D; opacity: 0; }
-.flash { position: absolute; inset: 0; background: #FFFFFF; opacity: 0; }
-.grain { position: absolute; left: -256px; top: -256px; width: 1592px; height: 2432px; opacity: .08; mix-blend-mode: overlay; }
-
-@media (prefers-reduced-motion: reduce) {
-  .poster-play { transition: none; }
-}
+.fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
 </style>
 </head>
 <body>
 <div class="app">
+  <header class="top">
+    <h1>要求越多</h1>
+    <p class="meta">16:9 · 1920 × 1080 · 30 FPS · 21 秒 · WebGL 实时渲染</p>
+  </header>
+
   <main class="viewer" aria-label="动效预览">
     <div class="stage-box" id="stageBox">
       <div class="stage" id="stage" aria-hidden="true">
-        <div class="scene" id="scene">
+        <canvas id="gl" width="1920" height="1080"></canvas>
+        <div class="vignette"></div>
 
-          <!-- S1: sunny day -->
-          <div class="bg-sky"></div>
-          <div class="sun obj" id="sun"></div>
-          <svg class="hills" id="hills" viewBox="0 0 1080 520" preserveAspectRatio="none">
-            <path d="M0 210 C 200 110 380 130 560 210 S 900 290 1080 170 V520 H0Z" fill="#9BD4B6"/>
-            <path d="M0 330 C 180 262 360 270 540 330 S 860 400 1080 300 V520 H0Z" fill="#5FAF8E"/>
-          </svg>
+        <svg class="dims" id="dims" viewBox="0 0 1920 1080">
+          <path id="dRect"/><path id="dLead"/>
+          <text class="d-small" id="dName">APS-C</text>
+          <text class="d-big" id="dSize">23.5 × 15.6 mm</text>
+        </svg>
 
-          <div class="polaroid obj" id="p1">
-            <div class="photo">
-              <svg viewBox="0 0 264 264" width="264" height="264">
-                <defs><linearGradient id="g-p1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86C8EE"/><stop offset="1" stop-color="#E3F2FA"/></linearGradient></defs>
-                <rect width="264" height="264" fill="url(#g-p1)"/>
-                <circle cx="206" cy="60" r="26" fill="#FFC23D"/>
-                <rect y="178" width="264" height="86" fill="#3E9BD1"/>
-                <path d="M0 184 Q33 176 66 184 T132 184 T198 184 T264 184 V194 H0Z" fill="#8ACDEE"/>
-                <path d="M86 264 V222 Q86 190 118 190 H146 Q178 190 178 222 V264Z" fill="#FF7A59"/>
-                <path d="M172 206 L194 168" stroke="#F3C9A6" stroke-width="13" stroke-linecap="round"/>
-                <path d="M194 168 L188 150 M194 168 L204 152" stroke="#F3C9A6" stroke-width="7" stroke-linecap="round"/>
-                <circle cx="132" cy="158" r="28" fill="#F3C9A6"/>
-                <path d="M104 157 Q104 126 132 126 Q160 126 160 157 Q152 140 134 141 Q114 141 104 157Z" fill="#2B2420"/>
-              </svg>
-              <div class="dev"></div>
-              <span class="date">'26 10 16</span>
-            </div>
-            <div class="cap">我</div>
-          </div>
+        <div class="copy">
+          <p class="ln" id="t1" style="top:440px">本来就想出去玩的时候，</p>
+          <p class="ln" id="t2" style="top:512px">给自己、给朋友拍点好看的照片。</p>
 
-          <div class="polaroid obj" id="p2">
-            <div class="photo">
-              <svg viewBox="0 0 264 264" width="264" height="264">
-                <defs><linearGradient id="g-p2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFAE7A"/><stop offset="1" stop-color="#FFE3BD"/></linearGradient></defs>
-                <rect width="264" height="264" fill="url(#g-p2)"/>
-                <circle cx="132" cy="112" r="72" fill="#FFF2D9" opacity=".55"/>
-                <rect y="214" width="264" height="50" fill="#E7926A"/>
-                <path d="M30 264 V228 Q30 202 56 202 H72 Q98 202 98 228 V264Z" fill="#2F4BFF"/>
-                <circle cx="64" cy="174" r="24" fill="#E8B48E"/>
-                <path d="M40 172 Q40 148 64 148 Q88 148 88 172 Q80 160 64 161 Q48 160 40 172Z" fill="#2B2420"/>
-                <path d="M96 264 V214 Q96 186 124 186 H140 Q168 186 168 214 V264Z" fill="#3E8F72"/>
-                <path d="M104 190 Q100 128 132 126 Q164 128 160 190 Z" fill="#3A2A22"/>
-                <circle cx="132" cy="156" r="27" fill="#F3C9A6"/>
-                <path d="M105 152 Q108 128 132 128 Q156 128 159 152 Q146 138 132 140 Q118 138 105 152Z" fill="#3A2A22"/>
-                <path d="M166 264 V232 Q166 208 190 208 H210 Q234 208 234 232 V264Z" fill="#FFFFFF"/>
-                <circle cx="200" cy="180" r="23" fill="#F6D2B5"/>
-                <path d="M176 176 Q178 154 200 154 Q222 154 224 176 Z" fill="#FF7A59"/>
-                <rect x="196" y="170" width="38" height="8" rx="4" fill="#FF7A59"/>
-              </svg>
-              <div class="dev"></div>
-              <span class="date">'26 10 16</span>
-            </div>
-            <div class="cap">朋友们</div>
-          </div>
+          <p class="ln" id="t3" style="top:470px">结果越看测评，</p>
+          <p class="sub" id="cnt" style="top:552px">已看 <b id="cntN">0</b> 篇测评　累计 <b id="cntT">00:00:00</b></p>
 
-          <div class="polaroid obj" id="p3">
-            <div class="photo">
-              <svg viewBox="0 0 264 264" width="264" height="264">
-                <defs><linearGradient id="g-p3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9DFF5"/><stop offset="1" stop-color="#F2F9FD"/></linearGradient></defs>
-                <rect width="264" height="264" fill="url(#g-p3)"/>
-                <circle cx="70" cy="70" r="24" fill="#FFC23D"/>
-                <g fill="#FFFFFF" opacity=".9"><ellipse cx="190" cy="54" rx="30" ry="12"/><ellipse cx="208" cy="46" rx="18" ry="12"/></g>
-                <path d="M0 200 L70 120 L120 170 L180 96 L264 190 V264 H0Z" fill="#8CCBA9"/>
-                <path d="M180 96 L201 119.5 L192 114 L183 122 L174 113 L165 114.5Z" fill="#FFFFFF"/>
-                <path d="M0 232 Q66 206 132 228 T264 222 V264 H0Z" fill="#3E8F72"/>
-              </svg>
-              <div class="dev"></div>
-              <span class="date">'26 10 16</span>
-            </div>
-            <div class="cap">山顶</div>
-          </div>
-
-          <!-- S2: review cards (filled by script) -->
-          <div class="layer" id="cards"></div>
-
-          <!-- shutter curtain into the viewfinder -->
-          <div class="bg-evf" id="bgEvf"></div>
-          <div class="layer blades" id="blades"><i></i><i></i><i></i><i></i></div>
-          <div class="grid" id="evfGrid"><i></i><i></i><i></i><i></i></div>
-
-          <!-- the camera, from compact to full rig -->
-          <div class="rig" id="rig">
-            <svg class="obj" id="cage" viewBox="0 0 680 500" width="680" height="500">
-              <rect x="10" y="10" width="660" height="480" rx="26" fill="none" stroke="#5E677D" stroke-width="18"/>
-              <rect x="10" y="10" width="660" height="480" rx="26" fill="none" stroke="#9AA3B8" stroke-width="2" opacity=".6"/>
-              <g id="cageHoles" fill="#0B0F17"></g>
-            </svg>
-            <svg class="obj" id="handle" viewBox="0 0 400 120" width="400" height="120">
-              <path d="M40 120 V56 Q40 22 74 22 H326 Q360 22 360 56 V120" fill="none" stroke="#5E677D" stroke-width="22" stroke-linejoin="round"/>
-              <rect x="110" y="8" width="180" height="30" rx="12" fill="#2A3142" stroke="#8C95A8" stroke-width="3"/>
-            </svg>
-            <svg class="obj" id="mic" viewBox="0 0 380 72" width="380" height="72">
-              <rect x="150" y="50" width="70" height="20" rx="4" fill="#2A3142" stroke="#5E677D" stroke-width="2"/>
-              <rect x="10" y="12" width="330" height="40" rx="20" fill="#1A1F2B" stroke="#8C95A8" stroke-width="3"/>
-              <g stroke="#3A4256" stroke-width="3"><path d="M44 20 V44 M58 20 V44 M72 20 V44 M86 20 V44 M100 20 V44 M114 20 V44 M128 20 V44 M142 20 V44 M156 20 V44 M170 20 V44"/></g>
-              <rect x="330" y="18" width="42" height="28" rx="10" fill="#2A3142" stroke="#8C95A8" stroke-width="3"/>
-            </svg>
-            <div class="monitor obj" id="monitor">
-              <svg viewBox="0 0 186 122" width="186" height="122">
-                <rect width="186" height="122" fill="#86C8EE"/>
-                <circle cx="146" cy="32" r="13" fill="#FFC23D"/>
-                <path d="M0 86 Q46 64 93 84 T186 76 V122 H0Z" fill="#5FAF8E"/>
-                <rect x="8" y="8" width="54" height="18" rx="3" fill="rgba(0,0,0,.5)"/>
-                <circle cx="17" cy="17" r="4.5" fill="#FF3B30"/>
-                <text x="26" y="22" font-size="12" font-weight="700" fill="#FFFFFF" class="mono-svg">REC</text>
-                <text x="178" y="114" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="end" class="mono-svg">4K60</text>
-              </svg>
-            </div>
-
-            <svg class="obj" id="bodyPro" viewBox="0 0 600 420" width="600" height="420">
-              <defs>
-                <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3446"/><stop offset="1" stop-color="#161B26"/></linearGradient>
-                <linearGradient id="g-sensor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7461E0"/><stop offset=".5" stop-color="#2E8C9E"/><stop offset="1" stop-color="#8A44A8"/></linearGradient>
-              </defs>
-              <rect x="66" y="58" width="78" height="30" rx="6" fill="#232A39" stroke="#465069" stroke-width="2"/>
-              <rect x="452" y="54" width="88" height="34" rx="8" fill="#232A39" stroke="#465069" stroke-width="2"/>
-              <path d="M250 92 L268 24 Q272 14 284 14 H376 Q388 14 392 24 L410 92Z" fill="url(#g-body)" stroke="#465069" stroke-width="3"/>
-              <rect x="20" y="84" width="560" height="316" rx="40" fill="url(#g-body)" stroke="#465069" stroke-width="3"/>
-              <path d="M20 124 Q20 84 60 84 H150 Q172 84 172 106 V378 Q172 400 150 400 H60 Q20 400 20 360Z" fill="#10141C"/>
-              <g stroke="#1D2330" stroke-width="3"><path d="M52 130 V360 M76 130 V360 M100 130 V360 M124 130 V360 M148 130 V360"/></g>
-              <circle cx="198" cy="128" r="9" fill="#3A1F1F" stroke="#5A6378" stroke-width="2"/>
-              <circle cx="330" cy="244" r="132" fill="#0E121A" stroke="#C3CAD6" stroke-width="10"/>
-              <g fill="none" stroke="#7D8597" stroke-width="10" stroke-linecap="round">
-                <path d="M330 122 A122 122 0 0 1 418 160"/><path d="M436 300 A122 122 0 0 1 384 354"/><path d="M226 308 A122 122 0 0 1 216 196"/>
-              </g>
-              <circle cx="330" cy="244" r="112" fill="#06080C"/>
-              <rect id="sensor" x="273.6" y="206.55" width="112.8" height="74.9" rx="3" fill="url(#g-sensor)" opacity="0"/>
-              <text id="sensorLabel" x="330" y="255" text-anchor="middle" font-size="32" font-weight="900" fill="rgba(255,255,255,.92)" class="ui-svg" opacity="0">APS-C</text>
-              <circle cx="482" cy="304" r="13" fill="#232A39" stroke="#5A6378" stroke-width="2"/>
-            </svg>
-
-            <svg class="obj" id="lens" viewBox="-210 -210 420 420" width="420" height="420">
-              <defs>
-                <radialGradient id="g-glass" cx=".4" cy=".36" r=".72"><stop offset="0" stop-color="#3D52B0"/><stop offset=".45" stop-color="#1A2252"/><stop offset="1" stop-color="#070918"/></radialGradient>
-                <path id="lensRing" d="M0,-150 A150,150 0 1,1 0,150 A150,150 0 1,1 0,-150"/>
-              </defs>
-              <circle r="204" fill="#10141C" stroke="#39425A" stroke-width="4"/>
-              <circle r="186" fill="none" stroke="#1C2230" stroke-width="26"/>
-              <circle r="186" fill="none" stroke="#2E3649" stroke-width="22" stroke-dasharray="3 6"/>
-              <circle r="168" fill="#141924" stroke="rgba(255,255,255,.5)" stroke-width="2"/>
-              <g id="lensText" opacity="0">
-                <text font-size="17" font-weight="700" letter-spacing="3" fill="#C9D0DC" class="mono-svg"><textPath href="#lensRing">ZOOM 24–70mm 1:2.8 · Ø82mm · ASPH · ED · ZOOM 24–70mm 1:2.8 · Ø82mm · ASPH ·</textPath></text>
-              </g>
-              <circle r="128" fill="url(#g-glass)" stroke="#2A3248" stroke-width="6"/>
-              <circle r="98" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2"/>
-              <circle r="62" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="2"/>
-              <ellipse cx="-44" cy="-52" rx="40" ry="22" fill="#5CE0B2" opacity=".22" transform="rotate(-35 -44 -52)"/>
-              <ellipse cx="52" cy="40" rx="26" ry="14" fill="#D46BFF" opacity=".24" transform="rotate(-35 52 40)"/>
-              <path d="M -90 -40 A 98 98 0 0 1 -30 -94" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="6" fill="none" stroke-linecap="round"/>
-            </svg>
-
-            <svg class="obj" id="compact" viewBox="0 0 380 250" width="380" height="250">
-              <defs><radialGradient id="g-cglass" cx=".38" cy=".34" r=".75"><stop offset="0" stop-color="#5D74C9"/><stop offset=".5" stop-color="#22305F"/><stop offset="1" stop-color="#0B1022"/></radialGradient></defs>
-              <rect x="246" y="14" width="64" height="32" rx="10" fill="#FFC23D" stroke="#121A2B" stroke-width="7"/>
-              <rect x="64" y="22" width="44" height="22" rx="6" fill="#121A2B"/>
-              <rect x="4" y="68" width="18" height="28" rx="5" fill="#121A2B"/>
-              <rect x="358" y="68" width="18" height="28" rx="5" fill="#121A2B"/>
-              <rect x="18" y="38" width="344" height="196" rx="36" fill="#FFFFFF"/>
-              <path d="M18 150 H362 V198 Q362 234 326 234 H54 Q18 234 18 198Z" fill="#FF7A59"/>
-              <rect x="18" y="38" width="344" height="196" rx="36" fill="none" stroke="#121A2B" stroke-width="7"/>
-              <rect x="44" y="64" width="78" height="44" rx="10" fill="#FFF3C9" stroke="#121A2B" stroke-width="6"/>
-              <rect id="cFlash" x="47" y="67" width="72" height="38" rx="8" fill="#FFFFFF" opacity="0"/>
-              <rect x="276" y="64" width="58" height="38" rx="9" fill="#24304F" stroke="#121A2B" stroke-width="6"/>
-              <circle cx="190" cy="140" r="82" fill="#121A2B"/>
-              <circle cx="190" cy="140" r="64" fill="#2B3655"/>
-              <circle cx="190" cy="140" r="52" fill="url(#g-cglass)"/>
-              <circle cx="190" cy="140" r="22" fill="#070A14"/>
-              <ellipse cx="168" cy="116" rx="16" ry="10" fill="#FFFFFF" opacity=".75" transform="rotate(-35 168 116)"/>
-              <circle cx="212" cy="160" r="5" fill="#FFFFFF" opacity=".5"/>
-            </svg>
-          </div>
-
-          <div class="chips" id="chips">
-            <span data-t="9.65">23.5×15.6 → 36×24 mm</span>
-            <span data-t="9.8">面积 ×2.36</span>
-            <span data-t="10.85">4K 60p</span>
-            <span data-t="11.0">10-bit 4:2:2</span>
-            <span data-t="11.15">Log</span>
-            <span data-t="11.3">不限时录制</span>
-            <span data-t="12.85" class="hot">大三元</span>
-            <span data-t="13.0">24–70mm F2.8</span>
-            <span data-t="13.15">恒定光圈</span>
-            <span data-t="13.3">Ø82 mm</span>
-          </div>
-
-          <div class="meter" id="meter">
-            <div class="m-row"><span class="m-lbl">预算</span><span class="m-val" id="mVal">¥2,999</span><span class="m-w">重量 <b id="mW">0.32</b> kg</span></div>
-            <div class="m-track"><i class="m-fill" id="mFill"></i><i class="m-over" id="mOver"></i><i class="m-budget"></i><span class="m-note">原本预算 ¥3,000</span></div>
-          </div>
-
-          <div class="hud" id="hud">
-            <i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>
-            <div class="h-top">
-              <div class="h-left"><span id="hMode">AUTO</span><span class="h-rec" id="hRec"><i id="hDot"></i>REC <b id="hTc">00:00:00:00</b></span></div>
-              <span class="h-bat" id="hBat"><i></i><i></i><i></i></span>
-            </div>
-            <div class="h-bot" id="hBot">1/250 · F2.8 · ISO 100 · ±0.0</div>
-          </div>
-
-          <!-- copy -->
-          <div class="txt">
-            <div class="ln v-s" id="l1" style="top:214px">本来就想出去玩的时候，</div>
-            <div class="ln v-xl" id="l2" style="top:300px">给自己、给朋友</div>
-            <div class="ln v-xl" id="l3" style="top:432px">拍点<span class="mark" id="mk1">好看的照片</span>。</div>
-            <div class="ln v-xl" id="lb" style="top:250px">结果越看<span class="cob">测评</span>，</div>
-            <div class="ln cnt" id="cnt" style="top:404px">已看测评 <b id="cntN">0</b> 条 · 累计 <b id="cntT">00:00:00</b></div>
-            <div class="ln v-xxl" id="lc" style="top:196px">要求越多：</div>
-            <div class="row" id="r1" style="top:386px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>要全画幅，</span></div>
-            <div class="row" id="r2" style="top:481px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>要专业视频，</span></div>
-            <div class="row" id="r3" style="top:576px"><svg class="box" viewBox="0 0 54 54"><rect x="3" y="3" width="48" height="48" rx="8" fill="none" stroke="rgba(244,246,250,.85)" stroke-width="4"/><path class="tick" d="M13 28 L23 38 L42 16" fill="none" stroke="#FFC23D" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg><span>镜头最好也<span class="mark2" id="mk3">一步到位</span>。</span></div>
-          </div>
+          <p class="ln hd" id="t4" style="top:300px">要求越多：</p>
+          <div class="item" id="i1"><p class="ln" style="top:420px">要全画幅，</p><p class="sub" style="top:478px">23.5×15.6 → 36×24 mm</p></div>
+          <div class="item" id="i2"><p class="ln" style="top:542px">要专业视频，</p><p class="sub" style="top:600px">4K 60p · 10-bit · Log</p></div>
+          <div class="item" id="i3"><p class="ln" style="top:664px">镜头最好也一步到位。</p><p class="sub" style="top:722px">24–70mm F2.8 · 大三元</p></div>
+          <i class="rule" id="rule"></i>
+          <p class="sub" id="budget" style="top:832px">预算 <b id="bVal">¥2,999</b>　重量 <b id="bKg">0.32</b> kg</p>
         </div>
 
-        <div class="dim" id="dim"></div>
-        <div class="layer" id="endLayer"></div>
-        <div class="flash" id="flash"></div>
-        <div class="grain" id="grain"></div>
+        <div class="fade" id="fade"></div>
       </div>
-      <button class="poster-play" id="posterPlay" type="button"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2.5 L15.5 9 L4 15.5Z" fill="currentColor"/></svg>从头播放</button>
+      <button class="poster-play" id="posterPlay" type="button"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5 L12.5 7 L3 12.5Z" fill="currentColor"/></svg>从头播放</button>
     </div>
 
-    <div class="controls">
-      <button class="btn primary" id="btnPlay" type="button"><svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" d="M3 1.5 L12 7 L3 12.5Z" fill="currentColor"/></svg><span id="playLabel">播放</span></button>
-      <input id="scrub" type="range" min="0" max="18" step="0.001" value="16.6" aria-label="时间轴">
-      <output class="clock" id="clock">00:16.6 / 00:18.0</output>
+    <div class="controls" id="controls">
+      <button class="btn" id="btnPlay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path id="playIcon" d="M2.5 1 L11 6 L2.5 11Z" fill="currentColor"/></svg><span id="playLabel">播放</span></button>
+      <input id="scrub" type="range" min="0" max="21" step="0.001" value="19.6" aria-label="时间轴">
+      <output class="clock" id="clock">00:19.6 / 00:21.0</output>
     </div>
   </main>
 
-  <aside class="panel">
-    <header>
-      <p class="eyebrow">竖屏动效短片</p>
-      <h1>要求越多</h1>
-      <p class="meta">1080 × 1920 · 30 fps · 18 秒 · 逐帧可导出</p>
-    </header>
-
-    <p class="quote">本来就想出去玩的时候，给自己、给朋友拍点好看的照片。结果越看测评，要求越多：要全画幅，要专业视频，镜头最好也一步到位。</p>
-
-    <section>
+  <section class="notes">
+    <div>
+      <h2>文案</h2>
+      <p class="quote">本来就想出去玩的时候，给自己、给朋友拍点好看的照片。结果越看测评，要求越多：要全画幅，要专业视频，镜头最好也一步到位。</p>
       <h2>分镜 · 点击跳转</h2>
       <ol class="beats" id="beats">
-        <li><button type="button" data-t="0"><span class="bt">0:00.0</span><span class="bc">本来就想出去玩的时候，</span><span class="bd">晴天，太阳升起，小相机跳出来</span></button></li>
-        <li><button type="button" data-t="1.35"><span class="bt">0:01.4</span><span class="bc">给自己、给朋友</span><span class="bd">闪光两下，拍立得弹出、慢慢显影</span></button></li>
-        <li><button type="button" data-t="2.5"><span class="bt">0:02.5</span><span class="bc">拍点好看的照片。</span><span class="bd">第三张落地，“好看的照片”划上记号</span></button></li>
-        <li><button type="button" data-t="4.6"><span class="bt">0:04.6</span><span class="bc">结果越看测评，</span><span class="bd">测评视频越堆越快，计数涨到 47 条</span></button></li>
-        <li><button type="button" data-t="7.2"><span class="bt">0:07.2</span><span class="bc">（转场）</span><span class="bd">快门帘幕落下，画面进入取景器</span></button></li>
-        <li><button type="button" data-t="7.6"><span class="bt">0:07.6</span><span class="bc">要求越多：</span><span class="bd">网格线、电量、拍摄参数亮起</span></button></li>
-        <li><button type="button" data-t="8.5"><span class="bt">0:08.5</span><span class="bc">要全画幅，</span><span class="bd">机身变大，传感器 23.5×15.6 → 36×24 mm</span></button></li>
-        <li><button type="button" data-t="10.2"><span class="bt">0:10.2</span><span class="bc">要专业视频，</span><span class="bd">REC 开始计时，兔笼、提手、麦克风、监视器装上</span></button></li>
-        <li><button type="button" data-t="12.2"><span class="bt">0:12.2</span><span class="bc">镜头最好也一步到位。</span><span class="bd">镜头越换越大，预算条冲出画面</span></button></li>
-        <li><button type="button" data-t="15.1"><span class="bt">0:15.1</span><span class="bc">（收尾）</span><span class="bd">第一张照片落回画面，其余压暗</span></button></li>
+        <li><button type="button" data-t="0"><span class="bt">0:00.0</span><span class="bc">本来就想出去玩的时候，</span><span class="bd">浅色影棚里，一台白色小相机缓缓转动</span></button></li>
+        <li><button type="button" data-t="1.6"><span class="bt">0:01.6</span><span class="bc">给自己、给朋友拍点好看的照片。</span><span class="bd">三张照片从镜头里飘出来，全片唯一的暖色</span></button></li>
+        <li><button type="button" data-t="4.9"><span class="bt">0:04.9</span><span class="bc">结果越看测评，</span><span class="bd">测评屏幕在相机周围越聚越多，影棚渐渐变暗</span></button></li>
+        <li><button type="button" data-t="7.7"><span class="bt">0:07.7</span><span class="bc">要求越多：</span><span class="bd">屏幕被相机吸进去</span></button></li>
+        <li><button type="button" data-t="9.4"><span class="bt">0:09.4</span><span class="bc">要全画幅，</span><span class="bd">机身长大变成石墨色，传感器 23.5×15.6 → 36×24 mm</span></button></li>
+        <li><button type="button" data-t="12.0"><span class="bt">0:12.0</span><span class="bc">要专业视频，</span><span class="bd">兔笼、提手、麦克风、监视器依次装配</span></button></li>
+        <li><button type="button" data-t="15.0"><span class="bt">0:15.0</span><span class="bc">镜头最好也一步到位。</span><span class="bd">大光圈变焦镜头卡口锁定，镜筒伸长</span></button></li>
+        <li><button type="button" data-t="18.0"><span class="bt">0:18.0</span><span class="bc">（收尾）</span><span class="bd">最初那张照片回到画面前景</span></button></li>
       </ol>
-    </section>
-
-    <section>
+    </div>
+    <div>
       <h2>导出 MP4</h2>
-      <p>画面里没有 CSS 动画和定时器，每一帧都由时间 <code>t</code> 算出来。导出时脚本逐帧跳到 <code>t</code>、截图，再交给 ffmpeg 合成，帧率不受电脑快慢影响。在仓库目录运行：</p>
+      <p>3D 场景用 Three.js 实时渲染，但画面里没有任何按真实时间走的动画：每一帧都由时间 <code>t</code> 算出来。导出时脚本逐帧跳到 <code>t</code>、截图，再交给 ffmpeg 合成，帧率不受电脑快慢影响。在仓库目录运行：</p>
       <div class="code"><pre id="cmd">npm install
 npx playwright install chromium
 npm run render</pre><button class="copy-btn" id="copyBtn" type="button">复制</button></div>
-      <p class="hint">需要本机装有 ffmpeg。输出到 <code>out/yaoqiu-yueduo.mp4</code>；加 <code>-- --fps 60</code> 出 60 帧。</p>
-    </section>
-  </aside>
+      <p>需要本机装有 ffmpeg。输出到 <code>out/yaoqiu-yueduo.mp4</code>；加 <code>-- --fps 60</code> 出 60 帧。</p>
+      <p>键盘：空格播放/暂停，← → 逐帧，Shift + ← → 跳 1 秒。</p>
+    </div>
+  </section>
 </div>
 
-<script>
-(() => {
-  'use strict';
-  const DUR = 18, POSTER = 16.6, W = 1080, H = 1920;
-  const RENDER = document.documentElement.classList.contains('render');
-  const $ = (s) => document.getElementById(s);
+<script type="module">
+// Three.js: the copy in node_modules when served locally, the CDN otherwise.
+let THREE;
+try { THREE = await import('./node_modules/three/build/three.module.js'); }
+catch (err) { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }
 
-  // ---------- easing + timing helpers ----------
-  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
-  const lerp = (a, b, k) => a + (b - a) * k;
-  const E = {
-    lin: (k) => k,
-    out: (k) => 1 - (1 - k) ** 3,
-    out4: (k) => 1 - (1 - k) ** 4,
-    in: (k) => k * k * k,
-    io: (k) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2),
-    expo: (k) => (k >= 1 ? 1 : 1 - 2 ** (-10 * k)),
-    back: (k) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * (k - 1) ** 3 + c1 * (k - 1) ** 2; },
-  };
-  // progress of a segment that starts at t0 and lasts d seconds
-  const P = (t, t0, d, e = E.out) => e(clamp((t - t0) / d));
-  const on = (t, t0, d = 0.08) => clamp((t - t0) / d);
+const W = 1920, H = 1080, DUR = 21, POSTER = 19.6;
+const RENDER = document.documentElement.classList.contains('render');
+const $ = (s) => document.getElementById(s);
+const stage = $('stage');
 
-  // place an absolutely positioned element by its centre
-  function put(el, x, y, s = 1, r = 0, o = 1, blur = 0) {
-    el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%) rotate(${r}deg) scale(${s})`;
-    el.style.opacity = o;
-    el.style.filter = blur > 0.05 ? `blur(${blur}px)` : '';
-  }
-  // offset an element from where CSS put it
-  function nudge(el, dx = 0, dy = 0, s = 1, o = 1, blur = 0) {
-    el.style.transform = `translate(${dx}px,${dy}px) scale(${s})`;
-    el.style.opacity = o;
-    el.style.filter = blur > 0.05 ? `blur(${blur}px)` : '';
-  }
-  // wrap every character in a span so lines can be staggered
-  function split(el) {
-    const out = [];
-    (function walk(n) {
-      [...n.childNodes].forEach((c) => {
-        if (c.nodeType === 3) {
-          const frag = document.createDocumentFragment();
-          for (const ch of c.textContent) {
-            const s = document.createElement('span');
-            s.className = 'ch'; s.textContent = ch; frag.appendChild(s); out.push(s);
-          }
-          c.replaceWith(frag);
-        } else if (c.nodeType === 1) walk(c);
-      });
-    })(el);
-    el.classList.add('shown');
-    return out;
-  }
-  function charsIn(chs, t, t0, st, d = 0.55, dy = 48, blur = 10) {
-    for (let i = 0; i < chs.length; i++) {
-      const k = P(t, t0 + i * st, d, E.out4);
-      const c = chs[i];
-      c.style.transform = `translateY(${(1 - k) * dy}px)`;
-      c.style.opacity = k;
-      c.style.filter = k < 0.999 && k > 0 ? `blur(${(1 - k) * blur}px)` : '';
+// ---------- timing helpers ----------
+const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = {
+  out: (k) => 1 - (1 - k) ** 3,
+  out4: (k) => 1 - (1 - k) ** 4,
+  in: (k) => k * k * k,
+  io: (k) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2),
+  io5: (k) => (k < 0.5 ? 16 * k ** 5 : 1 - (-2 * k + 2) ** 5 / 2),
+};
+// progress of a segment that starts at t0 and lasts d seconds
+const P = (t, t0, d, e = E.out) => e(clamp((t - t0) / d));
+const pad = (n) => String(n).padStart(2, '0');
+const money = (n) => '¥' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, k) => { const x = hex(a), y = hex(b); return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], k))).join(',')})`; };
+
+// ---------- fonts first (the lens engraving is drawn into a canvas) ----------
+async function loadFonts() {
+  const text = [...new Set(document.querySelector('.copy').textContent + $('dims').textContent + '0123456789:,.¥×–→·ZOOMASPHEDØm')].join('');
+  const faces = ['400 44px "Noto Serif SC"', '600 60px "Noto Serif SC"', '400 20px "JetBrains Mono"', '500 20px "JetBrains Mono"'];
+  try { await Promise.race([Promise.all(faces.map((f) => document.fonts.load(f, text))), new Promise((r) => setTimeout(r, 10000))]); }
+  catch (err) { /* system fonts */ }
+}
+
+// ---------- canvas textures ----------
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+function tex(c, srgb = true) { const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
+function grain(g, x, y, w, h, amt, seed) {
+  const img = g.getImageData(x, y, w, h), r = rng(seed);
+  for (let i = 0; i < img.data.length; i += 4) { const n = (r() - 0.5) * amt; img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n; }
+  g.putImageData(img, x, y);
+}
+// the three snapshots, drawn in a 528×560 frame
+function drawPhoto(g, kind, x, y, w, h) {
+  g.save(); g.translate(x, y); g.scale(w / 528, h / 560); g.beginPath(); g.rect(0, 0, 528, 560); g.clip();
+  let gr, rg;
+  if (kind === 'sea') {
+    gr = g.createLinearGradient(0, 0, 0, 330); gr.addColorStop(0, '#9CC0D8'); gr.addColorStop(1, '#F0DAC2'); g.fillStyle = gr; g.fillRect(0, 0, 528, 330);
+    rg = g.createRadialGradient(372, 262, 0, 372, 262, 170); rg.addColorStop(0, 'rgba(255,238,206,1)'); rg.addColorStop(.3, 'rgba(255,224,178,.75)'); rg.addColorStop(1, 'rgba(255,224,178,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 528, 330);
+    g.fillStyle = '#FFF6E6'; g.beginPath(); g.arc(372, 262, 30, 0, 7); g.fill();
+    gr = g.createLinearGradient(0, 330, 0, 560); gr.addColorStop(0, '#5E91AE'); gr.addColorStop(1, '#264E66'); g.fillStyle = gr; g.fillRect(0, 330, 528, 230);
+    g.fillStyle = 'rgba(255,236,204,.6)';
+    for (let i = 0; i < 11; i++) { const ww = 70 - i * 5; g.fillRect(372 - ww / 2, 338 + i * 15, ww, 3); }
+    g.fillStyle = '#2A2422'; g.beginPath(); g.arc(176, 368, 22, 0, 7); g.fill();
+    g.beginPath(); g.roundRect(150, 394, 54, 170, 24); g.fill();
+    g.strokeStyle = '#2A2422'; g.lineCap = 'round'; g.lineWidth = 15;
+    g.beginPath(); g.moveTo(198, 414); g.lineTo(232, 344); g.stroke();
+  } else if (kind === 'friends') {
+    gr = g.createLinearGradient(0, 0, 0, 560); gr.addColorStop(0, '#EFA884'); gr.addColorStop(.62, '#F8DCBA'); gr.addColorStop(1, '#F8DCBA'); g.fillStyle = gr; g.fillRect(0, 0, 528, 560);
+    rg = g.createRadialGradient(264, 330, 0, 264, 330, 220); rg.addColorStop(0, 'rgba(255,246,226,.95)'); rg.addColorStop(1, 'rgba(255,246,226,0)'); g.fillStyle = rg; g.fillRect(0, 0, 528, 560);
+    g.fillStyle = '#C58A6B'; g.fillRect(0, 470, 528, 90);
+    g.fillStyle = '#3B2B25';
+    for (const [cx, cy, s] of [[160, 360, 1], [270, 336, 1.12], [380, 368, .95]]) {
+      g.beginPath(); g.arc(cx, cy, 26 * s, 0, 7); g.fill();
+      g.beginPath(); g.roundRect(cx - 38 * s, cy + 32 * s, 76 * s, 260, 34 * s); g.fill();
     }
+  } else {
+    gr = g.createLinearGradient(0, 0, 0, 560); gr.addColorStop(0, '#CFDDE7'); gr.addColorStop(.7, '#F4EFE7'); g.fillStyle = gr; g.fillRect(0, 0, 528, 560);
+    rg = g.createRadialGradient(150, 170, 0, 150, 170, 120); rg.addColorStop(0, 'rgba(255,226,180,.95)'); rg.addColorStop(1, 'rgba(255,226,180,0)'); g.fillStyle = rg; g.fillRect(0, 0, 528, 560);
+    g.fillStyle = '#FBE3BC'; g.beginPath(); g.arc(150, 170, 24, 0, 7); g.fill();
+    const ridge = (col, pts) => { g.fillStyle = col; g.beginPath(); g.moveTo(0, 560); pts.forEach(([a, b]) => g.lineTo(a, b)); g.lineTo(528, 560); g.fill(); };
+    ridge('#A5BBC8', [[0, 330], [110, 250], [190, 300], [300, 190], [420, 280], [528, 240]]);
+    ridge('#7895A8', [[0, 410], [140, 330], [260, 390], [380, 320], [528, 380]]);
+    ridge('#4C6A7D', [[0, 480], [160, 430], [330, 470], [528, 420]]);
   }
-  const pad = (n) => String(n).padStart(2, '0');
-  const money = (n) => '¥' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const hash = (n) => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+  g.restore();
+}
+function photoTexture(kind, seed) {
+  const [c, g] = cnv(600, 740);
+  g.fillStyle = '#F5F4F1'; g.fillRect(0, 0, 600, 740);
+  drawPhoto(g, kind, 36, 36, 528, 560);
+  grain(g, 36, 36, 528, 560, 16, seed);
+  grain(g, 0, 0, 600, 740, 5, seed + 1);
+  return tex(c);
+}
+function panelTexture(progress, tone, seed) {
+  const [c, g] = cnv(512, 288);
+  const r = rng(seed);
+  g.beginPath(); g.roundRect(4, 4, 504, 280, 22); g.clip();
+  let gr = g.createLinearGradient(0, 0, 512, 288); gr.addColorStop(0, tone[0]); gr.addColorStop(1, tone[1]); g.fillStyle = gr; g.fillRect(0, 0, 512, 288);
+  gr = g.createLinearGradient(0, 0, 300, 288); gr.addColorStop(0, 'rgba(255,255,255,.10)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 512, 288);
+  g.fillStyle = 'rgba(255,255,255,.22)';
+  g.beginPath(); g.roundRect(30, 28, 150 + r() * 80, 10, 5); g.fill();
+  g.beginPath(); g.roundRect(30, 48, 80 + r() * 60, 10, 5); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.arc(256, 140, 34, 0, 7); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.moveTo(246, 124); g.lineTo(272, 140); g.lineTo(246, 156); g.closePath(); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(30, 248, 452, 3);
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(30, 248, 452 * progress, 3);
+  return tex(c);
+}
+function stripes(w, h) { const [c, g] = cnv(16, 4); g.fillStyle = '#fff'; g.fillRect(0, 0, 8, 4); g.fillStyle = '#000'; g.fillRect(8, 0, 8, 4); const t = tex(c, false); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w, h); return t; }
+function noise(size, rep, seed) { const [c, g] = cnv(size, size); g.fillStyle = '#808080'; g.fillRect(0, 0, size, size); grain(g, 0, 0, size, size, 120, seed); const t = tex(c, false); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); return t; }
+function ringText() {
+  const [c, g] = cnv(1024, 1024);
+  g.fillStyle = '#16171A'; g.fillRect(0, 0, 1024, 1024);
+  g.translate(512, 512); g.fillStyle = '#C9CDD3'; g.font = '500 30px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const s = 'ZOOM 24–70mm 1:2.8  Ø82  ·  ASPH  ED  ·  ';
+  const chars = [...s + s], step = (Math.PI * 2) / chars.length;
+  chars.forEach((ch, i) => { g.save(); g.rotate(i * step); g.translate(0, -452); g.fillText(ch, 0, 0); g.restore(); });
+  return tex(c);
+}
+function sensorTexture() {
+  const [c, g] = cnv(600, 400);
+  let gr = g.createLinearGradient(0, 0, 600, 400);
+  gr.addColorStop(0, '#3A2E6A'); gr.addColorStop(.45, '#1E5866'); gr.addColorStop(.75, '#2C3B6E'); gr.addColorStop(1, '#4A2C62');
+  g.fillStyle = gr; g.fillRect(0, 0, 600, 400);
+  g.fillStyle = 'rgba(255,255,255,.07)';
+  for (let x = 0; x < 600; x += 6) g.fillRect(x, 0, 1, 400);
+  for (let y = 0; y < 400; y += 6) g.fillRect(0, y, 600, 1);
+  gr = g.createRadialGradient(200, 120, 0, 200, 120, 320); gr.addColorStop(0, 'rgba(255,255,255,.22)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 600, 400);
+  return tex(c);
+}
+// what you see through a coated front element: dark depth, inner rings, coloured reflections
+function glassTexture() {
+  const [c, g] = cnv(512, 512);
+  let gr = g.createRadialGradient(256, 256, 0, 256, 256, 256);
+  gr.addColorStop(0, '#0C1022'); gr.addColorStop(.7, '#06070D'); gr.addColorStop(1, '#030305');
+  g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+  g.lineWidth = 3;
+  for (const [r, a] of [[200, .14], [150, .12], [96, .1], [52, .08]]) { g.strokeStyle = `rgba(150,165,255,${a})`; g.beginPath(); g.arc(256, 256, r, 0, 7); g.stroke(); }
+  const glow = (x, y, r, col) => { const q = g.createRadialGradient(x, y, 0, x, y, r); q.addColorStop(0, col); q.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = q; g.fillRect(0, 0, 512, 512); };
+  glow(170, 160, 120, 'rgba(126,82,255,.45)');
+  glow(340, 350, 80, 'rgba(60,220,160,.28)');
+  glow(150, 140, 46, 'rgba(255,255,255,.35)');
+  return tex(c);
+}
+function shadowBlob() { const [c, g] = cnv(256, 256); const rg = g.createRadialGradient(128, 128, 0, 128, 128, 128); rg.addColorStop(0, 'rgba(0,0,0,.55)'); rg.addColorStop(.5, 'rgba(0,0,0,.22)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.fillRect(0, 0, 256, 256); return tex(c, false); }
+function screenTexture() {
+  const [c, g] = cnv(800, 500);
+  drawPhoto(g, 'sea', 0, -60, 800, 848);
+  g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, 0, 800, 54);
+  g.fillStyle = '#FF3B30'; g.beginPath(); g.arc(34, 27, 9, 0, 7); g.fill();
+  g.fillStyle = '#FFFFFF'; g.font = '500 24px "JetBrains Mono", monospace'; g.textBaseline = 'middle';
+  g.fillText('REC  00:00:12:08', 54, 28); g.textAlign = 'right'; g.fillText('4K 60p  10-bit', 776, 28);
+  g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 3;
+  for (const [x, y, dx, dy] of [[300, 170, 1, 1], [500, 170, -1, 1], [300, 360, 1, -1], [500, 360, -1, -1]]) { g.beginPath(); g.moveTo(x, y + dy * 26); g.lineTo(x, y); g.lineTo(x + dx * 26, y); g.stroke(); }
+  return tex(c);
+}
 
-  // ---------- build ----------
-  const stage = $('stage'), scene = $('scene'), rig = $('rig');
+// ---------- geometry ----------
+// smooth rounded box: push a sphere's vertices out to the box corners, keep sphere normals
+function rbox(w, h, d, r) {
+  r = Math.min(r, w / 2, h / 2, d / 2);
+  const g = new THREE.SphereGeometry(r, 40, 20), p = g.attributes.position;
+  const ix = w / 2 - r, iy = h / 2 - r, iz = d / 2 - r, sg = (v) => (Math.abs(v) < 1e-6 ? 0 : Math.sign(v));
+  for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) + sg(p.getX(i)) * ix, p.getY(i) + sg(p.getY(i)) * iy, p.getZ(i) + sg(p.getZ(i)) * iz);
+  g.computeBoundingSphere();
+  return g;
+}
+// cylinder along +z, from z0 to z1
+function cyl(r, z0, z1, open = false) { const g = new THREE.CylinderGeometry(r, r, z1 - z0, 96, 1, open); g.rotateX(Math.PI / 2); g.translate(0, 0, (z0 + z1) / 2); return g; }
 
-  const CARDS = [
-    ['别买错！', '买相机前一定要看的 10 个坑', '46.2万次观看', '18:07', '#1B2A4E', '#6B2D5C', 290, 850, -7],
-    ['全画幅？', 'APS-C 还是全画幅？看完不纠结', '31.8万次观看', '22:41', '#0E3B43', '#1F7A6C', 800, 800, 6],
-    ['4K 实测', '拍视频到底要看哪些参数', '12.5万次观看', '15:12', '#3A1F14', '#B4532A', 560, 1030, -3],
-    ['半年后悔', '用了半年，后悔没一步到位', '58.0万次观看', '11:36', '#25243A', '#5B4B8A', 250, 1230, 5],
-    ['画质横评', '9 台相机画质横评', '20.3万次观看', '34:50', '#13293D', '#2F6690', 830, 1200, -6],
-    ['大三元', '大三元到底值不值', '9.7万次观看', '19:28', '#2B2B2B', '#6A6A6A', 540, 1410, 2],
-    ['买前必看', '新手第一台相机怎么选', '102万次观看', '16:03', '#3D1E1E', '#A33B3B', 330, 1010, 9],
-    ['说点实话', '这钱该不该花？说点实话', '7.4万次观看', '13:55', '#1D3A2A', '#3E7A55', 770, 1020, -9],
-    ['10-bit', '8-bit 和 10-bit 差在哪', '5.1万次观看', '09:47', '#1F2235', '#3D4A8F', 280, 1490, -4],
-    ['一步到位', '镜头一步到位，反而省钱？', '26.9万次观看', '21:19', '#3A2A10', '#9A6B1F', 820, 1470, 7],
-    ['防抖实测', '手持拍视频，防抖够不够', '8.8万次观看', '12:22', '#102C35', '#2A7F8F', 540, 830, -1],
-    ['终极推荐', '2026 年相机终极推荐', '77.1万次观看', '41:05', '#24122B', '#7A2E6F', 540, 1180, 0],
+// ---------- scene ----------
+const canvas = $('gl');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+} catch (err) {
+  const d = document.createElement('div'); d.className = 'gl-error'; d.textContent = '这个浏览器无法使用 WebGL，3D 画面显示不出来。'; $('stageBox').appendChild(d);
+  throw err;
+}
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
+cam.setViewOffset(W, H, -250, 0, W, H); // product sits right of centre, copy on the left
+
+// studio reflections: a dark room with three softboxes, prefiltered once
+(() => {
+  const env = new THREE.Scene();
+  env.add(new THREE.Mesh(new THREE.BoxGeometry(24, 14, 24), new THREE.MeshBasicMaterial({ color: 0x1c1d20, side: THREE.BackSide })));
+  const box = (w, h, pos, rot, v) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(v), side: THREE.DoubleSide })); m.position.set(...pos); m.rotation.set(...rot); env.add(m); };
+  box(10, 6, [0, 6.8, 1], [Math.PI / 2, 0, 0], 5.5);
+  box(3, 9, [-11.5, 1.5, 2], [0, Math.PI / 2, 0], 4);
+  box(2, 9, [11.5, 1.5, -2], [0, -Math.PI / 2, 0], 2.6);
+  box(14, 2.4, [0, 0.5, -11.5], [0, 0, 0], 1.4);
+  box(9, 2.6, [2, 3.2, 11.5], [0, Math.PI, 0], 2.4);
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(env, 0.035).texture;
+  pm.dispose();
+})();
+
+const key = new THREE.DirectionalLight(0xffffff, 1.8); key.position.set(-4, 6, 5); scene.add(key);
+const rimL = new THREE.DirectionalLight(0xdfe6f2, 0); rimL.position.set(-5, 2.5, -5); scene.add(rimL);
+const rimR = new THREE.DirectionalLight(0xdfe6f2, 0); rimR.position.set(5, 3, -4); scene.add(rimR);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8d92, 0.7); scene.add(hemi);
+
+let built = false;
+const S = {}; // everything render() needs to touch
+
+function build() {
+  const ribs = stripes(90, 1), ribsFine = stripes(140, 1), leather = noise(256, 5, 11);
+  const M = S.M = {
+    body: new THREE.MeshPhysicalMaterial({ color: '#E9E8E5', roughness: .32, clearcoat: .8, clearcoatRoughness: .22 }),
+    grip: new THREE.MeshPhysicalMaterial({ color: '#17181B', roughness: .86, bumpMap: leather, bumpScale: 1.2 }),
+    silver: new THREE.MeshStandardMaterial({ color: '#D3D6DA', metalness: 1, roughness: .24 }),
+    void: new THREE.MeshStandardMaterial({ color: '#050506', roughness: .95, side: THREE.DoubleSide }),
+    flange: new THREE.MeshStandardMaterial({ color: '#33363B', metalness: .6, roughness: .4 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: '#05070C', metalness: .1, roughness: .04, clearcoat: 1, iridescence: .9, iridescenceIOR: 1.8, iridescenceThicknessRange: [180, 520], transparent: true, opacity: .55 }),
+    sensor: (() => { const st = sensorTexture(); return new THREE.MeshPhysicalMaterial({ map: st, emissive: '#ffffff', emissiveMap: st, emissiveIntensity: .5, metalness: .5, roughness: .22, iridescence: .8, iridescenceIOR: 1.5, iridescenceThicknessRange: [220, 780] }); })(),
+    lensBody: new THREE.MeshPhysicalMaterial({ color: '#1E2023', roughness: .46, clearcoat: .35, clearcoatRoughness: .3 }),
+    rubber: new THREE.MeshStandardMaterial({ color: '#131416', roughness: .78, bumpMap: ribs, bumpScale: 2.2 }),
+    rubberFine: new THREE.MeshStandardMaterial({ color: '#131416', roughness: .78, bumpMap: ribsFine, bumpScale: 1.6 }),
+    ring: new THREE.MeshStandardMaterial({ map: ringText(), roughness: .5, metalness: .2 }),
+    accent: new THREE.MeshBasicMaterial({ color: '#E9EAEC' }),
+    depth: new THREE.MeshBasicMaterial({ map: glassTexture() }),
+    tally: new THREE.MeshBasicMaterial({ color: '#FF3B30', toneMapped: false }),
+  };
+  const metal = () => new THREE.MeshStandardMaterial({ color: '#3A3D42', metalness: .82, roughness: .34, transparent: true });
+  const add = (parent, geo, mat, pos = [0, 0, 0]) => { const m = new THREE.Mesh(geo, mat); m.position.set(...pos); parent.add(m); return m; };
+
+  const world = S.world = new THREE.Group(); scene.add(world);
+  const rig = S.rig = new THREE.Group(); world.add(rig);
+
+  // floor shadow
+  S.shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowBlob(), transparent: true, depthWrite: false, toneMapped: false }));
+  S.shadow.rotation.x = -Math.PI / 2; S.shadow.position.y = -1.08; world.add(S.shadow);
+
+  // body: one shell that grows from compact to full frame
+  S.body = add(rig, rbox(1.9, 1.18, 0.6, 0.15), M.body);
+  S.grip = add(rig, rbox(0.46, 1.12, 0.8, 0.19), M.grip);
+  S.hump = add(rig, rbox(0.66, 0.38, 0.56, 0.1), M.body);
+  S.dialL = add(rig, cyl(0.13, -0.035, 0.035).rotateX(Math.PI / 2), M.silver);
+  S.dialR = add(rig, cyl(0.12, -0.035, 0.035).rotateX(Math.PI / 2), M.silver);
+  S.shutter = add(rig, cyl(0.07, -0.025, 0.025).rotateX(Math.PI / 2), M.silver);
+  S.finder = add(rig, rbox(0.17, 0.1, 0.03, 0.025), M.lensBody);
+  S.tally = add(rig, new THREE.SphereGeometry(0.022, 16, 12), M.tally);
+
+  // front: compact lens and the bare mount share one anchor
+  const front = S.front = new THREE.Group(); rig.add(front);
+  const cLens = S.cLens = new THREE.Group(); front.add(cLens);
+  add(cLens, cyl(0.37, 0, 0.06), M.lensBody);
+  add(cLens, cyl(0.33, 0.06, 0.24), M.silver);
+  add(cLens, cyl(0.335, 0.11, 0.19), M.rubberFine);
+  add(cLens, new THREE.TorusGeometry(0.3, 0.012, 12, 96), M.lensBody, [0, 0, 0.24]);
+  add(cLens, new THREE.CircleGeometry(0.29, 64), M.depth, [0, 0, 0.235]);
+  add(cLens, new THREE.SphereGeometry(0.25, 64, 16, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(1, 1, 0.22), M.glass, [0, 0, 0.236]);
+  const mount = S.mount = new THREE.Group(); front.add(mount);
+  add(mount, cyl(0.52, 0, 0.09, true), M.flange);
+  add(mount, new THREE.RingGeometry(0.415, 0.52, 128), M.flange, [0, 0, 0.09]);
+  add(mount, new THREE.TorusGeometry(0.445, 0.03, 24, 128), M.silver, [0, 0, 0.095]);
+  add(mount, cyl(0.415, 0, 0.09, true), M.void);
+  add(mount, new THREE.CircleGeometry(0.415, 64), M.void, [0, 0, 0.004]);
+  S.sensor = add(mount, new THREE.PlaneGeometry(1, 1), M.sensor, [0, 0, 0.012]);
+
+  // pro video kit — each part keeps its own material so it can fade in on its own
+  const part = (geos, from) => { const g = new THREE.Group(); const mat = metal(); geos.forEach(([geo, pos, m]) => add(g, geo, m || mat, pos)); rig.add(g); g.userData = { from, mats: [mat] }; return g; };
+  S.parts = [
+    [part([[rbox(0.08, 1.64, 0.5, 0.03), [-1.03, 0.1, -0.02]]], [-1.2, 0, 0]), 12.75],
+    [part([[rbox(0.08, 1.64, 0.5, 0.03), [1.03, 0.1, -0.02]]], [1.2, 0, 0]), 12.85],
+    [part([[rbox(2.14, 0.07, 0.68, 0.03), [0, -0.68, 0]]], [0, -0.8, 0]), 12.95],
+    [part([[rbox(2.14, 0.08, 0.5, 0.03), [0, 0.92, -0.02]]], [0, 0.9, 0]), 13.05],
+    [part([[rbox(0.07, 0.2, 0.11, 0.025), [-0.4, 1.06, 0]], [rbox(0.07, 0.2, 0.11, 0.025), [0.4, 1.06, 0]], [rbox(1.0, 0.09, 0.16, 0.045), [0, 1.19, 0]], [rbox(0.56, 0.12, 0.19, 0.055), [0, 1.19, 0], M.grip]], [0, 1.1, 0]), 13.3],
+    [part([[rbox(0.15, 0.13, 0.14, 0.03), [0, 1.31, 0.05]], [cyl(0.075, -0.3, 0.6), [0, 1.45, 0], M.lensBody], [cyl(0.078, 0.34, 0.6), [0, 1.45, 0], M.rubberFine], [cyl(0.071, -0.35, -0.3), [0, 1.45, 0], M.silver]], [0, 0.9, 0.7]), 13.55],
   ];
-  const cardWrap = $('cards');
-  const cards = CARDS.map((c, i) => {
-    const el = document.createElement('div');
-    el.className = 'card obj';
-    el.style.setProperty('--c1', c[4]); el.style.setProperty('--c2', c[5]);
-    el.innerHTML = `<div class="thumb"><span class="tt">${c[0]}</span><span class="dur">${c[3]}</span><span class="prog"></span></div>` +
-      `<div class="info"><p class="ti">${c[1]}</p><p class="me">${c[2]}</p></div>`;
-    cardWrap.appendChild(el);
-    // cadence speeds up: gaps shrink as the pile grows
-    const t0 = 5.05 + 2.1 * (i / (CARDS.length - 1)) ** 0.62;
-    const dx = c[6] - 540, dy = c[7] - 1150, len = Math.hypot(dx, dy) || 1;
-    return { el, t0, x: c[6], y: c[7], r: c[8], ox: c[6] + (dx / len) * 1150, oy: c[7] + (dy / len) * 1150 + (len < 60 ? 900 : 0),
-      s: i === CARDS.length - 1 ? 1.08 : 1, spin: i % 2 ? 26 : -26 };
+  // monitor on an arm, screen turned toward camera-right
+  const mon = new THREE.Group();
+  const monMat = metal();
+  add(mon, cyl(0.024, 0, 0.44).rotateY(Math.PI / 2).rotateZ(0.62), monMat, [1.03, 0.93, 0]);
+  add(mon, new THREE.SphereGeometry(0.055, 24, 16), monMat, [1.38, 1.18, 0]);
+  const screenFrame = new THREE.Group(); screenFrame.position.set(1.74, 1.3, 0.08); screenFrame.rotation.set(-0.08, -0.5, 0); mon.add(screenFrame);
+  add(screenFrame, rbox(0.94, 0.62, 0.08, 0.05), new THREE.MeshPhysicalMaterial({ color: '#1A1B1E', roughness: .5, clearcoat: .4, transparent: true }));
+  S.screenMat = new THREE.MeshBasicMaterial({ map: screenTexture(), toneMapped: false, transparent: true });
+  add(screenFrame, new THREE.PlaneGeometry(0.84, 0.525), S.screenMat, [0, 0, 0.041]);
+  mon.userData = { from: [1.3, 0.5, 0.4], mats: [monMat, screenFrame.children[0].material, S.screenMat] };
+  rig.add(mon);
+  S.parts.push([mon, 13.85]);
+
+  // the zoom lens
+  const lens = S.lens = new THREE.Group(); front.add(lens);
+  add(lens, cyl(0.44, 0, 0.07), M.silver);
+  add(lens, cyl(0.47, 0.07, 0.42), M.lensBody);
+  add(lens, cyl(0.492, 0.15, 0.4), M.rubber);
+  add(lens, new THREE.TorusGeometry(0.49, 0.004, 8, 160), M.accent, [0, 0, 0.43]);
+  S.inner = add(lens, cyl(0.44, 0.0, 0.48), M.lensBody, [0, 0, 0.0]);
+  const lf = S.lensFront = new THREE.Group(); lens.add(lf);
+  add(lf, cyl(0.5, 0, 0.17), M.rubberFine);
+  add(lf, cyl(0.52, 0.17, 0.31), M.lensBody);
+  add(lf, new THREE.RingGeometry(0.4, 0.52, 160), M.ring, [0, 0, 0.311]);
+  add(lf, new THREE.CircleGeometry(0.4, 64), M.depth, [0, 0, 0.24]);
+  add(lf, new THREE.TorusGeometry(0.3, 0.01, 8, 96), M.flange, [0, 0, 0.245]);
+  add(lf, new THREE.TorusGeometry(0.19, 0.008, 8, 96), M.flange, [0, 0, 0.245]);
+  add(lf, new THREE.SphereGeometry(0.4, 96, 24, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).scale(1, 1, 0.2), M.glass, [0, 0, 0.25]);
+
+  // the three snapshots
+  const paper = new THREE.MeshStandardMaterial({ color: '#EEEDEA', roughness: .7 });
+  const card = (kind, seed, emissive = 0) => {
+    const map = photoTexture(kind, seed);
+    const front = new THREE.MeshStandardMaterial({ map, roughness: .55, transparent: true, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: emissive });
+    const edge = paper.clone(); edge.transparent = true;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.74, 0.008), [edge, edge, edge, edge, front, edge]);
+    m.userData.mats = [front, edge];
+    world.add(m);
+    return m;
+  };
+  S.photos = [
+    { m: card('sea', 21), t0: 2.2, to: [-0.55, 1.12, -0.35], rot: [0.02, 0.12, 0.09] },
+    { m: card('friends', 33), t0: 2.75, to: [1.22, 0.95, 0.05], rot: [0.03, -0.3, -0.07] },
+    { m: card('peak', 47), t0: 3.3, to: [1.55, -0.3, 0.75], rot: [0.06, -0.48, 0.05] },
+  ];
+  S.endPhoto = card('sea', 21, 0.28);
+
+  // review screens on a slowly turning shell
+  const tones = [['#30333A', '#15171B'], ['#3B3E45', '#1C1E22'], ['#282B31', '#111316'], ['#35383F', '#191B1F']];
+  const ptex = [0, 1, 2, 3, 4, 5].map((i) => panelTexture([1, .86, .62, 1, .94, .4][i], tones[i % 4], 100 + i));
+  const swarm = S.swarm = new THREE.Group(); world.add(swarm);
+  const N = 46, r = rng(5);
+  S.panels = [];
+  for (let i = 0; i < N; i++) {
+    const y = 1 - (2 * (i + 0.5)) / N, rad = Math.sqrt(1 - y * y), th = i * 2.399963;
+    const dir = new THREE.Vector3(Math.cos(th) * rad, y * 0.72, Math.sin(th) * rad).normalize();
+    const mat = new THREE.MeshStandardMaterial({ map: ptex[i % 6], transparent: true, side: THREE.DoubleSide, roughness: .22, metalness: .1, depthWrite: false, emissive: '#ffffff', emissiveMap: ptex[i % 6], emissiveIntensity: .1 });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.349), mat);
+    swarm.add(m);
+    S.panels.push({ m, mat, dir, R: 2.2 + r() * 0.45, t0: 5.0 + 2.5 * ((i + 1) / N) ** 0.62, a0: 7.7 + 0.55 * r(), spin: (r() - 0.5) * 0.3 });
+  }
+  S.allMats = [];
+  scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { if (!S.allMats.includes(m)) S.allMats.push(m); }); });
+  built = true;
+}
+
+// ---------- camera path: [t, azimuth, elevation, distance, target x, y, z] ----------
+const KEYS = [
+  [0.0, -0.36, 0.17, 6.8, 0.1, 0.05, 0.0],
+  [4.6, -0.22, 0.12, 5.9, 0.1, 0.1, 0.0],
+  [7.4, -0.05, 0.2, 9.4, 0.05, 0.1, 0.0],
+  [9.2, -0.25, 0.1, 6.0, 0.1, 0.05, 0.0],
+  [11.9, 0.04, 0.03, 4.1, 0.16, 0.04, 0.3],
+  [13.9, 0.62, 0.22, 7.2, 0.42, 0.33, 0.0],
+  [17.9, 0.36, 0.12, 7.0, 0.35, 0.28, 0.45],
+  [21.0, 0.2, 0.1, 8.2, 0.38, 0.3, 0.3],
+];
+// monotone cubic through the keys, so moves never stop dead or overshoot
+function camAt(t) {
+  const n = KEYS.length;
+  if (t <= KEYS[0][0]) return KEYS[0].slice(1);
+  if (t >= KEYS[n - 1][0]) return KEYS[n - 1].slice(1);
+  let i = 0; while (t > KEYS[i + 1][0]) i++;
+  const a = KEYS[i], b = KEYS[i + 1], h = b[0] - a[0], s = (t - a[0]) / h, s2 = s * s, s3 = s2 * s;
+  const out = [];
+  for (let c = 1; c < a.length; c++) {
+    const slope = (j) => {
+      if (j <= 0 || j >= n - 1) return 0;
+      const d0 = (KEYS[j][c] - KEYS[j - 1][c]) / (KEYS[j][0] - KEYS[j - 1][0]), d1 = (KEYS[j + 1][c] - KEYS[j][c]) / (KEYS[j + 1][0] - KEYS[j][0]);
+      return d0 * d1 <= 0 ? 0 : (d0 + d1) / 2;
+    };
+    out.push((2 * s3 - 3 * s2 + 1) * a[c] + (s3 - 2 * s2 + s) * slope(i) * h + (-2 * s3 + 3 * s2) * b[c] + (s3 - s2) * slope(i + 1) * h);
+  }
+  return out;
+}
+
+// ---------- copy ----------
+const copy = {
+  t1: $('t1'), t2: $('t2'), t3: $('t3'), cnt: $('cnt'), t4: $('t4'),
+  items: ['i1', 'i2', 'i3'].map((id) => ({ ln: $(id).children[0], sub: $(id).children[1] })),
+  rule: $('rule'), budget: $('budget'), cntN: $('cntN'), cntT: $('cntT'), bVal: $('bVal'), bKg: $('bKg'),
+};
+function lineAt(el, t, t0, tOut = Infinity, dim = 1) {
+  const k = P(t, t0, 1.0, E.out4), o = P(t, tOut, 0.45, E.in);
+  el.style.opacity = k * (1 - o) * dim;
+  el.style.transform = `translateY(${((1 - k) * 18 - o * 10).toFixed(2)}px)`;
+  el.style.letterSpacing = `${lerp(0.24, 0.1, k).toFixed(3)}em`;
+  const b = (1 - k) * 6 + o * 4;
+  el.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : '';
+}
+function subAt(el, t, t0, tOut = Infinity, dim = 1) {
+  const k = P(t, t0, 0.8, E.out4), o = P(t, tOut, 0.4, E.in);
+  el.style.opacity = k * (1 - o) * dim;
+  el.style.transform = `translateX(${((1 - k) * -12).toFixed(2)}px)`;
+}
+const setText = (node, s) => { if (node.textContent !== s) node.textContent = s; };
+
+const dims = { root: $('dims'), rect: $('dRect'), lead: $('dLead'), name: $('dName'), size: $('dSize') };
+const v3 = new THREE.Vector3();
+const toScreen = (obj, x, y, z) => { v3.set(x, y, z).applyMatrix4(obj.matrixWorld).project(cam); return [(v3.x + 1) * W / 2, (1 - v3.y) * H / 2]; };
+
+const PRICE = [[10.9, 0.7, 14999], [13.9, 0.7, 22300], [16.6, 0.8, 36800]];
+const WEIGHT = [[10.9, 0.7, 0.74], [13.9, 0.7, 1.46], [16.6, 0.8, 2.36]];
+const porcelain = new THREE.Color('#E9E8E5'), graphite = new THREE.Color('#2A2C30');
+const compactScale = [1.45 / 1.9, 0.86 / 1.18, 0.42 / 0.6];
+
+// ---------- the whole film as a function of t ----------
+function render(t) {
+  t = clamp(t, 0, DUR);
+  if (!built) return;
+  const dk = P(t, 7.4, 1.4, E.io); // light studio → dark studio
+
+  // backdrop and copy colours follow the studio
+  stage.style.background = `radial-gradient(ellipse 70% 90% at 62% 44%, ${mix('#F3F4F5', '#2A2D32', dk)} 0%, ${mix('#D2D5D9', '#0A0B0D', dk)} 100%)`;
+  stage.style.setProperty('--tx', mix('#1C1E22', '#ECEDEF', dk));
+  stage.style.setProperty('--mu', mix('#6E737B', '#8C9198', dk));
+  stage.style.setProperty('--vig', (0.08 + 0.3 * dk).toFixed(3));
+
+  // lights
+  let pop = 0;
+  for (const p of S.photos) { const d = t - p.t0; if (d > 0 && d < 0.6) pop += Math.exp(-d * 9) * Math.min(1, d / 0.03); }
+  key.intensity = lerp(1.8, 1.25, dk) + pop * 1.6;
+  hemi.intensity = lerp(0.75, 0.12, dk);
+  rimL.intensity = lerp(0, 2.6, dk);
+  rimR.intensity = lerp(0, 1.9, dk);
+  for (const m of S.allMats) if ('envMapIntensity' in m) m.envMapIntensity = lerp(1, 0.7, dk);
+  renderer.toneMappingExposure = lerp(1.0, 1.08, dk);
+
+  // camera
+  const [az, el, dist, tx, ty, tz] = camAt(t);
+  cam.position.set(tx + dist * Math.sin(az) * Math.cos(el), ty + dist * Math.sin(el), tz + dist * Math.cos(az) * Math.cos(el));
+  cam.lookAt(tx, ty, tz);
+
+  // rig drift
+  const rig = S.rig;
+  rig.rotation.y = lerp(0.42, 0.18, P(t, 0, 8, E.io)) * (1 - P(t, 9.4, 2.4, E.io)) + 0.04 * Math.sin(t * 0.42);
+  rig.position.y = 0.025 * Math.sin(t * 0.9);
+
+  // compact → full-frame body
+  const m = P(t, 9.5, 1.2, E.io);
+  const sx = lerp(compactScale[0], 1, m), sy = lerp(compactScale[1], 1, m), sz = lerp(compactScale[2], 1, m);
+  S.body.scale.set(sx, sy, sz);
+  S.M.body.color.lerpColors(porcelain, graphite, m);
+  S.M.body.roughness = lerp(0.32, 0.4, m);
+  S.M.body.clearcoat = lerp(0.8, 0.5, m);
+  const top = 0.59 * sy, frontZ = 0.3 * sz;
+  const g = P(t, 9.8, 0.9, E.out4), h = P(t, 9.95, 0.9, E.out4), dd = P(t, 10.15, 0.7, E.out4);
+  S.grip.visible = g > 0.001; S.grip.scale.setScalar(Math.max(g, 0.001)); S.grip.position.set(-0.95 * sx + 0.24, -0.02, 0.1 * g);
+  S.hump.visible = h > 0.001; S.hump.scale.set(1, Math.max(h, 0.001), 1); S.hump.position.set(0.18 * sx, top - 0.12 + 0.12 * h, -0.02);
+  for (const [d, x] of [[S.dialL, -0.6], [S.dialR, 0.66]]) { d.visible = dd > 0.001; d.scale.set(1, Math.max(dd, 0.001), 1); d.position.set(x * sx, top + 0.035 * dd, -0.06); }
+  S.shutter.position.set(lerp(-0.5 * sx, -0.69, m), top + 0.025, lerp(0.05, 0.3, m));
+  const c = P(t, 9.5, 0.6, E.in);
+  S.finder.visible = c < 1;
+  S.finder.scale.setScalar(Math.max(1 - c, 0.001)); S.finder.position.set(-0.52 * sx, 0.26 * sy, frontZ);
+  S.front.position.set(0.18 * sx, -0.04 * sy, frontZ);
+  S.cLens.visible = c < 1; S.cLens.scale.set(1 - 0.35 * c, 1 - 0.35 * c, Math.max(1 - c, 0.001));
+  const mt = P(t, 9.9, 0.7, E.out4);
+  S.mount.visible = mt > 0.001; S.mount.scale.setScalar(Math.max(mt, 0.001));
+  const ff = P(t, 10.9, 0.8, E.io);
+  const sw = lerp(0.405, 0.62, ff), sh = lerp(0.268, 0.41, ff), so = P(t, 10.4, 0.5, E.out4);
+  S.sensor.visible = so > 0.001; S.sensor.scale.set(sw * Math.max(so, 0.001), sh * Math.max(so, 0.001), 1);
+
+  // pro video kit
+  for (const [grp, t0] of S.parts) {
+    const k = P(t, t0, 0.75, E.out4), f = grp.userData.from;
+    grp.visible = t >= t0;
+    grp.position.set(f[0] * (1 - k), f[1] * (1 - k), f[2] * (1 - k));
+    grp.userData.mats.forEach((mm) => { mm.opacity = P(t, t0, 0.35, E.out); });
+  }
+  S.tally.visible = t >= 13.3;
+  S.tally.position.set(0.8, 0.42, 0.305);
+  S.M.tally.color.set(Math.floor((t - 13.3) * 2) % 2 === 0 ? '#FF3B30' : '#4A1A18');
+
+  // the lens: slides on, twists to lock, then extends
+  const la = P(t, 15.2, 0.8, E.out4), lock = P(t, 16.0, 0.35, E.out), ext = P(t, 16.6, 0.8, E.io5);
+  S.lens.visible = t >= 15.2;
+  S.lens.position.z = 0.1 + lerp(2.6, 0, la);
+  S.lens.rotation.z = lerp(0.55, 0.32, la) * (1 - lock);
+  S.lens.scale.setScalar(1 + 0.12 * ext);
+  S.inner.position.z = 0.02 + 0.3 * ext;
+  S.lensFront.position.z = 0.42 + 0.32 * ext;
+  const click = t > 16.3 && t < 16.8 ? Math.exp(-(t - 16.3) * 14) * Math.sin((t - 16.3) * 60) * 0.006 : 0;
+  rig.position.y += click;
+
+  // floor shadow grows with the kit
+  const kit = P(t, 12.75, 1.8, E.io), lensK = P(t, 15.2, 1.0, E.io);
+  S.shadow.scale.set(lerp(2.3, 3.0, m) + 0.9 * kit + 0.2 * lensK, lerp(1.0, 1.4, m) + 0.25 * kit + 0.6 * lensK, 1);
+  S.shadow.position.set(0.15 + 0.35 * kit, -1.08, 0.1 + 0.25 * lensK);
+  S.shadow.material.opacity = lerp(0.85, 0.55, dk);
+
+  // snapshots
+  const fx = 0.18 * sx, fy = -0.04 * sy;
+  S.photos.forEach((p, i) => {
+    const k = P(t, p.t0, 1.1, E.out4), out = P(t, 4.7 + i * 0.08, 0.9, E.in);
+    p.m.visible = t >= p.t0 && out < 1;
+    const fl = Math.sin(t * 1.1 + i * 2) * 0.03;
+    p.m.position.set(lerp(fx, p.to[0], k) * (1 + out * 0.6), lerp(fy, p.to[1], k) + Math.sin(Math.PI * k) * 0.25 + fl + out * 0.3, lerp(0.5, p.to[2], k) + out * 0.4);
+    p.m.rotation.set(p.rot[0] * k, p.rot[1] * k + out * 0.4, p.rot[2] * k);
+    p.m.scale.setScalar(lerp(0.15, 1, k));
+    p.m.userData.mats.forEach((mm) => { mm.opacity = clamp((t - p.t0) / 0.15) * (1 - out); });
   });
 
-  const holes = $('cageHoles');
-  for (let x = 60; x <= 620; x += 40) {
-    for (const y of [10, 490]) {
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 4.5); holes.appendChild(c);
-    }
+  // review screens
+  S.swarm.position.set(0.45, 0.15, 0);
+  S.swarm.rotation.set(0.12, 0.2 * (t - 5), 0);
+  for (const p of S.panels) {
+    const k = P(t, p.t0, 0.7, E.out4), a = P(t, p.a0, 0.55, E.in);
+    p.m.visible = t >= p.t0 && a < 1;
+    if (!p.m.visible) continue;
+    const r = lerp(p.R + 1.6, p.R, k) * (1 - a * 0.97);
+    p.m.position.copy(p.dir).multiplyScalar(r);
+    p.m.lookAt(p.m.position.x * 2, p.m.position.y * 2, p.m.position.z * 2);
+    p.m.rotateZ(p.spin * (1 - k));
+    p.m.scale.setScalar(Math.max(k * (1 - a), 0.001));
+    p.mat.opacity = clamp((t - p.t0) / 0.2) * 0.92;
+    p.mat.emissiveIntensity = 0.04 + 0.55 * dk;
   }
 
-  // the first photo comes back at the end, above the dimmer
-  const pEnd = $('p1').cloneNode(true);
-  pEnd.id = 'pEnd';
-  pEnd.querySelector('.dev').remove();
-  $('endLayer').appendChild(pEnd);
-
-  // film grain tile, seeded so every render is identical
-  (() => {
-    const c = document.createElement('canvas'); c.width = c.height = 256;
-    const g = c.getContext('2d'), img = g.createImageData(256, 256);
-    let seed = 7;
-    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    for (let i = 0; i < img.data.length; i += 4) {
-      const v = 128 + (rnd() - 0.5) * 255;
-      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
-    }
-    g.putImageData(img, 0, 0);
-    $('grain').style.background = `url(${c.toDataURL()}) repeat`;
-  })();
-
-  const L1 = split($('l1')), L2 = split($('l2')), L3 = split($('l3')), LB = split($('lb')), LC = split($('lc'));
-  const lines = { l1: $('l1'), l2: $('l2'), l3: $('l3'), lb: $('lb'), lc: $('lc') };
-  const polas = [
-    { el: $('p1'), t0: 1.65, x: 230, y: 1420, r: -9 },
-    { el: $('p2'), t0: 2.25, x: 850, y: 1380, r: 8 },
-    { el: $('p3'), t0: 3.0, x: 560, y: 1585, r: -3 },
-  ].map((p) => ({ ...p, dev: p.el.querySelector('.dev') }));
-  const FLASHES = [1.6, 2.2, 2.95];
-  const rows = [
-    { el: $('r1'), t0: 8.5 }, { el: $('r2'), t0: 10.2 }, { el: $('r3'), t0: 12.2 },
-  ].map((r) => ({ ...r, tick: r.el.querySelector('.tick') }));
-  const chips = [...$('chips').children].map((el) => ({ el, t0: parseFloat(el.dataset.t) }));
-  const blades = [...$('blades').children];
-  const bladeY = [0, 460, 920, 1380];
-  const batBars = [...$('hBat').children];
-  const PRICE = [[9.0, 0.6, 14999], [11.0, 0.6, 22300], [13.0, 0.8, 36800]];
-  const WEIGHT = [[9.0, 0.6, 0.74], [11.0, 0.6, 1.46], [13.0, 0.8, 2.36]];
-  const HITS = [[9.0, 10], [11.05, 12], [12.7, 8], [13.5, 14], [13.8, 20]];
-  const TRACK = 888, SCALE_MAX = 32000;
-
-  const el = {
-    sun: $('sun'), hills: $('hills'), compact: $('compact'), cFlash: $('cFlash'), flash: $('flash'),
-    cnt: $('cnt'), cntN: $('cntN'), cntT: $('cntT'), bgEvf: $('bgEvf'), grid: $('evfGrid'), hud: $('hud'),
-    hMode: $('hMode'), hRec: $('hRec'), hDot: $('hDot'), hTc: $('hTc'), hBat: $('hBat'), hBot: $('hBot'),
-    bodyPro: $('bodyPro'), sensor: $('sensor'), sensorLabel: $('sensorLabel'), cage: $('cage'), handle: $('handle'),
-    mic: $('mic'), monitor: $('monitor'), lens: $('lens'), lensText: $('lensText'), meter: $('meter'),
-    mVal: $('mVal'), mW: $('mW'), mFill: $('mFill'), mOver: $('mOver'), mk1: $('mk1'), mk3: $('mk3'),
-    dim: $('dim'), grain: $('grain'),
-  };
-  const setText = (node, s) => { if (node.textContent !== s) node.textContent = s; };
-
-  // ---------- the whole film as a function of t ----------
-  function render(t) {
-    t = clamp(t, 0, DUR);
-
-    // S1 · sunny day ------------------------------------------------
-    const sunK = P(t, -0.5, 1.3);
-    put(el.sun, 870, lerp(430, 330, sunK), lerp(0.86, 1, sunK));
-    nudge(el.hills, 0, lerp(70, 0, P(t, -0.4, 1.2)));
-
-    charsIn(L1, t, 0.25, 0.035);
-    charsIn(L2, t, 1.35, 0.07);
-    charsIn(L3, t, 2.5, 0.06);
-    el.mk1.style.setProperty('--k', P(t, 3.3, 0.45, E.io));
-    ['l1', 'l2', 'l3'].forEach((id, i) => {
-      const k = P(t, 4.4 + i * 0.05, 0.38, E.in);
-      nudge(lines[id], 0, -44 * k, 1, 1 - k, 8 * k);
-    });
-
-    let fl = 0, squash = 0;
-    for (const f of FLASHES) {
-      const d = t - f;
-      if (d >= 0 && d < 0.35) fl = Math.max(fl, d < 0.04 ? d / 0.04 : 1 - (d - 0.04) / 0.31);
-      if (d >= 0 && d < 0.3) squash += Math.sin((d / 0.3) * Math.PI) * 0.06;
-    }
-    el.flash.style.opacity = fl * 0.6;
-    el.cFlash.setAttribute('opacity', fl);
-
-    const drift = P(t, 4.45, 0.6, E.io);
-    for (const p of polas) {
-      if (t < p.t0) { p.el.style.opacity = 0; continue; }
-      const k = P(t, p.t0, 0.7, E.out4), kr = P(t, p.t0, 0.85, E.back);
-      put(p.el, lerp(540, p.x, k), lerp(960, p.y, k) - Math.sin(Math.PI * k) * 150 + drift * 70,
-        lerp(0.25, 1, k), lerp(0, p.r, kr) + drift * (p.r > 0 ? 3 : -3), on(t, p.t0));
-      p.dev.style.opacity = 1 - P(t, p.t0 + 0.35, 1.3, E.io);
-    }
-
-    // the compact camera: S1 hero, hides in S2, returns in S3 and turns into the pro body
-    const camIn = P(t, 0.7, 0.55, E.back);
-    const camHide = P(t, 5.1, 0.4, E.in);
-    const camBack = P(t, 7.75, 0.5, E.back);
-    const morph = P(t, 8.6, 0.45, E.in);
-    if (t < 7.6) {
-      put(el.compact, 540, 960 + Math.sin(t * 2.4) * 6, camIn * (1 - squash) * (1 - 0.1 * camHide), 0,
-        t < 0.7 ? 0 : 1 - camHide);
-    } else {
-      put(el.compact, 540, 1110, lerp(0.6, 1, camBack) * lerp(1, 1.45, morph), 0, on(t, 7.75, 0.12) * (1 - morph), morph * 8);
-    }
-
-    // S2 · reviews pile up ------------------------------------------
-    charsIn(LB, t, 4.7, 0.045);
-    const bOut = P(t, 7.12, 0.3, E.in);
-    nudge(lines.lb, 0, -44 * bOut, 1, 1 - bOut, 8 * bOut);
-    const cIn = P(t, 5.0, 0.4);
-    nudge(el.cnt, 0, (1 - cIn) * 20, 1, cIn * (1 - bOut));
-    const n = Math.round(47 * P(t, 5.05, 2.15, (k) => k ** 1.8));
-    setText(el.cntN, String(n));
-    const secs = n * 1049;
-    setText(el.cntT, `${pad(Math.floor(secs / 3600))}:${pad(Math.floor(secs / 60) % 60)}:${pad(secs % 60)}`);
-    for (const c of cards) {
-      if (t < c.t0) { c.el.style.opacity = 0; continue; }
-      const k = P(t, c.t0, 0.5, E.expo);
-      put(c.el, lerp(c.ox, c.x, k), lerp(c.oy, c.y, k), lerp(1.25, c.s, k), lerp(c.r + c.spin, c.r, k), 1);
-    }
-
-    // shutter curtain → viewfinder ----------------------------------
-    blades.forEach((b, i) => {
-      const k = P(t, 7.28, 0.32, E.io);
-      b.style.transform = `translateY(${lerp(-600, bladeY[i], k)}px)`;
-      b.style.opacity = t > 7.64 ? 0 : 1;
-    });
-    el.bgEvf.style.opacity = t >= 7.6 ? 1 : 0;
-    const hk = P(t, 7.6, 0.3);
-    const flick = t < 7.6 ? 0 : t < 7.66 ? 0.6 : t < 7.71 ? 0.15 : 1;
-    el.hud.style.opacity = flick;
-    el.hud.style.transform = `scale(${lerp(1.04, 1, hk)})`;
-    el.grid.style.opacity = flick;
-
-    const recT = 10.3, recOn = t >= recT;
-    el.hMode.style.opacity = recOn ? 0 : 1;
-    el.hRec.style.opacity = recOn ? 1 : 0;
-    el.hDot.style.opacity = recOn && Math.floor((t - recT) * 2) % 2 === 0 ? 1 : 0.2;
-    const fr = Math.floor(Math.max(0, t - recT) * 30);
-    setText(el.hTc, `00:00:${pad(Math.floor(fr / 30))}:${pad(fr % 30)}`);
-    setText(el.hBot, recOn ? '4K 60p · 10-bit · 1/120 · F2.8 · ISO 800' : '1/250 · F2.8 · ISO 100 · ±0.0');
-    const bars = t < 10.4 ? 3 : t < 12.4 ? 2 : 1;
-    const low = t >= 14.5;
-    el.hBat.classList.toggle('low', low);
-    batBars.forEach((b, i) => { b.style.opacity = i < bars ? (low && Math.floor(t * 2.5) % 2 ? 0.15 : 1) : 0; });
-
-    // S3 · 要求越多 ---------------------------------------------------
-    charsIn(LC, t, 7.65, 0.06, 0.5);
-    for (const r of rows) {
-      const k = P(t, r.t0, 0.45, E.out4);
-      nudge(r.el, lerp(-60, 0, k), 0, 1, k, (1 - k) * 8);
-      r.tick.style.strokeDashoffset = 1 - P(t, r.t0 + 0.25, 0.3);
-    }
-    el.mk3.style.setProperty('--k', P(t, 13.0, 0.4, E.io));
-
-    // R1 · full frame
-    put(el.bodyPro, 540, 1110, lerp(0.78, 1, P(t, 8.6, 0.5, E.back)), 0, on(t, 8.6, 0.15));
-    const g = P(t, 9.35, 0.55, E.expo);
-    const sw = lerp(112.8, 172.8, g), sh = lerp(74.9, 115.2, g);
-    el.sensor.setAttribute('width', sw); el.sensor.setAttribute('height', sh);
-    el.sensor.setAttribute('x', 330 - sw / 2); el.sensor.setAttribute('y', 244 - sh / 2);
-    const so = on(t, 9.1, 0.2);
-    el.sensor.setAttribute('opacity', so);
-    el.sensorLabel.setAttribute('opacity', so);
-    setText(el.sensorLabel, g < 0.5 ? 'APS-C' : '全画幅');
-
-    // R2 · pro video
-    const ck = P(t, 10.4, 0.4, E.out4);
-    put(el.cage, 540, 1110, lerp(1.15, 1, ck), 0, ck);
-    put(el.handle, 540, lerp(560, 812, P(t, 10.6, 0.4, E.back)), 1, 0, on(t, 10.6));
-    put(el.mic, 540, lerp(470, 722, P(t, 10.75, 0.4, E.back)), 1, 0, on(t, 10.75));
-    const mk = P(t, 10.9, 0.45, E.back);
-    put(el.monitor, lerp(1320, 905, mk), 845, 1, lerp(14, 0, mk), on(t, 10.9));
-
-    // R3 · the lens, then a bigger lens
-    const l1 = P(t, 12.3, 0.4, E.back), l2 = P(t, 12.9, 0.6, E.back);
-    put(el.lens, 570, 1144, 0.6 * l1 + 0.4 * l2, 0, on(t, 12.3, 0.05));
-    el.lensText.setAttribute('opacity', P(t, 13.0, 0.4));
-    el.lensText.setAttribute('transform', `rotate(${Math.max(0, t - 12.3) * 9})`);
-
-    for (const c of chips) {
-      const k = P(t, c.t0, 0.35, E.back);
-      nudge(c.el, 0, (1 - k) * 16, lerp(0.7, 1, k), on(t, c.t0, 0.12));
-    }
-
-    // budget meter
-    const mi = P(t, 8.0, 0.4);
-    nudge(el.meter, 0, (1 - mi) * 30, 1, mi);
-    let price = 2999, kg = 0.32;
-    for (const [a, d, to] of PRICE) price = lerp(price, to, P(t, a, d, E.io));
-    for (const [a, d, to] of WEIGHT) kg = lerp(kg, to, P(t, a, d, E.io));
-    const px = (price / SCALE_MAX) * TRACK;
-    setText(el.mVal, money(price));
-    setText(el.mW, kg.toFixed(2));
-    el.mVal.style.color = px > TRACK ? 'var(--s-rec)' : '';
-    el.mFill.style.width = Math.min(px, TRACK) + 'px';
-    el.mOver.style.width = Math.max(0, px - TRACK) + 'px';
-
-    // weight lands with a thud
-    let sx = 0, sy = 0;
-    for (const [h, a] of HITS) {
-      const d = t - h;
-      if (d > 0 && d < 0.6) { const e = Math.exp(-d * 9) * a; sx += Math.sin(d * 55) * e; sy += Math.cos(d * 47) * e * 0.6; }
-    }
-    scene.style.transform = sx || sy ? `translate(${sx.toFixed(2)}px,${sy.toFixed(2)}px)` : '';
-    rig.style.transform = `scale(${1 + 0.035 * P(t, 14.0, 4.0, E.io)})`;
-
-    // S4 · back to the first photo ----------------------------------
-    const ek = P(t, 15.1, 0.75, E.out4), er = P(t, 15.1, 0.9, E.back);
-    put(pEnd, lerp(980, 840, ek), lerp(2250, 1420, ek), 0.92, lerp(-24, 8, er), t < 15.1 ? 0 : 1);
-    el.dim.style.opacity = 0.42 * P(t, 15.3, 0.8, E.io);
-
-    const gf = Math.floor(t * 24);
-    el.grain.style.transform = `translate(${Math.floor(hash(gf) * 256)}px,${Math.floor(hash(gf + 99) * 256)}px)`;
+  // closing shot: the first snapshot comes back
+  const ek = P(t, 18.1, 1.9, E.out4);
+  S.endPhoto.visible = t >= 18.1;
+  if (S.endPhoto.visible) {
+    cam.updateMatrixWorld();
+    S.endPhoto.position.copy(cam.localToWorld(v3.set(lerp(1.05, 0.78, ek), lerp(-1.5, -0.5, ek) + Math.sin(t * 1.1) * 0.01, -4.3)));
+    S.endPhoto.quaternion.copy(cam.quaternion);
+    S.endPhoto.rotateX(lerp(-0.5, -0.06, ek)); S.endPhoto.rotateY(lerp(-0.7, -0.22, ek)); S.endPhoto.rotateZ(lerp(-0.3, 0.07, ek));
+    S.endPhoto.userData.mats.forEach((mm) => { mm.opacity = clamp((t - 18.1) / 0.3); });
   }
 
-  // ---------- player ----------
-  let cur = POSTER, playing = false, started = false, last = 0;
-  const btnPlay = $('btnPlay'), playLabel = $('playLabel'), playIcon = $('playIcon'), scrub = $('scrub'), clock = $('clock');
-  const posterPlay = $('posterPlay'), stageBox = $('stageBox');
-  const beatBtns = [...document.querySelectorAll('#beats button')];
-  const beatTimes = beatBtns.map((b) => parseFloat(b.dataset.t));
-  const fmt = (s) => `${pad(Math.floor(s / 60))}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+  // copy ---------------------------------------------------------------
+  lineAt(copy.t1, t, 0.6, 4.6);
+  lineAt(copy.t2, t, 1.6, 4.68);
+  lineAt(copy.t3, t, 5.0, 7.5);
+  subAt(copy.cnt, t, 5.4, 7.45);
+  const n = Math.round(47 * P(t, 5.05, 2.4, (k) => k ** 1.6)), secs = n * 1049;
+  setText(copy.cntN, String(n));
+  setText(copy.cntT, `${pad(Math.floor(secs / 3600))}:${pad(Math.floor(secs / 60) % 60)}:${pad(secs % 60)}`);
+  lineAt(copy.t4, t, 8.7);
+  const starts = [9.5, 12.1, 15.1];
+  copy.items.forEach((it, i) => {
+    const next = starts[i + 1] ?? 18.4;
+    const dim = lerp(1, 0.5, P(t, next, 0.8, E.io));
+    lineAt(it.ln, t, starts[i], Infinity, dim);
+    subAt(it.sub, t, starts[i] + 0.45, Infinity, dim);
+  });
+  const bi = P(t, 10.2, 0.9, E.out4);
+  copy.rule.style.opacity = bi * 0.5; copy.rule.style.transform = `scaleX(${bi})`;
+  subAt(copy.budget, t, 10.4);
+  let price = 2999, kg = 0.32;
+  for (const [a, d, to] of PRICE) price = lerp(price, to, P(t, a, d, E.io));
+  for (const [a, d, to] of WEIGHT) kg = lerp(kg, to, P(t, a, d, E.io));
+  setText(copy.bVal, money(price)); setText(copy.bKg, kg.toFixed(2));
 
-  function syncUI() {
-    if (RENDER) return;
-    scrub.value = cur;
-    clock.textContent = `${fmt(cur)} / ${fmt(DUR)}`;
-    playLabel.textContent = playing ? '暂停' : cur >= DUR ? '重播' : '播放';
-    playIcon.setAttribute('d', playing ? 'M3 1.5 H6 V12.5 H3Z M8 1.5 H11 V12.5 H8Z' : 'M3 1.5 L12 7 L3 12.5Z');
-    let active = 0;
-    beatTimes.forEach((bt, i) => { if (cur >= bt) active = i; });
-    beatBtns.forEach((b, i) => b.parentElement.classList.toggle('on', started && i === active));
-    posterPlay.hidden = started;
-  }
-  function tick(now) {
-    if (!playing) return;
-    cur = Math.min(DUR, cur + (now - last) / 1000);
-    last = now;
-    render(cur);
-    if (cur >= DUR) playing = false;
-    syncUI();
-    if (playing) requestAnimationFrame(tick);
-  }
-  function play(from) {
-    started = true;
-    if (typeof from === 'number') cur = from;
-    else if (cur >= DUR - 0.01) cur = 0;
-    playing = true; last = performance.now();
-    render(cur); syncUI();
-    requestAnimationFrame(tick);
-  }
-  function pause() { playing = false; syncUI(); }
-  function seek(t) { cur = clamp(t, 0, DUR); render(cur); syncUI(); }
+  $('fade').style.opacity = P(t, 20.3, 0.7, E.io);
 
-  function fit() {
-    if (RENDER) return;
-    const vw = document.documentElement.clientWidth;
-    const wide = vw > 860;
-    const availW = wide ? vw - 400 - 40 - 48 : vw - 32;
-    const availH = Math.max(420, window.innerHeight - 110);
-    const s = Math.min(availW / W, availH / H);
-    stageBox.style.width = `${W * s}px`;
-    stageBox.style.height = `${H * s}px`;
-    stage.style.transform = `scale(${s})`;
-    document.querySelector('.controls').style.width = `${W * s}px`;
+  renderer.render(scene, cam);
+
+  // sensor callout, projected from 3D after the frame is laid out
+  const dOn = P(t, 10.6, 0.5) * (1 - P(t, 12.6, 0.5));
+  dims.root.style.opacity = dOn;
+  if (dOn > 0) {
+    const s = S.sensor, pts = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(([x, y]) => toScreen(s, x, y, 0));
+    dims.rect.setAttribute('d', 'M' + pts.map((p) => p.map((v) => v.toFixed(1)).join(' ')).join(' L') + ' Z');
+    const [ax, ay] = pts[2], bx = ax + 70, by = ay - 70, cx = bx + 200;
+    dims.lead.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)} L${bx.toFixed(1)} ${by.toFixed(1)} L${cx.toFixed(1)} ${by.toFixed(1)}`);
+    dims.name.setAttribute('x', bx); dims.name.setAttribute('y', by - 44);
+    dims.size.setAttribute('x', bx); dims.size.setAttribute('y', by - 14);
+    setText(dims.name, ff < 0.5 ? 'APS-C' : '全画幅');
+    setText(dims.size, ff >= 1 ? '36 × 24 mm' : `${lerp(23.5, 36, ff).toFixed(1)} × ${lerp(15.6, 24, ff).toFixed(1)} mm`);
   }
+}
 
-  if (!RENDER) {
-    posterPlay.addEventListener('click', () => play(0));
-    btnPlay.addEventListener('click', () => (playing ? pause() : play(started ? undefined : 0)));
-    scrub.addEventListener('input', () => { started = true; pause(); seek(parseFloat(scrub.value)); });
-    beatBtns.forEach((b) => b.addEventListener('click', () => play(parseFloat(b.dataset.t))));
-    document.addEventListener('keydown', (e) => {
-      const tag = e.target.tagName;
-      if (e.key === ' ' && tag !== 'BUTTON' && tag !== 'INPUT') { e.preventDefault(); playing ? pause() : play(started ? undefined : 0); }
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && tag !== 'INPUT') {
-        e.preventDefault(); started = true; pause();
-        seek(cur + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 1 : 1 / 30));
-      }
-    });
-    $('copyBtn').addEventListener('click', () => {
-      const text = $('cmd').textContent;
-      const done = () => { $('copyBtn').textContent = '已复制'; setTimeout(() => ($('copyBtn').textContent = '复制'), 1600); };
-      const fallback = () => { const r = document.createRange(); r.selectNodeContents($('cmd')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-      try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
-    });
-    window.addEventListener('resize', fit);
-    fit();
-  }
+// ---------- player ----------
+let cur = POSTER, playing = false, started = false, last = 0;
+const btnPlay = $('btnPlay'), playLabel = $('playLabel'), playIcon = $('playIcon'), scrub = $('scrub'), clock = $('clock');
+const posterPlay = $('posterPlay'), stageBox = $('stageBox');
+const beatBtns = [...document.querySelectorAll('#beats button')];
+const beatTimes = beatBtns.map((b) => parseFloat(b.dataset.t));
+const fmt = (s) => `${pad(Math.floor(s / 60))}:${(s % 60).toFixed(1).padStart(4, '0')}`;
 
-  // ---------- render hook for render.mjs ----------
-  const ready = (async () => {
-    if (document.readyState !== 'complete') await new Promise((r) => addEventListener('load', r, { once: true }));
-    const text = [...new Set(stage.textContent + '0123456789:,.¥×–→·')].join('');
-    const faces = ['600 58px "Noto Serif SC"', '900 108px "Noto Serif SC"', '500 30px "Noto Sans SC"', '700 30px "Noto Sans SC"',
-      '900 56px "Noto Sans SC"', '500 30px "JetBrains Mono"', '700 30px "JetBrains Mono"', '400 50px "Long Cang"'];
-    try {
-      await Promise.race([Promise.all(faces.map((f) => document.fonts.load(f, text))), new Promise((r) => setTimeout(r, 12000))]);
-    } catch (err) { /* fall back to system fonts */ }
-    await document.fonts.ready;
-    render(cur);
-    return true;
-  })();
-  window.__motion = { duration: DUR, poster: POSTER, width: W, height: H, ready, seek: (t) => { cur = t; render(t); } };
-
+function syncUI() {
+  if (RENDER) return;
+  scrub.value = cur;
+  clock.textContent = `${fmt(cur)} / ${fmt(DUR)}`;
+  playLabel.textContent = playing ? '暂停' : cur >= DUR ? '重播' : '播放';
+  playIcon.setAttribute('d', playing ? 'M2.5 1 H5 V11 H2.5Z M7 1 H9.5 V11 H7Z' : 'M2.5 1 L11 6 L2.5 11Z');
+  let active = 0;
+  beatTimes.forEach((bt, i) => { if (cur >= bt) active = i; });
+  beatBtns.forEach((b, i) => b.parentElement.classList.toggle('on', started && i === active));
+  posterPlay.hidden = started;
+}
+function tick(now) {
+  if (!playing) return;
+  cur = Math.min(DUR, cur + (now - last) / 1000); last = now;
   render(cur);
+  if (cur >= DUR) playing = false;
   syncUI();
+  if (playing) requestAnimationFrame(tick);
+}
+function play(from) {
+  started = true;
+  if (typeof from === 'number') cur = from; else if (cur >= DUR - 0.01) cur = 0;
+  playing = true; last = performance.now(); render(cur); syncUI(); requestAnimationFrame(tick);
+}
+function pause() { playing = false; syncUI(); }
+function seek(t) { cur = clamp(t, 0, DUR); render(cur); syncUI(); }
+function fit() {
+  if (RENDER) return;
+  const availW = document.querySelector('.viewer').clientWidth;
+  const availH = Math.max(240, window.innerHeight - 170);
+  const s = Math.min(availW / W, availH / H);
+  stageBox.style.width = `${W * s}px`; stageBox.style.height = `${H * s}px`;
+  stage.style.transform = `scale(${s})`;
+  $('controls').style.width = `${W * s}px`;
+}
+
+if (!RENDER) {
+  posterPlay.addEventListener('click', () => play(0));
+  btnPlay.addEventListener('click', () => (playing ? pause() : play(started ? undefined : 0)));
+  scrub.addEventListener('input', () => { started = true; pause(); seek(parseFloat(scrub.value)); });
+  beatBtns.forEach((b) => b.addEventListener('click', () => play(parseFloat(b.dataset.t))));
+  document.addEventListener('keydown', (e) => {
+    const tag = e.target.tagName;
+    if (e.key === ' ' && tag !== 'BUTTON' && tag !== 'INPUT') { e.preventDefault(); playing ? pause() : play(started ? undefined : 0); }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && tag !== 'INPUT') {
+      e.preventDefault(); started = true; pause(); seek(cur + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 1 : 1 / 30));
+    }
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const done = () => { $('copyBtn').textContent = '已复制'; setTimeout(() => ($('copyBtn').textContent = '复制'), 1600); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($('cmd')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText($('cmd').textContent).then(done, fallback); } catch (err) { fallback(); }
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  syncUI();
+}
+
+// ---------- render hook for render.mjs ----------
+const ready = (async () => {
+  if (document.readyState !== 'complete') await new Promise((r) => addEventListener('load', r, { once: true }));
+  await loadFonts();
+  await document.fonts.ready;
+  build();
+  render(cur);
+  return true;
 })();
+window.__motion = { duration: DUR, poster: POSTER, width: W, height: H, ready, seek: (t) => { cur = t; render(t); } };
 </script>
 </body>
 </html>
