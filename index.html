@@ -8,7 +8,7 @@
 <script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@200;300&family=Noto+Serif+SC:wght@400;600&display=swap">
 <style>
 /* Layout: a 1920×1080 stage scaled to the column width, controls under it, storyboard and export notes below. */
 :root {
@@ -23,8 +23,8 @@
   --shadow: rgba(16, 18, 22, .25);
 
   --f-voice: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  --f-ui: "Noto Serif SC", "Songti SC", serif;
-  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-num: "IBM Plex Sans", "Helvetica Neue", Arial, "Noto Serif SC", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Serif SC", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -40,7 +40,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 15px; line-height: 1.7; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-voice); font-size: 15px; line-height: 1.7; }
 
 /* ---------- page chrome ---------- */
 .app {
@@ -55,7 +55,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-
 .poster-play {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px 12px 18px; border: 0; border-radius: 999px;
-  background: rgba(247, 247, 248, .92); color: #17191C; font: 600 15px/1 var(--f-ui); letter-spacing: .08em; cursor: pointer;
+  background: rgba(247, 247, 248, .92); color: #17191C; font: 600 15px/1 var(--f-voice); letter-spacing: .08em; cursor: pointer;
   box-shadow: 0 12px 30px rgba(0, 0, 0, .25); backdrop-filter: blur(6px);
 }
 .poster-play svg { width: 14px; height: 14px; }
@@ -63,12 +63,12 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-
 .controls { display: flex; align-items: center; gap: 14px; width: 100%; }
 .btn {
   flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; min-width: 82px; padding: 0 14px;
-  border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-fg); font: 600 13px/1 var(--f-ui); letter-spacing: .08em; cursor: pointer;
+  border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-fg); font: 600 13px/1 var(--f-voice); letter-spacing: .08em; cursor: pointer;
 }
 .btn svg { width: 12px; height: 12px; }
 #scrub { flex: 1; min-width: 0; accent-color: var(--fg); }
 .clock { flex: none; font: 400 12px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
-.gl-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #E8E9EB; font: 400 15px/1.7 var(--f-ui); }
+.gl-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #E8E9EB; font: 400 15px/1.7 var(--f-voice); }
 
 .notes { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 48px; padding-top: 12px; }
 .notes h2 { margin: 0 0 12px; font: 400 12px/1 var(--f-mono); letter-spacing: .14em; color: var(--muted); }
@@ -90,7 +90,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-
 .code { position: relative; margin-bottom: 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
 .code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 400 13px/1.8 var(--f-mono); }
 .copy-btn { position: absolute; right: 8px; top: 8px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line);
-  background: var(--bg); color: var(--fg); font: 400 12px/1 var(--f-ui); cursor: pointer; }
+  background: var(--bg); color: var(--fg); font: 400 12px/1 var(--f-voice); cursor: pointer; }
 @media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
 
 /* ---------- render mode: just the stage, 1:1 ---------- */
@@ -108,20 +108,28 @@ html.render .stage { transform: none !important; }
 }
 #gl { position: absolute; inset: 0; width: 1920px; height: 1080px; display: block; }
 .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 80% at 60% 48%, transparent 55%, rgba(0, 0, 0, var(--vig, .1)) 100%); }
-.dims { position: absolute; inset: 0; width: 1920px; height: 1080px; opacity: 0; overflow: visible; }
-.dims path { fill: none; stroke: rgba(236, 237, 239, .78); stroke-width: 1.25; }
-.dims .d-big { font: 400 22px/1 var(--f-mono); letter-spacing: .06em; fill: #ECEDEF; }
-.dims .d-small { font: 400 15px/1 var(--f-voice); letter-spacing: .2em; fill: rgba(236, 237, 239, .62); }
 
+/* callouts drawn from projected 3D points */
+.callouts { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; }
+.callouts path { fill: none; stroke: rgba(236, 237, 239, .7); stroke-width: 1.25; stroke-dasharray: 1; }
+.callouts .rect { stroke-dasharray: none; }
+.callouts circle { fill: #ECEDEF; }
+.callouts .c-name { font: 400 16px/1 var(--f-voice); letter-spacing: .18em; fill: rgba(236, 237, 239, .6); }
+.callouts .c-val { font: 400 21px/1 var(--f-mono); letter-spacing: .02em; fill: #ECEDEF; }
+
+/* one data block per beat: label, hero number, spec rows */
 .copy { position: absolute; inset: 0; pointer-events: none; }
-.ln { position: absolute; left: 168px; margin: 0; white-space: nowrap; opacity: 0;
-  font: 400 44px/1.3 var(--f-voice); letter-spacing: .1em; color: var(--tx); }
-.hd { font-weight: 600; font-size: 60px; letter-spacing: .12em; }
-.sub { position: absolute; left: 170px; margin: 0; white-space: nowrap; opacity: 0;
-  font: 400 20px/1.4 var(--f-mono); letter-spacing: .08em; color: var(--mu); font-variant-numeric: tabular-nums; }
-.sub b { font-weight: 500; color: var(--tx); }
-.item .ln { font-size: 38px; }
-.rule { position: absolute; left: 170px; top: 812px; width: 300px; height: 1px; background: var(--mu); opacity: 0; transform-origin: 0 50%; }
+.blk { position: absolute; left: 168px; top: 330px; width: 640px; }
+.eb { margin: 0; font: 400 18px/1 var(--f-mono); letter-spacing: .18em; color: var(--mu); opacity: 0; }
+.hero { margin: 22px 0 0; display: flex; align-items: baseline; gap: 18px; color: var(--tx); opacity: 0; white-space: nowrap; }
+.hero .num { font: 200 156px/1 var(--f-num); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.hero .unit { font: 400 32px/1 var(--f-voice); letter-spacing: .1em; }
+.hair { display: block; width: 360px; height: 1px; margin: 34px 0 26px; background: var(--mu); opacity: 0; transform-origin: 0 50%; }
+.rows { display: grid; gap: 16px; }
+.row { display: grid; grid-template-columns: 92px auto; align-items: baseline; margin: 0; opacity: 0; white-space: nowrap; }
+.row span { font: 400 19px/1.3 var(--f-voice); letter-spacing: .14em; color: var(--mu); }
+.row b { font: 400 22px/1.3 var(--f-mono); font-weight: 400; letter-spacing: .02em; color: var(--tx); font-variant-numeric: tabular-nums; }
+.ledger { position: absolute; left: 168px; top: 940px; margin: 0; opacity: 0; }
 
 .fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
 </style>
@@ -130,7 +138,7 @@ html.render .stage { transform: none !important; }
 <div class="app">
   <header class="top">
     <h1>要求越多</h1>
-    <p class="meta">16:9 · 1920 × 1080 · 30 FPS · 21 秒 · WebGL 实时渲染</p>
+    <p class="meta">16:9 · 1920 × 1080 · 30 FPS · 23 秒 · WebGL 实时渲染</p>
   </header>
 
   <main class="viewer" aria-label="动效预览">
@@ -138,26 +146,77 @@ html.render .stage { transform: none !important; }
       <div class="stage" id="stage" aria-hidden="true">
         <canvas id="gl" width="1920" height="1080"></canvas>
         <div class="vignette"></div>
+        <svg class="callouts" id="callouts" viewBox="0 0 1920 1080"></svg>
 
-        <svg class="dims" id="dims" viewBox="0 0 1920 1080">
-          <path id="dRect"/><path id="dLead"/>
-          <text class="d-small" id="dName">APS-C</text>
-          <text class="d-big" id="dSize">23.5 × 15.6 mm</text>
-        </svg>
+        <div class="copy" id="copy">
+          <section class="blk" id="bIntro">
+            <p class="eb">出发前</p>
+            <p class="hero"><span class="num">320</span><span class="unit">g</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>相机</span><b>2420 万像素 · f/2.8</b></p>
+              <p class="row"><span>同行</span><b>4 人 · 2 天</b></p>
+              <p class="row"><span>预算</span><b>¥3,000</b></p>
+              <p class="row" data-at="2.2"><span>照片</span><b id="introShots">1 张</b></p>
+            </div>
+          </section>
 
-        <div class="copy">
-          <p class="ln" id="t1" style="top:440px">本来就想出去玩的时候，</p>
-          <p class="ln" id="t2" style="top:512px">给自己、给朋友拍点好看的照片。</p>
+          <section class="blk" id="bReview">
+            <p class="eb">做功课</p>
+            <p class="hero"><span class="num" id="reviewN">0</span><span class="unit">篇测评</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>累计</span><b id="reviewTime">00:00:00</b></p>
+              <p class="row"><span>收藏</span><b id="reviewSaved">0 条对比视频</b></p>
+              <p class="row"><span>最晚</span><b>凌晨 02:47</b></p>
+            </div>
+          </section>
 
-          <p class="ln" id="t3" style="top:470px">结果越看测评，</p>
-          <p class="sub" id="cnt" style="top:552px">已看 <b id="cntN">0</b> 篇测评　累计 <b id="cntT">00:00:00</b></p>
+          <section class="blk" id="bR1">
+            <p class="eb">要求 01 · 画幅</p>
+            <p class="hero"><span class="num" id="mp">2420</span><span class="unit">万像素</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>画幅</span><b>全画幅 36 × 24 mm</b></p>
+              <p class="row"><span>面积</span><b>APS-C 的 2.36 倍</b></p>
+              <p class="row"><span>机身</span><b>¥25,999 · 720 g</b></p>
+            </div>
+          </section>
 
-          <p class="ln hd" id="t4" style="top:300px">要求越多：</p>
-          <div class="item" id="i1"><p class="ln" style="top:420px">要全画幅，</p><p class="sub" style="top:478px">23.5×15.6 → 36×24 mm</p></div>
-          <div class="item" id="i2"><p class="ln" style="top:542px">要专业视频，</p><p class="sub" style="top:600px">4K 60p · 10-bit · Log</p></div>
-          <div class="item" id="i3"><p class="ln" style="top:664px">镜头最好也一步到位。</p><p class="sub" style="top:722px">24–70mm F2.8 · 大三元</p></div>
-          <i class="rule" id="rule"></i>
-          <p class="sub" id="budget" style="top:832px">预算 <b id="bVal">¥2,999</b>　重量 <b id="bKg">0.32</b> kg</p>
+          <section class="blk" id="bR2">
+            <p class="eb">要求 02 · 视频</p>
+            <p class="hero"><span class="num" id="res">4K</span><span class="unit">24p</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>规格</span><b>4K 60p · 10-bit 4:2:2</b></p>
+              <p class="row"><span>曲线</span><b>Log · 不限时录制</b></p>
+              <p class="row"><span>配件</span><b>+¥7,796 · +740 g</b></p>
+            </div>
+          </section>
+
+          <section class="blk" id="bR3">
+            <p class="eb">要求 03 · 镜头</p>
+            <p class="hero"><span class="num" id="fstop">F5.6</span><span class="unit">恒定光圈</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>焦段</span><b>24–70 mm 标准变焦</b></p>
+              <p class="row"><span>结构</span><b>20 片 15 组</b></p>
+              <p class="row"><span>镜头</span><b>+¥14,999 · +735 g</b></p>
+            </div>
+          </section>
+
+          <section class="blk" id="bEnd">
+            <p class="eb">合计</p>
+            <p class="hero"><span class="num" id="ratio">×1.0</span><span class="unit">预算</span></p>
+            <i class="hair"></i>
+            <div class="rows">
+              <p class="row"><span>花费</span><b>¥48,794 · 原计划 ¥3,000</b></p>
+              <p class="row"><span>重量</span><b>2.20 kg · 原来 0.32 kg</b></p>
+              <p class="row"><span>照片</span><b>f/2.8 · 1/500 s · ISO 100</b></p>
+            </div>
+          </section>
+
+          <p class="row ledger" id="ledger"><span>合计</span><b id="ledgerVal">¥2,999 · 0.32 kg</b></p>
         </div>
 
         <div class="fade" id="fade"></div>
@@ -167,25 +226,23 @@ html.render .stage { transform: none !important; }
 
     <div class="controls" id="controls">
       <button class="btn" id="btnPlay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path id="playIcon" d="M2.5 1 L11 6 L2.5 11Z" fill="currentColor"/></svg><span id="playLabel">播放</span></button>
-      <input id="scrub" type="range" min="0" max="21" step="0.001" value="19.6" aria-label="时间轴">
-      <output class="clock" id="clock">00:19.6 / 00:21.0</output>
+      <input id="scrub" type="range" min="0" max="23" step="0.001" value="21.6" aria-label="时间轴">
+      <output class="clock" id="clock">00:21.6 / 00:23.0</output>
     </div>
   </main>
 
   <section class="notes">
     <div>
-      <h2>文案</h2>
+      <h2>原文案 · 画面里不直接出现，改用数据表达</h2>
       <p class="quote">本来就想出去玩的时候，给自己、给朋友拍点好看的照片。结果越看测评，要求越多：要全画幅，要专业视频，镜头最好也一步到位。</p>
       <h2>分镜 · 点击跳转</h2>
       <ol class="beats" id="beats">
-        <li><button type="button" data-t="0"><span class="bt">0:00.0</span><span class="bc">本来就想出去玩的时候，</span><span class="bd">浅色影棚里，一台白色小相机缓缓转动</span></button></li>
-        <li><button type="button" data-t="1.6"><span class="bt">0:01.6</span><span class="bc">给自己、给朋友拍点好看的照片。</span><span class="bd">三张照片从镜头里飘出来，全片唯一的暖色</span></button></li>
-        <li><button type="button" data-t="4.9"><span class="bt">0:04.9</span><span class="bc">结果越看测评，</span><span class="bd">测评屏幕在相机周围越聚越多，影棚渐渐变暗</span></button></li>
-        <li><button type="button" data-t="7.7"><span class="bt">0:07.7</span><span class="bc">要求越多：</span><span class="bd">屏幕被相机吸进去</span></button></li>
-        <li><button type="button" data-t="9.4"><span class="bt">0:09.4</span><span class="bc">要全画幅，</span><span class="bd">机身长大变成石墨色，传感器 23.5×15.6 → 36×24 mm</span></button></li>
-        <li><button type="button" data-t="12.0"><span class="bt">0:12.0</span><span class="bc">要专业视频，</span><span class="bd">兔笼、提手、麦克风、监视器依次装配</span></button></li>
-        <li><button type="button" data-t="15.0"><span class="bt">0:15.0</span><span class="bc">镜头最好也一步到位。</span><span class="bd">大光圈变焦镜头卡口锁定，镜筒伸长</span></button></li>
-        <li><button type="button" data-t="18.0"><span class="bt">0:18.0</span><span class="bc">（收尾）</span><span class="bd">最初那张照片回到画面前景</span></button></li>
+        <li><button type="button" data-t="0"><span class="bt">0:00.0</span><span class="bc">出发前 · 320 g</span><span class="bd">白色口袋相机，三张照片飘出来，各自带着拍摄参数</span></button></li>
+        <li><button type="button" data-t="4.9"><span class="bt">0:04.9</span><span class="bc">做功课 · 47 篇测评</span><span class="bd">测评屏幕越聚越多，每块屏幕上都是一个参数</span></button></li>
+        <li><button type="button" data-t="9.2"><span class="bt">0:09.2</span><span class="bc">要求 01 · 6000 万像素</span><span class="bd">机身长大变成石墨色，传感器 23.5×15.6 → 36×24 mm</span></button></li>
+        <li><button type="button" data-t="12.1"><span class="bt">0:12.1</span><span class="bc">要求 02 · 8K</span><span class="bd">兔笼、提手、麦克风、监视器依次装上，各自标出增加的重量</span></button></li>
+        <li><button type="button" data-t="16.0"><span class="bt">0:16.0</span><span class="bc">要求 03 · F2.8</span><span class="bd">光圈 F5.6 → F4 → F2.8，24–70 mm 镜头锁上卡口、镜筒伸长</span></button></li>
+        <li><button type="button" data-t="19.4"><span class="bt">0:19.4</span><span class="bc">合计 · 预算 ×16.3</span><span class="bd">第一张照片回到前景，参数和出发前那张一模一样</span></button></li>
       </ol>
     </div>
     <div>
@@ -206,10 +263,22 @@ let THREE;
 try { THREE = await import('./node_modules/three/build/three.module.js'); }
 catch (err) { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }
 
-const W = 1920, H = 1080, DUR = 21, POSTER = 19.6;
+const W = 1920, H = 1080, DUR = 23, POSTER = 21.6;
 const RENDER = document.documentElement.classList.contains('render');
 const $ = (s) => document.getElementById(s);
 const stage = $('stage');
+
+// ---------- cue sheet (seconds) ----------
+const T = {
+  intro: 0.5, photos: [2.2, 2.75, 3.3], introOut: 4.5,
+  review: 4.9, reviewOut: 7.6, dark: 7.4,
+  r1: 9.2, morph: 9.5, sensor: 10.4, ff: 10.9, r1Out: 11.9,
+  r2: 12.1, kit: [12.6, 12.7, 12.8, 12.9, 13.15, 13.4, 13.65], r2Out: 15.8,
+  r3: 16.0, lens: 16.2, lock: 17.0, ext: 17.6, r3Out: 19.3,
+  end: 19.4, endBlock: 19.6, fade: 22.3,
+};
+// running totals: [start, duration, price, weight kg]
+const LEDGER = [[10.0, 0.7, 25999, 0.72], [13.8, 0.7, 33795, 1.46], [17.6, 0.8, 48794, 2.195]];
 
 // ---------- timing helpers ----------
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
@@ -229,16 +298,27 @@ function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; l
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mix = (a, b, k) => { const x = hex(a), y = hex(b); return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], k))).join(',')})`; };
 
-// ---------- fonts first (the lens engraving is drawn into a canvas) ----------
+// what the review screens and the prints say
+const REVIEWS = [
+  ['6000万像素', '画质横评 · 32:18'], ['8K 24p', '视频实测 · 21:45'], ['F2.8', '镜头怎么选 · 18:02'],
+  ['全画幅', '画幅对比 · 26:37'], ['15 档', '动态范围 · 14:10'], ['4K 60p', '发热测试 · 19:56'],
+  ['10-bit', '调色宽容度 · 12:31'], ['大三元', '值不值 · 23:08'], ['ISO 51200', '夜景实拍 · 16:44'],
+  ['8 档防抖', '手持视频 · 11:27'], ['759 点', '对焦追踪 · 15:03'], ['1/8000 s', '高速快门 · 09:52'],
+];
+const EXIF = { sea: 'f/2.8   1/500 s   ISO 100', friends: 'f/2.8   1/250 s   ISO 200', peak: 'f/4   1/1000 s   ISO 100' };
+
+// ---------- fonts first (screens, prints and the lens engraving are drawn into canvases) ----------
 async function loadFonts() {
-  const text = [...new Set(document.querySelector('.copy').textContent + $('dims').textContent + '0123456789:,.¥×–→·ZOOMASPHEDØm')].join('');
-  const faces = ['400 44px "Noto Serif SC"', '600 60px "Noto Serif SC"', '400 20px "JetBrains Mono"', '500 20px "JetBrains Mono"'];
+  const extra = REVIEWS.flat().join('') + Object.values(EXIF).join('') + '26.10.18 ZOOM 24–70mm 1:2.8 Ø82 ASPH ED REC 4K60p 10-bit ×+°″';
+  const text = [...new Set($('copy').textContent + extra + '0123456789:,.¥×–→·')].join('');
+  const faces = ['200 156px "IBM Plex Sans"', '300 66px "IBM Plex Sans"', '400 22px "IBM Plex Mono"', '500 22px "IBM Plex Mono"',
+    '400 20px "Noto Serif SC"', '600 20px "Noto Serif SC"'];
   try { await Promise.race([Promise.all(faces.map((f) => document.fonts.load(f, text))), new Promise((r) => setTimeout(r, 10000))]); }
   catch (err) { /* system fonts */ }
 }
 
 // ---------- canvas textures ----------
-function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d', { willReadFrequently: true })]; }
 function tex(c, srgb = true) { const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
 function grain(g, x, y, w, h, amt, seed) {
   const img = g.getImageData(x, y, w, h), r = rng(seed);
@@ -281,27 +361,32 @@ function drawPhoto(g, kind, x, y, w, h) {
   }
   g.restore();
 }
+// a print with its exposure written in the margin
 function photoTexture(kind, seed) {
   const [c, g] = cnv(600, 740);
   g.fillStyle = '#F5F4F1'; g.fillRect(0, 0, 600, 740);
   drawPhoto(g, kind, 36, 36, 528, 560);
   grain(g, 36, 36, 528, 560, 16, seed);
+  g.fillStyle = '#8C9096'; g.font = '400 24px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+  g.fillText(EXIF[kind], 38, 664);
+  g.textAlign = 'right'; g.fillText('26.10.18', 562, 664);
   grain(g, 0, 0, 600, 740, 5, seed + 1);
   return tex(c);
 }
-function panelTexture(progress, tone, seed) {
+// a review video: dark screen, the spec it argues about, a watched progress bar
+function panelTexture(i) {
   const [c, g] = cnv(512, 288);
-  const r = rng(seed);
+  const r = rng(100 + i), [big, small] = REVIEWS[i];
+  const tones = [['#30333A', '#15171B'], ['#3B3E45', '#1C1E22'], ['#282B31', '#111316'], ['#35383F', '#191B1F']][i % 4];
   g.beginPath(); g.roundRect(4, 4, 504, 280, 22); g.clip();
-  let gr = g.createLinearGradient(0, 0, 512, 288); gr.addColorStop(0, tone[0]); gr.addColorStop(1, tone[1]); g.fillStyle = gr; g.fillRect(0, 0, 512, 288);
+  let gr = g.createLinearGradient(0, 0, 512, 288); gr.addColorStop(0, tones[0]); gr.addColorStop(1, tones[1]); g.fillStyle = gr; g.fillRect(0, 0, 512, 288);
   gr = g.createLinearGradient(0, 0, 300, 288); gr.addColorStop(0, 'rgba(255,255,255,.10)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 512, 288);
-  g.fillStyle = 'rgba(255,255,255,.22)';
-  g.beginPath(); g.roundRect(30, 28, 150 + r() * 80, 10, 5); g.fill();
-  g.beginPath(); g.roundRect(30, 48, 80 + r() * 60, 10, 5); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.arc(256, 140, 34, 0, 7); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.moveTo(246, 124); g.lineTo(272, 140); g.lineTo(246, 156); g.closePath(); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(30, 248, 452, 3);
-  g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(30, 248, 452 * progress, 3);
+  g.textBaseline = 'alphabetic';
+  g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '400 19px "IBM Plex Mono", "Noto Serif SC", monospace'; g.fillText(small, 32, 50);
+  g.fillStyle = 'rgba(255,255,255,.94)'; g.font = '300 70px "IBM Plex Sans", "Noto Serif SC", sans-serif'; g.fillText(big, 30, 170);
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.moveTo(452, 208); g.lineTo(474, 222); g.lineTo(452, 236); g.closePath(); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(32, 250, 448, 3);
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(32, 250, 448 * (0.55 + r() * 0.45), 3);
   return tex(c);
 }
 function stripes(w, h) { const [c, g] = cnv(16, 4); g.fillStyle = '#fff'; g.fillRect(0, 0, 8, 4); g.fillStyle = '#000'; g.fillRect(8, 0, 8, 4); const t = tex(c, false); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w, h); return t; }
@@ -309,7 +394,7 @@ function noise(size, rep, seed) { const [c, g] = cnv(size, size); g.fillStyle = 
 function ringText() {
   const [c, g] = cnv(1024, 1024);
   g.fillStyle = '#16171A'; g.fillRect(0, 0, 1024, 1024);
-  g.translate(512, 512); g.fillStyle = '#C9CDD3'; g.font = '500 30px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.translate(512, 512); g.fillStyle = '#C9CDD3'; g.font = '500 30px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
   const s = 'ZOOM 24–70mm 1:2.8  Ø82  ·  ASPH  ED  ·  ';
   const chars = [...s + s], step = (Math.PI * 2) / chars.length;
   chars.forEach((ch, i) => { g.save(); g.rotate(i * step); g.translate(0, -452); g.fillText(ch, 0, 0); g.restore(); });
@@ -330,7 +415,7 @@ function sensorTexture() {
 // what you see through a coated front element: dark depth, inner rings, coloured reflections
 function glassTexture() {
   const [c, g] = cnv(512, 512);
-  let gr = g.createRadialGradient(256, 256, 0, 256, 256, 256);
+  const gr = g.createRadialGradient(256, 256, 0, 256, 256, 256);
   gr.addColorStop(0, '#0C1022'); gr.addColorStop(.7, '#06070D'); gr.addColorStop(1, '#030305');
   g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
   g.lineWidth = 3;
@@ -347,8 +432,8 @@ function screenTexture() {
   drawPhoto(g, 'sea', 0, -60, 800, 848);
   g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, 0, 800, 54);
   g.fillStyle = '#FF3B30'; g.beginPath(); g.arc(34, 27, 9, 0, 7); g.fill();
-  g.fillStyle = '#FFFFFF'; g.font = '500 24px "JetBrains Mono", monospace'; g.textBaseline = 'middle';
-  g.fillText('REC  00:00:12:08', 54, 28); g.textAlign = 'right'; g.fillText('4K 60p  10-bit', 776, 28);
+  g.fillStyle = '#FFFFFF'; g.font = '500 24px "IBM Plex Mono", monospace'; g.textBaseline = 'middle';
+  g.fillText('REC  00:00:12:08', 54, 28); g.textAlign = 'right'; g.fillText('8K 24p  10-bit', 776, 28);
   g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 3;
   for (const [x, y, dx, dy] of [[300, 170, 1, 1], [500, 170, -1, 1], [300, 360, 1, -1], [500, 360, -1, -1]]) { g.beginPath(); g.moveTo(x, y + dy * 26); g.lineTo(x, y); g.lineTo(x + dx * 26, y); g.stroke(); }
   return tex(c);
@@ -384,9 +469,9 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
 const cam = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
-cam.setViewOffset(W, H, -250, 0, W, H); // product sits right of centre, copy on the left
+cam.setViewOffset(W, H, -250, 0, W, H); // product sits right of centre, data on the left
 
-// studio reflections: a dark room with three softboxes, prefiltered once
+// studio reflections: a dark room with softboxes, prefiltered once
 (() => {
   const env = new THREE.Scene();
   env.add(new THREE.Mesh(new THREE.BoxGeometry(24, 14, 24), new THREE.MeshBasicMaterial({ color: 0x1c1d20, side: THREE.BackSide })));
@@ -411,6 +496,7 @@ const S = {}; // everything render() needs to touch
 
 function build() {
   const ribs = stripes(90, 1), ribsFine = stripes(140, 1), leather = noise(256, 5, 11);
+  const st = sensorTexture();
   const M = S.M = {
     body: new THREE.MeshPhysicalMaterial({ color: '#E9E8E5', roughness: .32, clearcoat: .8, clearcoatRoughness: .22 }),
     grip: new THREE.MeshPhysicalMaterial({ color: '#17181B', roughness: .86, bumpMap: leather, bumpScale: 1.2 }),
@@ -418,7 +504,7 @@ function build() {
     void: new THREE.MeshStandardMaterial({ color: '#050506', roughness: .95, side: THREE.DoubleSide }),
     flange: new THREE.MeshStandardMaterial({ color: '#33363B', metalness: .6, roughness: .4 }),
     glass: new THREE.MeshPhysicalMaterial({ color: '#05070C', metalness: .1, roughness: .04, clearcoat: 1, iridescence: .9, iridescenceIOR: 1.8, iridescenceThicknessRange: [180, 520], transparent: true, opacity: .55 }),
-    sensor: (() => { const st = sensorTexture(); return new THREE.MeshPhysicalMaterial({ map: st, emissive: '#ffffff', emissiveMap: st, emissiveIntensity: .5, metalness: .5, roughness: .22, iridescence: .8, iridescenceIOR: 1.5, iridescenceThicknessRange: [220, 780] }); })(),
+    sensor: new THREE.MeshPhysicalMaterial({ map: st, emissive: '#ffffff', emissiveMap: st, emissiveIntensity: .5, metalness: .5, roughness: .22, iridescence: .8, iridescenceIOR: 1.5, iridescenceThicknessRange: [220, 780] }),
     lensBody: new THREE.MeshPhysicalMaterial({ color: '#1E2023', roughness: .46, clearcoat: .35, clearcoatRoughness: .3 }),
     rubber: new THREE.MeshStandardMaterial({ color: '#131416', roughness: .78, bumpMap: ribs, bumpScale: 2.2 }),
     rubberFine: new THREE.MeshStandardMaterial({ color: '#131416', roughness: .78, bumpMap: ribsFine, bumpScale: 1.6 }),
@@ -464,15 +550,20 @@ function build() {
   add(mount, new THREE.CircleGeometry(0.415, 64), M.void, [0, 0, 0.004]);
   S.sensor = add(mount, new THREE.PlaneGeometry(1, 1), M.sensor, [0, 0, 0.012]);
 
-  // pro video kit — each part keeps its own material so it can fade in on its own
-  const part = (geos, from) => { const g = new THREE.Group(); const mat = metal(); geos.forEach(([geo, pos, m]) => add(g, geo, m || mat, pos)); rig.add(g); g.userData = { from, mats: [mat] }; return g; };
+  // pro video kit: short, precise exploded-view moves; each part fades on its own material
+  const part = (geos, from, t0) => {
+    const g = new THREE.Group(); const mat = metal();
+    g.userData = { from, t0, mats: [mat], meshes: geos.map(([geo, pos, m]) => add(g, geo, m || mat, pos)) };
+    rig.add(g); return g;
+  };
+  const [k0, k1, k2, k3, k4, k5, k6] = T.kit;
   S.parts = [
-    [part([[rbox(0.08, 1.64, 0.5, 0.03), [-1.03, 0.1, -0.02]]], [-1.2, 0, 0]), 12.75],
-    [part([[rbox(0.08, 1.64, 0.5, 0.03), [1.03, 0.1, -0.02]]], [1.2, 0, 0]), 12.85],
-    [part([[rbox(2.14, 0.07, 0.68, 0.03), [0, -0.68, 0]]], [0, -0.8, 0]), 12.95],
-    [part([[rbox(2.14, 0.08, 0.5, 0.03), [0, 0.92, -0.02]]], [0, 0.9, 0]), 13.05],
-    [part([[rbox(0.07, 0.2, 0.11, 0.025), [-0.4, 1.06, 0]], [rbox(0.07, 0.2, 0.11, 0.025), [0.4, 1.06, 0]], [rbox(1.0, 0.09, 0.16, 0.045), [0, 1.19, 0]], [rbox(0.56, 0.12, 0.19, 0.055), [0, 1.19, 0], M.grip]], [0, 1.1, 0]), 13.3],
-    [part([[rbox(0.15, 0.13, 0.14, 0.03), [0, 1.31, 0.05]], [cyl(0.075, -0.3, 0.6), [0, 1.45, 0], M.lensBody], [cyl(0.078, 0.34, 0.6), [0, 1.45, 0], M.rubberFine], [cyl(0.071, -0.35, -0.3), [0, 1.45, 0], M.silver]], [0, 0.9, 0.7]), 13.55],
+    part([[rbox(0.08, 1.64, 0.5, 0.03), [-1.03, 0.1, -0.02]]], [-1.2, 0, 0], k0),
+    part([[rbox(0.08, 1.64, 0.5, 0.03), [1.03, 0.1, -0.02]]], [1.2, 0, 0], k1),
+    part([[rbox(2.14, 0.07, 0.68, 0.03), [0, -0.68, 0]]], [0, -0.8, 0], k2),
+    part([[rbox(2.14, 0.08, 0.5, 0.03), [0, 0.92, -0.02]]], [0, 0.9, 0], k3),
+    part([[rbox(0.07, 0.2, 0.11, 0.025), [-0.4, 1.06, 0]], [rbox(0.07, 0.2, 0.11, 0.025), [0.4, 1.06, 0]], [rbox(1.0, 0.09, 0.16, 0.045), [0, 1.19, 0]], [rbox(0.56, 0.12, 0.19, 0.055), [0, 1.19, 0], M.grip]], [0, 1.1, 0], k4),
+    part([[rbox(0.15, 0.13, 0.14, 0.03), [0, 1.31, 0.05]], [cyl(0.075, -0.3, 0.6), [0, 1.45, 0], M.lensBody], [cyl(0.078, 0.34, 0.6), [0, 1.45, 0], M.rubberFine], [cyl(0.071, -0.35, -0.3), [0, 1.45, 0], M.silver]], [0, 0.9, 0.7], k5),
   ];
   // monitor on an arm, screen turned toward camera-right
   const mon = new THREE.Group();
@@ -480,12 +571,13 @@ function build() {
   add(mon, cyl(0.024, 0, 0.44).rotateY(Math.PI / 2).rotateZ(0.62), monMat, [1.03, 0.93, 0]);
   add(mon, new THREE.SphereGeometry(0.055, 24, 16), monMat, [1.38, 1.18, 0]);
   const screenFrame = new THREE.Group(); screenFrame.position.set(1.74, 1.3, 0.08); screenFrame.rotation.set(-0.08, -0.5, 0); mon.add(screenFrame);
-  add(screenFrame, rbox(0.94, 0.62, 0.08, 0.05), new THREE.MeshPhysicalMaterial({ color: '#1A1B1E', roughness: .5, clearcoat: .4, transparent: true }));
+  const frameMat = new THREE.MeshPhysicalMaterial({ color: '#1A1B1E', roughness: .5, clearcoat: .4, transparent: true });
+  S.monFrame = add(screenFrame, rbox(0.94, 0.62, 0.08, 0.05), frameMat);
   S.screenMat = new THREE.MeshBasicMaterial({ map: screenTexture(), toneMapped: false, transparent: true });
   add(screenFrame, new THREE.PlaneGeometry(0.84, 0.525), S.screenMat, [0, 0, 0.041]);
-  mon.userData = { from: [1.3, 0.5, 0.4], mats: [monMat, screenFrame.children[0].material, S.screenMat] };
+  mon.userData = { from: [1.3, 0.5, 0.4], t0: k6, mats: [monMat, frameMat, S.screenMat] };
   rig.add(mon);
-  S.parts.push([mon, 13.85]);
+  S.parts.push(mon);
 
   // the zoom lens
   const lens = S.lens = new THREE.Group(); front.add(lens);
@@ -493,11 +585,11 @@ function build() {
   add(lens, cyl(0.47, 0.07, 0.42), M.lensBody);
   add(lens, cyl(0.492, 0.15, 0.4), M.rubber);
   add(lens, new THREE.TorusGeometry(0.49, 0.004, 8, 160), M.accent, [0, 0, 0.43]);
-  S.inner = add(lens, cyl(0.44, 0.0, 0.48), M.lensBody, [0, 0, 0.0]);
+  S.inner = add(lens, cyl(0.44, 0.0, 0.48), M.lensBody);
   const lf = S.lensFront = new THREE.Group(); lens.add(lf);
   add(lf, cyl(0.5, 0, 0.17), M.rubberFine);
   add(lf, cyl(0.52, 0.17, 0.31), M.lensBody);
-  add(lf, new THREE.RingGeometry(0.4, 0.52, 160), M.ring, [0, 0, 0.311]);
+  S.lensRing = add(lf, new THREE.RingGeometry(0.4, 0.52, 160), M.ring, [0, 0, 0.311]);
   add(lf, new THREE.CircleGeometry(0.4, 64), M.depth, [0, 0, 0.24]);
   add(lf, new THREE.TorusGeometry(0.3, 0.01, 8, 96), M.flange, [0, 0, 0.245]);
   add(lf, new THREE.TorusGeometry(0.19, 0.008, 8, 96), M.flange, [0, 0, 0.245]);
@@ -507,36 +599,57 @@ function build() {
   const paper = new THREE.MeshStandardMaterial({ color: '#EEEDEA', roughness: .7 });
   const card = (kind, seed, emissive = 0) => {
     const map = photoTexture(kind, seed);
-    const front = new THREE.MeshStandardMaterial({ map, roughness: .55, transparent: true, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: emissive });
+    const face = new THREE.MeshStandardMaterial({ map, roughness: .55, transparent: true, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: emissive });
     const edge = paper.clone(); edge.transparent = true;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.74, 0.008), [edge, edge, edge, edge, front, edge]);
-    m.userData.mats = [front, edge];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.74, 0.008), [edge, edge, edge, edge, face, edge]);
+    m.userData.mats = [face, edge];
     world.add(m);
     return m;
   };
   S.photos = [
-    { m: card('sea', 21), t0: 2.2, to: [-0.55, 1.12, -0.35], rot: [0.02, 0.12, 0.09] },
-    { m: card('friends', 33), t0: 2.75, to: [1.22, 0.95, 0.05], rot: [0.03, -0.3, -0.07] },
-    { m: card('peak', 47), t0: 3.3, to: [1.55, -0.3, 0.75], rot: [0.06, -0.48, 0.05] },
+    { m: card('sea', 21), t0: T.photos[0], to: [-0.55, 1.12, -0.35], rot: [0.02, 0.12, 0.09] },
+    { m: card('friends', 33), t0: T.photos[1], to: [1.22, 0.95, 0.05], rot: [0.03, -0.3, -0.07] },
+    { m: card('peak', 47), t0: T.photos[2], to: [1.55, -0.3, 0.75], rot: [0.06, -0.48, 0.05] },
   ];
   S.endPhoto = card('sea', 21, 0.28);
 
-  // review screens on a slowly turning shell
-  const tones = [['#30333A', '#15171B'], ['#3B3E45', '#1C1E22'], ['#282B31', '#111316'], ['#35383F', '#191B1F']];
-  const ptex = [0, 1, 2, 3, 4, 5].map((i) => panelTexture([1, .86, .62, 1, .94, .4][i], tones[i % 4], 100 + i));
+  // review screens on a slowly turning shell, each one arguing for a spec
+  const ptex = REVIEWS.map((_, i) => panelTexture(i));
   const swarm = S.swarm = new THREE.Group(); world.add(swarm);
   const N = 46, r = rng(5);
   S.panels = [];
   for (let i = 0; i < N; i++) {
     const y = 1 - (2 * (i + 0.5)) / N, rad = Math.sqrt(1 - y * y), th = i * 2.399963;
     const dir = new THREE.Vector3(Math.cos(th) * rad, y * 0.72, Math.sin(th) * rad).normalize();
-    const mat = new THREE.MeshStandardMaterial({ map: ptex[i % 6], transparent: true, side: THREE.DoubleSide, roughness: .22, metalness: .1, depthWrite: false, emissive: '#ffffff', emissiveMap: ptex[i % 6], emissiveIntensity: .1 });
+    const map = ptex[i % ptex.length];
+    const mat = new THREE.MeshStandardMaterial({ map, transparent: true, side: THREE.DoubleSide, roughness: .22, metalness: .1, depthWrite: false, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: .1 });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.349), mat);
     swarm.add(m);
     S.panels.push({ m, mat, dir, R: 2.2 + r() * 0.45, t0: 5.0 + 2.5 * ((i + 1) / N) ** 0.62, a0: 7.7 + 0.55 * r(), spin: (r() - 0.5) * 0.3 });
   }
   S.allMats = [];
   scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { if (!S.allMats.includes(m)) S.allMats.push(m); }); });
+
+  // callouts: [mesh, local anchor, screen offset, label, value, in, out]
+  const [, cageR, , , handle, mic] = S.parts;
+  S.callouts = [
+    { mesh: S.sensor, at: [0.5, 0.5, 0], dx: 70, dy: -70, name: 'APS-C', val: '23.5 × 15.6 mm', tin: 10.6, tout: 11.95, rect: true },
+    { mesh: cageR.userData.meshes[0], at: [0, -0.62, 0.25], dx: 80, dy: 56, name: '兔笼', val: '+186 g', tin: k1 + 0.55, tout: T.r2Out - 0.15 },
+    { mesh: handle.userData.meshes[2], at: [-0.5, 0.03, 0.08], dx: -80, dy: -46, name: '提手', val: '+118 g', tin: k4 + 0.55, tout: T.r2Out - 0.15 },
+    { mesh: mic.userData.meshes[1], at: [0, 0.07, 0.45], dx: 70, dy: -64, name: '麦克风', val: '+92 g', tin: k5 + 0.55, tout: T.r2Out - 0.15 },
+    { mesh: S.monFrame, at: [0.2, -0.31, 0.04], dx: 34, dy: 76, name: '监视器', val: '5.5″ · +344 g', tin: k6 + 0.55, tout: T.r2Out - 0.15 },
+    { mesh: S.lensRing, at: [0, -0.5, 0], dx: -90, dy: 70, name: '滤镜口径', val: 'Ø82 mm', tin: T.ext + 0.5, tout: T.r3Out - 0.1 },
+  ];
+  const svg = $('callouts'), NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); parent.appendChild(e); return e; };
+  for (const c of S.callouts) {
+    c.g = el('g', { opacity: 0 }, svg);
+    if (c.rect) c.rectPath = el('path', { class: 'rect' }, c.g);
+    c.path = el('path', { pathLength: 1 }, c.g);
+    c.dot = el('circle', { r: 3 }, c.g);
+    c.nameEl = el('text', { class: 'c-name' }, c.g); c.nameEl.textContent = c.name;
+    c.valEl = el('text', { class: 'c-val' }, c.g); c.valEl.textContent = c.val;
+  }
   built = true;
 }
 
@@ -547,9 +660,10 @@ const KEYS = [
   [7.4, -0.05, 0.2, 9.4, 0.05, 0.1, 0.0],
   [9.2, -0.25, 0.1, 6.0, 0.1, 0.05, 0.0],
   [11.9, 0.04, 0.03, 4.1, 0.16, 0.04, 0.3],
-  [13.9, 0.62, 0.22, 7.2, 0.42, 0.33, 0.0],
-  [17.9, 0.36, 0.12, 7.0, 0.35, 0.28, 0.45],
-  [21.0, 0.2, 0.1, 8.2, 0.38, 0.3, 0.3],
+  [13.6, 0.62, 0.22, 7.2, 0.42, 0.33, 0.0],
+  [16.0, 0.5, 0.18, 7.0, 0.4, 0.3, 0.2],
+  [18.9, 0.36, 0.12, 7.0, 0.35, 0.28, 0.45],
+  [23.0, 0.2, 0.1, 8.2, 0.38, 0.3, 0.3],
 ];
 // monotone cubic through the keys, so moves never stop dead or overshoot
 function camAt(t) {
@@ -570,33 +684,43 @@ function camAt(t) {
   return out;
 }
 
-// ---------- copy ----------
-const copy = {
-  t1: $('t1'), t2: $('t2'), t3: $('t3'), cnt: $('cnt'), t4: $('t4'),
-  items: ['i1', 'i2', 'i3'].map((id) => ({ ln: $(id).children[0], sub: $(id).children[1] })),
-  rule: $('rule'), budget: $('budget'), cntN: $('cntN'), cntT: $('cntT'), bVal: $('bVal'), bKg: $('bKg'),
+// ---------- data blocks ----------
+const blockOf = (id, tin, tout) => {
+  const root = $(id);
+  return { tin, tout, eb: root.querySelector('.eb'), hero: root.querySelector('.hero'), hair: root.querySelector('.hair'), rows: [...root.querySelectorAll('.row')] };
 };
-function lineAt(el, t, t0, tOut = Infinity, dim = 1) {
-  const k = P(t, t0, 1.0, E.out4), o = P(t, tOut, 0.45, E.in);
-  el.style.opacity = k * (1 - o) * dim;
-  el.style.transform = `translateY(${((1 - k) * 18 - o * 10).toFixed(2)}px)`;
-  el.style.letterSpacing = `${lerp(0.24, 0.1, k).toFixed(3)}em`;
-  const b = (1 - k) * 6 + o * 4;
+const BLOCKS = [
+  blockOf('bIntro', T.intro, T.introOut),
+  blockOf('bReview', T.review, T.reviewOut),
+  blockOf('bR1', T.r1, T.r1Out),
+  blockOf('bR2', T.r2, T.r2Out),
+  blockOf('bR3', T.r3, T.r3Out),
+  blockOf('bEnd', T.endBlock, Infinity),
+];
+function show(el, t, t0, o, dy) {
+  const k = P(t, t0, 0.9, E.out4);
+  el.style.opacity = (k * (1 - o)).toFixed(3);
+  el.style.transform = `translateY(${((1 - k) * dy - o * 12).toFixed(2)}px)`;
+  const b = (1 - k) * 6 + o * 5;
   el.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : '';
 }
-function subAt(el, t, t0, tOut = Infinity, dim = 1) {
-  const k = P(t, t0, 0.8, E.out4), o = P(t, tOut, 0.4, E.in);
-  el.style.opacity = k * (1 - o) * dim;
-  el.style.transform = `translateX(${((1 - k) * -12).toFixed(2)}px)`;
+function blockAt(b, t) {
+  const o = P(t, b.tout, 0.5, E.in);
+  show(b.eb, t, b.tin, o, 10);
+  show(b.hero, t, b.tin + 0.12, o, 26);
+  const h = P(t, b.tin + 0.3, 0.9, E.io);
+  b.hair.style.opacity = (0.4 * h * (1 - o)).toFixed(3);
+  b.hair.style.transform = `scaleX(${h.toFixed(3)})`;
+  b.rows.forEach((r, i) => show(r, t, r.dataset.at ? parseFloat(r.dataset.at) : b.tin + 0.45 + i * 0.14, o, 10));
 }
 const setText = (node, s) => { if (node.textContent !== s) node.textContent = s; };
+const D = {
+  introShots: $('introShots'), reviewN: $('reviewN'), reviewTime: $('reviewTime'), reviewSaved: $('reviewSaved'),
+  mp: $('mp'), res: $('res'), fstop: $('fstop'), ratio: $('ratio'), ledger: $('ledger'), ledgerVal: $('ledgerVal'), fade: $('fade'),
+};
 
-const dims = { root: $('dims'), rect: $('dRect'), lead: $('dLead'), name: $('dName'), size: $('dSize') };
 const v3 = new THREE.Vector3();
 const toScreen = (obj, x, y, z) => { v3.set(x, y, z).applyMatrix4(obj.matrixWorld).project(cam); return [(v3.x + 1) * W / 2, (1 - v3.y) * H / 2]; };
-
-const PRICE = [[10.9, 0.7, 14999], [13.9, 0.7, 22300], [16.6, 0.8, 36800]];
-const WEIGHT = [[10.9, 0.7, 0.74], [13.9, 0.7, 1.46], [16.6, 0.8, 2.36]];
 const porcelain = new THREE.Color('#E9E8E5'), graphite = new THREE.Color('#2A2C30');
 const compactScale = [1.45 / 1.9, 0.86 / 1.18, 0.42 / 0.6];
 
@@ -604,9 +728,9 @@ const compactScale = [1.45 / 1.9, 0.86 / 1.18, 0.42 / 0.6];
 function render(t) {
   t = clamp(t, 0, DUR);
   if (!built) return;
-  const dk = P(t, 7.4, 1.4, E.io); // light studio → dark studio
+  const dk = P(t, T.dark, 1.4, E.io); // light studio → dark studio
 
-  // backdrop and copy colours follow the studio
+  // backdrop and type colours follow the studio
   stage.style.background = `radial-gradient(ellipse 70% 90% at 62% 44%, ${mix('#F3F4F5', '#2A2D32', dk)} 0%, ${mix('#D2D5D9', '#0A0B0D', dk)} 100%)`;
   stage.style.setProperty('--tx', mix('#1C1E22', '#ECEDEF', dk));
   stage.style.setProperty('--mu', mix('#6E737B', '#8C9198', dk));
@@ -627,59 +751,59 @@ function render(t) {
   cam.position.set(tx + dist * Math.sin(az) * Math.cos(el), ty + dist * Math.sin(el), tz + dist * Math.cos(az) * Math.cos(el));
   cam.lookAt(tx, ty, tz);
 
-  // rig drift
+  // rig drift: a 3/4 view early, square to camera for the sensor
   const rig = S.rig;
   rig.rotation.y = lerp(0.42, 0.18, P(t, 0, 8, E.io)) * (1 - P(t, 9.4, 2.4, E.io)) + 0.04 * Math.sin(t * 0.42);
   rig.position.y = 0.025 * Math.sin(t * 0.9);
 
   // compact → full-frame body
-  const m = P(t, 9.5, 1.2, E.io);
+  const m = P(t, T.morph, 1.2, E.io);
   const sx = lerp(compactScale[0], 1, m), sy = lerp(compactScale[1], 1, m), sz = lerp(compactScale[2], 1, m);
   S.body.scale.set(sx, sy, sz);
   S.M.body.color.lerpColors(porcelain, graphite, m);
   S.M.body.roughness = lerp(0.32, 0.4, m);
   S.M.body.clearcoat = lerp(0.8, 0.5, m);
   const top = 0.59 * sy, frontZ = 0.3 * sz;
-  const g = P(t, 9.8, 0.9, E.out4), h = P(t, 9.95, 0.9, E.out4), dd = P(t, 10.15, 0.7, E.out4);
+  const g = P(t, T.morph + 0.3, 0.9, E.out4), h = P(t, T.morph + 0.45, 0.9, E.out4), dd = P(t, T.morph + 0.65, 0.7, E.out4);
   S.grip.visible = g > 0.001; S.grip.scale.setScalar(Math.max(g, 0.001)); S.grip.position.set(-0.95 * sx + 0.24, -0.02, 0.1 * g);
   S.hump.visible = h > 0.001; S.hump.scale.set(1, Math.max(h, 0.001), 1); S.hump.position.set(0.18 * sx, top - 0.12 + 0.12 * h, -0.02);
   for (const [d, x] of [[S.dialL, -0.6], [S.dialR, 0.66]]) { d.visible = dd > 0.001; d.scale.set(1, Math.max(dd, 0.001), 1); d.position.set(x * sx, top + 0.035 * dd, -0.06); }
   S.shutter.position.set(lerp(-0.5 * sx, -0.69, m), top + 0.025, lerp(0.05, 0.3, m));
-  const c = P(t, 9.5, 0.6, E.in);
+  const c = P(t, T.morph, 0.6, E.in);
   S.finder.visible = c < 1;
   S.finder.scale.setScalar(Math.max(1 - c, 0.001)); S.finder.position.set(-0.52 * sx, 0.26 * sy, frontZ);
   S.front.position.set(0.18 * sx, -0.04 * sy, frontZ);
   S.cLens.visible = c < 1; S.cLens.scale.set(1 - 0.35 * c, 1 - 0.35 * c, Math.max(1 - c, 0.001));
-  const mt = P(t, 9.9, 0.7, E.out4);
+  const mt = P(t, T.morph + 0.4, 0.7, E.out4);
   S.mount.visible = mt > 0.001; S.mount.scale.setScalar(Math.max(mt, 0.001));
-  const ff = P(t, 10.9, 0.8, E.io);
-  const sw = lerp(0.405, 0.62, ff), sh = lerp(0.268, 0.41, ff), so = P(t, 10.4, 0.5, E.out4);
+  const ff = P(t, T.ff, 0.8, E.io);
+  const sw = lerp(0.405, 0.62, ff), sh = lerp(0.268, 0.41, ff), so = P(t, T.sensor, 0.5, E.out4);
   S.sensor.visible = so > 0.001; S.sensor.scale.set(sw * Math.max(so, 0.001), sh * Math.max(so, 0.001), 1);
 
   // pro video kit
-  for (const [grp, t0] of S.parts) {
-    const k = P(t, t0, 0.75, E.out4), f = grp.userData.from;
+  for (const grp of S.parts) {
+    const { from: f, t0, mats } = grp.userData, k = P(t, t0, 0.75, E.out4);
     grp.visible = t >= t0;
     grp.position.set(f[0] * (1 - k), f[1] * (1 - k), f[2] * (1 - k));
-    grp.userData.mats.forEach((mm) => { mm.opacity = P(t, t0, 0.35, E.out); });
+    mats.forEach((mm) => { mm.opacity = P(t, t0, 0.35, E.out); });
   }
-  S.tally.visible = t >= 13.3;
+  S.tally.visible = t >= T.kit[4];
   S.tally.position.set(0.8, 0.42, 0.305);
-  S.M.tally.color.set(Math.floor((t - 13.3) * 2) % 2 === 0 ? '#FF3B30' : '#4A1A18');
+  S.M.tally.color.set(Math.floor((t - T.kit[4]) * 2) % 2 === 0 ? '#FF3B30' : '#4A1A18');
 
   // the lens: slides on, twists to lock, then extends
-  const la = P(t, 15.2, 0.8, E.out4), lock = P(t, 16.0, 0.35, E.out), ext = P(t, 16.6, 0.8, E.io5);
-  S.lens.visible = t >= 15.2;
+  const la = P(t, T.lens, 0.8, E.out4), lock = P(t, T.lock, 0.35, E.out), ext = P(t, T.ext, 0.8, E.io5);
+  S.lens.visible = t >= T.lens;
   S.lens.position.z = 0.1 + lerp(2.6, 0, la);
   S.lens.rotation.z = lerp(0.55, 0.32, la) * (1 - lock);
   S.lens.scale.setScalar(1 + 0.12 * ext);
   S.inner.position.z = 0.02 + 0.3 * ext;
   S.lensFront.position.z = 0.42 + 0.32 * ext;
-  const click = t > 16.3 && t < 16.8 ? Math.exp(-(t - 16.3) * 14) * Math.sin((t - 16.3) * 60) * 0.006 : 0;
-  rig.position.y += click;
+  const ck = t - (T.lock + 0.3);
+  rig.position.y += ck > 0 && ck < 0.5 ? Math.exp(-ck * 14) * Math.sin(ck * 60) * 0.006 : 0;
 
   // floor shadow grows with the kit
-  const kit = P(t, 12.75, 1.8, E.io), lensK = P(t, 15.2, 1.0, E.io);
+  const kit = P(t, T.kit[0], 1.8, E.io), lensK = P(t, T.lens, 1.0, E.io);
   S.shadow.scale.set(lerp(2.3, 3.0, m) + 0.9 * kit + 0.2 * lensK, lerp(1.0, 1.4, m) + 0.25 * kit + 0.6 * lensK, 1);
   S.shadow.position.set(0.15 + 0.35 * kit, -1.08, 0.1 + 0.25 * lensK);
   S.shadow.material.opacity = lerp(0.85, 0.55, dk);
@@ -696,7 +820,7 @@ function render(t) {
     p.m.userData.mats.forEach((mm) => { mm.opacity = clamp((t - p.t0) / 0.15) * (1 - out); });
   });
 
-  // review screens
+  // review screens arrive from outside, settle on the shell, then get pulled into the camera
   S.swarm.position.set(0.45, 0.15, 0);
   S.swarm.rotation.set(0.12, 0.2 * (t - 5), 0);
   for (const p of S.panels) {
@@ -708,61 +832,57 @@ function render(t) {
     p.m.lookAt(p.m.position.x * 2, p.m.position.y * 2, p.m.position.z * 2);
     p.m.rotateZ(p.spin * (1 - k));
     p.m.scale.setScalar(Math.max(k * (1 - a), 0.001));
-    p.mat.opacity = clamp((t - p.t0) / 0.2) * 0.92;
-    p.mat.emissiveIntensity = 0.04 + 0.55 * dk;
+    p.mat.opacity = clamp((t - p.t0) / 0.2) * 0.94;
+    p.mat.emissiveIntensity = 0.06 + 0.55 * dk;
   }
 
-  // closing shot: the first snapshot comes back
-  const ek = P(t, 18.1, 1.9, E.out4);
-  S.endPhoto.visible = t >= 18.1;
+  // closing shot: the first snapshot comes back, framed in camera space so it always lands lower right
+  const ek = P(t, T.end, 1.9, E.out4);
+  S.endPhoto.visible = t >= T.end;
   if (S.endPhoto.visible) {
     cam.updateMatrixWorld();
     S.endPhoto.position.copy(cam.localToWorld(v3.set(lerp(1.05, 0.78, ek), lerp(-1.5, -0.5, ek) + Math.sin(t * 1.1) * 0.01, -4.3)));
     S.endPhoto.quaternion.copy(cam.quaternion);
     S.endPhoto.rotateX(lerp(-0.5, -0.06, ek)); S.endPhoto.rotateY(lerp(-0.7, -0.22, ek)); S.endPhoto.rotateZ(lerp(-0.3, 0.07, ek));
-    S.endPhoto.userData.mats.forEach((mm) => { mm.opacity = clamp((t - 18.1) / 0.3); });
+    S.endPhoto.userData.mats.forEach((mm) => { mm.opacity = clamp((t - T.end) / 0.3); });
   }
 
-  // copy ---------------------------------------------------------------
-  lineAt(copy.t1, t, 0.6, 4.6);
-  lineAt(copy.t2, t, 1.6, 4.68);
-  lineAt(copy.t3, t, 5.0, 7.5);
-  subAt(copy.cnt, t, 5.4, 7.45);
+  // data -----------------------------------------------------------------
+  for (const b of BLOCKS) blockAt(b, t);
+  setText(D.introShots, `${T.photos.filter((p) => t >= p).length || 1} 张`);
   const n = Math.round(47 * P(t, 5.05, 2.4, (k) => k ** 1.6)), secs = n * 1049;
-  setText(copy.cntN, String(n));
-  setText(copy.cntT, `${pad(Math.floor(secs / 3600))}:${pad(Math.floor(secs / 60) % 60)}:${pad(secs % 60)}`);
-  lineAt(copy.t4, t, 8.7);
-  const starts = [9.5, 12.1, 15.1];
-  copy.items.forEach((it, i) => {
-    const next = starts[i + 1] ?? 18.4;
-    const dim = lerp(1, 0.5, P(t, next, 0.8, E.io));
-    lineAt(it.ln, t, starts[i], Infinity, dim);
-    subAt(it.sub, t, starts[i] + 0.45, Infinity, dim);
-  });
-  const bi = P(t, 10.2, 0.9, E.out4);
-  copy.rule.style.opacity = bi * 0.5; copy.rule.style.transform = `scaleX(${bi})`;
-  subAt(copy.budget, t, 10.4);
+  setText(D.reviewN, String(n));
+  setText(D.reviewTime, `${pad(Math.floor(secs / 3600))}:${pad(Math.floor(secs / 60) % 60)}:${pad(secs % 60)}`);
+  setText(D.reviewSaved, `${Math.round(126 * P(t, 5.3, 2.2, (k) => k ** 1.4))} 条对比视频`);
+  setText(D.mp, String(Math.round(lerp(2420, 6000, P(t, T.ff - 0.3, 1.2, E.io)) / 10) * 10));
+  setText(D.res, t < T.kit[1] ? '4K' : t < T.kit[4] ? '6K' : '8K');
+  setText(D.fstop, t < T.lens + 0.35 ? 'F5.6' : t < T.lock ? 'F4' : 'F2.8');
+  setText(D.ratio, `×${lerp(1, 16.3, P(t, T.endBlock + 0.3, 1.4, E.io)).toFixed(1)}`);
   let price = 2999, kg = 0.32;
-  for (const [a, d, to] of PRICE) price = lerp(price, to, P(t, a, d, E.io));
-  for (const [a, d, to] of WEIGHT) kg = lerp(kg, to, P(t, a, d, E.io));
-  setText(copy.bVal, money(price)); setText(copy.bKg, kg.toFixed(2));
-
-  $('fade').style.opacity = P(t, 20.3, 0.7, E.io);
+  for (const [a, d, p, w] of LEDGER) { const k = P(t, a, d, E.io); price = lerp(price, p, k); kg = lerp(kg, w, k); }
+  setText(D.ledgerVal, `${money(price)} · ${kg.toFixed(2)} kg`);
+  show(D.ledger, t, T.r1 + 0.8, P(t, T.r3Out, 0.5, E.in), 8);
+  D.fade.style.opacity = P(t, T.fade, 0.7, E.io);
 
   renderer.render(scene, cam);
 
-  // sensor callout, projected from 3D after the frame is laid out
-  const dOn = P(t, 10.6, 0.5) * (1 - P(t, 12.6, 0.5));
-  dims.root.style.opacity = dOn;
-  if (dOn > 0) {
-    const s = S.sensor, pts = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(([x, y]) => toScreen(s, x, y, 0));
-    dims.rect.setAttribute('d', 'M' + pts.map((p) => p.map((v) => v.toFixed(1)).join(' ')).join(' L') + ' Z');
-    const [ax, ay] = pts[2], bx = ax + 70, by = ay - 70, cx = bx + 200;
-    dims.lead.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)} L${bx.toFixed(1)} ${by.toFixed(1)} L${cx.toFixed(1)} ${by.toFixed(1)}`);
-    dims.name.setAttribute('x', bx); dims.name.setAttribute('y', by - 44);
-    dims.size.setAttribute('x', bx); dims.size.setAttribute('y', by - 14);
-    setText(dims.name, ff < 0.5 ? 'APS-C' : '全画幅');
-    setText(dims.size, ff >= 1 ? '36 × 24 mm' : `${lerp(23.5, 36, ff).toFixed(1)} × ${lerp(15.6, 24, ff).toFixed(1)} mm`);
+  // callouts, projected from 3D after the frame is laid out
+  for (const c of S.callouts) {
+    const on = P(t, c.tin, 0.5) * (1 - P(t, c.tout, 0.45, E.in));
+    c.g.setAttribute('opacity', on.toFixed(3));
+    if (on <= 0) continue;
+    if (c.rect) {
+      const pts = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(([x, y]) => toScreen(c.mesh, x, y, 0));
+      c.rectPath.setAttribute('d', 'M' + pts.map((p) => p.map((v) => v.toFixed(1)).join(' ')).join(' L') + ' Z');
+      setText(c.nameEl, ff < 0.5 ? 'APS-C' : '全画幅');
+      setText(c.valEl, ff >= 1 ? '36 × 24 mm' : `${lerp(23.5, 36, ff).toFixed(1)} × ${lerp(15.6, 24, ff).toFixed(1)} mm`);
+    }
+    const [ax, ay] = toScreen(c.mesh, ...c.at), ex = ax + c.dx, ey = ay + c.dy, dir = Math.sign(c.dx), tail = 150 * dir;
+    c.path.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)} L${(ex + tail).toFixed(1)} ${ey.toFixed(1)}`);
+    c.path.style.strokeDashoffset = (1 - P(t, c.tin, 0.7, E.io)).toFixed(3);
+    c.dot.setAttribute('cx', ax.toFixed(1)); c.dot.setAttribute('cy', ay.toFixed(1));
+    const lx = dir > 0 ? ex + 4 : ex - 4, anchor = dir > 0 ? 'start' : 'end';
+    for (const [node, y] of [[c.nameEl, ey - 40], [c.valEl, ey - 12]]) { node.setAttribute('x', lx.toFixed(1)); node.setAttribute('y', y.toFixed(1)); node.setAttribute('text-anchor', anchor); }
   }
 }
 

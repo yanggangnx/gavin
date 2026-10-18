@@ -6,7 +6,7 @@
 //   node render.mjs                         → out/yaoqiu-yueduo.mp4 (30 fps)
 //   node render.mjs --fps 60 --out a.mp4    → 60 fps to a.mp4
 //   node render.mjs --from 9 --to 12        → render only 9s–12s
-//   node render.mjs --still 19.6            → one PNG of the frame at 19.6s
+//   node render.mjs --still 21.6            → one PNG of the frame at 21.6s
 //   node render.mjs --format png            → lossless PNG frames (slower; default is JPEG q95)
 //
 // Needs ffmpeg on PATH (or set FFMPEG=/path/to/ffmpeg).

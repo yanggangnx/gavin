@@ -2,11 +2,11 @@
   "name": "yaoqiu-yueduo",
   "version": "1.0.0",
   "private": true,
-  "description": "要求越多：用网页 3D 逐帧渲染的 16:9 动效短片",
+  "description": "要求越多：用网页 3D 逐帧渲染、用数据讲故事的 16:9 动效短片",
   "type": "module",
   "scripts": {
     "render": "node render.mjs",
-    "still": "node render.mjs --still 19.6",
+    "still": "node render.mjs --still 21.6",
     "preview": "npx serve ."
   },
   "devDependencies": {
