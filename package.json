@@ -7,7 +7,9 @@
   "scripts": {
     "render": "node render.mjs",
     "still": "node render.mjs --still 21.6",
-    "preview": "npx serve ."
+    "preview": "npx serve .",
+    "render:s5": "node render.mjs --page s5/index.html --out out/s5-sample.mp4",
+    "still:s5": "node render.mjs --page s5/index.html --still 4.9 --out out/s5-still.png"
   },
   "devDependencies": {
     "playwright": "1.56.1"

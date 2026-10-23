@@ -8,6 +8,7 @@
 //   node render.mjs --from 9 --to 12        → render only 9s–12s
 //   node render.mjs --still 21.6            → one PNG of the frame at 21.6s
 //   node render.mjs --format png            → lossless PNG frames (slower; default is JPEG q95)
+//   node render.mjs --samples 4             → passed to the page as ?samples=4 (pages that accumulate samples)
 //
 // Needs ffmpeg on PATH (or set FFMPEG=/path/to/ffmpeg).
 
@@ -22,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const opts = { fps: 30, out: null, still: null, from: 0, to: null, crf: 18, format: 'jpeg', page: 'index.html' };
+const opts = { fps: 30, out: null, still: null, from: 0, to: null, crf: 18, format: 'jpeg', page: 'index.html', samples: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   const m = argv[i].match(/^--([^=]+)(?:=(.*))?$/);
@@ -33,7 +34,7 @@ for (let i = 0; i < argv.length; i++) {
     console.error(`未知参数 --${key}`);
     process.exit(1);
   }
-  opts[key] = ['fps', 'still', 'from', 'to', 'crf'].includes(key) ? Number(val) : val;
+  opts[key] = ['fps', 'still', 'from', 'to', 'crf', 'samples'].includes(key) ? Number(val) : val;
 }
 
 // ES modules (three.js) do not load from file://, so serve the folder locally.
@@ -77,7 +78,7 @@ const browser = await launch();
 try {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   page.on('pageerror', (err) => console.error(`页面错误：${err.message}`));
-  await page.goto(`${base}${opts.page}?render`, { waitUntil: 'networkidle' });
+  await page.goto(`${base}${opts.page}?render${opts.samples ? `&samples=${opts.samples}` : ''}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__motion, null, { timeout: 60000 });
   await page.evaluate(() => window.__motion.ready);
   const { duration, width, height } = await page.evaluate(() => {

@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LUMIX S5 扫光</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
+<script type="importmap">
+{ "imports": { "three": "../node_modules/three/build/three.module.js", "three/addons/": "../node_modules/three/examples/jsm/" } }
+</script>
+<style>
+/* Layout: a 1920×1080 stage scaled to the column width, controls under it, shot list and export notes below. */
+:root {
+  --bg: #ECEDEE; --surface: #F7F7F8; --fg: #17191C; --muted: #696E76; --line: #D6D8DB;
+  --accent: #17191C; --accent-fg: #F7F7F8; --soft: rgba(23, 25, 28, .05); --shadow: rgba(16, 18, 22, .25);
+  --f-text: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0F11; --surface: #16181B; --fg: #E8E9EB; --muted: #8B9097; --line: #25282C;
+    --accent: #E8E9EB; --accent-fg: #0E0F11; --soft: rgba(232, 233, 235, .06); --shadow: rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E0F11; --surface: #16181B; --fg: #E8E9EB; --muted: #8B9097; --line: #25282C;
+  --accent: #E8E9EB; --accent-fg: #0E0F11; --soft: rgba(232, 233, 235, .06); --shadow: rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-text); font-size: 15px; line-height: 1.7; }
+
+.app {
+  max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.top h1 { margin: 0; font: 600 24px/1.2 var(--f-text); letter-spacing: .06em; }
+.meta { margin: 0; font: 400 12px/1.4 var(--f-mono); letter-spacing: .06em; color: var(--muted); }
+.viewer { display: flex; flex-direction: column; gap: 12px; align-items: center; min-width: 0; }
+.stage-box { position: relative; overflow: hidden; border-radius: 10px; background: #000; box-shadow: 0 40px 80px -48px var(--shadow), 0 0 0 1px var(--line); }
+.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: #000; }
+#gl { position: absolute; inset: 0; width: 1920px; height: 1080px; display: block; }
+.gl-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #E8E9EB; }
+
+.controls { display: flex; align-items: center; gap: 14px; width: 100%; }
+.btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; min-width: 82px; padding: 0 14px;
+  border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-fg); font: 600 13px/1 var(--f-text); letter-spacing: .06em; cursor: pointer;
+}
+.btn svg { width: 12px; height: 12px; }
+.btn.ghost { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+#scrub { flex: 1; min-width: 0; accent-color: var(--fg); }
+.clock { flex: none; font: 400 12px/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.btn:focus-visible, .shots button:focus-visible, #scrub:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+.notes { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; padding-top: 12px; }
+.notes h2 { margin: 0 0 12px; font: 400 12px/1 var(--f-mono); letter-spacing: .14em; color: var(--muted); }
+.shots { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.shots li { border-bottom: 1px solid var(--line); }
+.shots button {
+  width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; padding: 11px 8px; border: 0; border-radius: 6px;
+  background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit;
+}
+.shots button:hover, .shots li.on button { background: var(--soft); }
+.shots .st { grid-row: span 2; font: 400 12px/2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.shots .sc { font-weight: 600; }
+.shots .sd { font-size: 13px; line-height: 1.6; color: var(--muted); }
+.notes p { margin: 0 0 14px; color: var(--muted); max-width: 60ch; }
+.notes code, .notes pre { font-family: var(--f-mono); font-size: 13px; }
+.notes pre { margin: 0 0 14px; padding: 14px 16px; overflow-x: auto; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); line-height: 1.8; }
+@media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
+
+/* render mode: just the stage, 1:1 */
+html.render, html.render body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+html.render .app { display: block; max-width: none; padding: 0; }
+html.render .top, html.render .notes, html.render .controls { display: none; }
+html.render .stage-box { width: 1920px; height: 1080px; border-radius: 0; box-shadow: none; }
+html.render .stage { transform: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>LUMIX S5 · 扫光快剪样片</h1>
+    <p class="meta">16:9 · 1920 × 1080 · 30 FPS · 6 秒 · WebGL 逐帧渲染</p>
+  </header>
+
+  <main class="viewer" aria-label="样片预览">
+    <div class="stage-box" id="stageBox">
+      <div class="stage" id="stage" aria-hidden="true"><canvas id="gl" width="1920" height="1080"></canvas></div>
+    </div>
+    <div class="controls" id="controls">
+      <button class="btn" id="btnPlay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path id="playIcon" d="M2.5 1 L11 6 L2.5 11Z" fill="currentColor"/></svg><span id="playLabel">播放</span></button>
+      <input id="scrub" type="range" min="0" max="6" step="0.001" value="0" aria-label="时间">
+      <span class="clock" id="clock">00:00.0 / 00:06.0</span>
+      <button class="btn ghost" id="btnHQ" type="button" title="暂停时用成片的采样数重画当前帧">高质量</button>
+    </div>
+  </main>
+
+  <section class="notes">
+    <div>
+      <h2>分镜</h2>
+      <ol class="shots" id="shots">
+        <li><button type="button" data-t="0"><span class="st">0:00.0</span><span class="sc">卡口特写</span><span class="sd">镜头贴着 L 卡口推进，一道竖光从左扫到右，传感器泛出虹彩</span></button></li>
+        <li><button type="button" data-t="1.5"><span class="st">0:01.5</span><span class="sc">LUMIX 字标</span><span class="sd">低机位仰拍取景器前脸，斜向光带扫过镀铬字母</span></button></li>
+        <li><button type="button" data-t="2.7"><span class="st">0:02.7</span><span class="sc">顶部转盘</span><span class="sd">从机背上方俯拍，模式转盘拨三档，顶光从后往前扫过拉丝金属</span></button></li>
+        <li><button type="button" data-t="3.9"><span class="st">0:03.9</span><span class="sc">整机</span><span class="sd">四分之三前侧全景缓慢环绕，轮廓光沿机身边缘走一圈后收黑</span></button></li>
+      </ol>
+    </div>
+    <div>
+      <h2>导出 MP4</h2>
+      <p>机身是按 132.6 × 97.1 × 81.9 mm 和参考照片用代码搭出来的；LUMIX、S5、转盘字符和按键标注是从照片里提取的丝印。每一帧都由时间 <code>t</code> 算出，导出时每帧叠加多次采样，得到运动模糊、景深和柔和阴影。</p>
+<pre>npm install
+node s5/tools/prepare.py   # 重新生成贴图（已生成可跳过）
+npm run render:s5          # → out/s5-sample.mp4</pre>
+      <p>键盘：空格播放/暂停，← → 逐帧，Shift + ← → 跳 1 秒。</p>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { TexturePass } from 'three/addons/postprocessing/TexturePass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const W = 1920, H = 1080, FPS = 30, DUR = 6, POSTER = 4.9;
+const RENDER = document.documentElement.classList.contains('render');
+const SAMPLES = Number(new URLSearchParams(location.search).get('samples')) || 16; // per frame when exporting
+const SHUTTER = 0.5; // fraction of a frame the shutter stays open (180°)
+const $ = (s) => document.getElementById(s);
+
+// ---------- timing helpers ----------
+const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, k) => a + (b - a) * k;
+const DEG = Math.PI / 180;
+const E = {
+  out: (k) => 1 - (1 - k) ** 3,
+  out4: (k) => 1 - (1 - k) ** 4,
+  io: (k) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2),
+  sine: (k) => 0.5 - 0.5 * Math.cos(Math.PI * k),
+};
+const P = (t, t0, d, e = E.out) => e(clamp((t - t0) / d));
+const pad = (n) => String(n).padStart(2, '0');
+
+// ---------- camera dimensions, in millimetres (front face of the body at z = 0, +z towards the subject) ----------
+const BW = 66.3;           // half width
+const DEPTH = 44;          // body depth without grip / eyecup
+const TOP = 74.9;          // shoulder height
+const LEATHER = [5.4, 66.3];
+const MOUNT = [18.4, 40.1];
+const HUMP = { cx: 18.3, base: 22.6, top: 17.75, y0: 74.9, y1: 90.7 };
+const DECK_LOW = 75.6; // grip top behind the WB/ISO platform
+
+// ---------- renderer ----------
+const canvas = $('gl');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+} catch (err) {
+  const d = document.createElement('div'); d.className = 'gl-error'; d.textContent = '这个浏览器无法使用 WebGL，3D 画面显示不出来。'; $('stageBox').appendChild(d);
+  throw err;
+}
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.autoClear = false;
+renderer.setClearColor(0x000000, 1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(28, W / H, 0.05, 80);
+scene.add(cam);
+
+// one render of the scene per sample, summed into acc; post effects run once on the sum
+const rtScene = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: RENDER ? 0 : 4 });
+const rtAcc = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType });
+const accMat = new THREE.ShaderMaterial({
+  uniforms: { tex: { value: rtScene.texture }, w: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+  fragmentShader: 'uniform sampler2D tex; uniform float w; varying vec2 vUv; void main() { gl_FragColor = vec4(texture2D(tex, vUv).rgb * w, 1.0); }',
+  blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true,
+});
+const accScene = new THREE.Scene();
+accScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), accMat));
+const accCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new TexturePass(rtAcc.texture));
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.5, 0.6, 1.1);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const finish = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, flash: { value: 0 }, fade: { value: 0 }, seed: { value: 0 }, vig: { value: 0.55 } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float flash, fade, seed, vig; varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + seed) * 43758.5453); }
+    void main() {
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      vec2 q = vUv - 0.5; q.x *= 16.0 / 9.0;
+      c *= 1.0 - vig * smoothstep(0.3, 1.05, length(q));
+      c += (hash(vUv * vec2(1920.0, 1080.0)) - 0.5) * 0.02;
+      c = mix(c, vec3(1.0), flash);
+      gl_FragColor = vec4(c * (1.0 - fade), 1.0);
+    }`,
+});
+composer.addPass(finish);
+
+// ---------- studio: reflections come from a black room with light strips, rebuilt when a strip moves ----------
+const envScene = new THREE.Scene();
+envScene.add(new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })));
+const strips = {};
+for (const name of ['top', 'rimL', 'rimR', 'fill', 'sweep', 'sweep2']) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+  m.visible = false; envScene.add(m); strips[name] = m;
+}
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null, envKey = '';
+function setEnv(cfg) {
+  const key = JSON.stringify(cfg, (k, v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v));
+  if (key === envKey) return;
+  envKey = key;
+  for (const [name, m] of Object.entries(strips)) {
+    const s = cfg[name];
+    m.visible = !!s && s.v > 0;
+    if (!m.visible) continue;
+    m.position.set(...s.at); m.scale.set(s.w, s.h, 1);
+    m.up.set(...(s.up || [0, 1, 0])); m.lookAt(0, 0, 0); m.rotateZ((s.rot || 0) * DEG);
+    m.material.color.setScalar(s.v);
+  }
+  const rt = pmrem.fromScene(envScene, 0, 0.1, 60);
+  if (envRT) envRT.dispose();
+  envRT = rt; scene.environment = rt.texture;
+}
+// a strip `d` units from the subject, in direction az (0 = in front, 90 = camera-left side) / el
+const strip = (az, el, d, w, h, v, rot = 0, up) => ({ at: [d * Math.sin(az * DEG) * Math.cos(el * DEG), d * Math.sin(el * DEG), d * Math.cos(az * DEG) * Math.cos(el * DEG)], w, h, v, rot, up });
+
+const key = new THREE.DirectionalLight(0xffffff, 1);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -1, right: 1, top: 1, bottom: -1, near: 0.5, far: 12 });
+key.shadow.bias = -0.0004; key.shadow.normalBias = 0.003;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xdfe6ff, 0.5);
+scene.add(rim, rim.target);
+
+// a faint glow behind the product, carried with the camera
+const bgTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, '#fff'); gr.addColorStop(0.45, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const bg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: bgTex, color: 0x000000, transparent: true, depthWrite: false }));
+bg.renderOrder = -1; bg.position.z = -30; bg.scale.set(60, 34, 1); cam.add(bg);
+
+// ---------- geometry helpers (all in mm) ----------
+function rrect(x0, y0, x1, y1, r, s = new THREE.Shape()) {
+  s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0);
+  s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2);
+  s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI);
+  s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5);
+  return s;
+}
+function holeRect(x0, y0, x1, y1, r) {
+  const p = new THREE.Path();
+  p.moveTo(x0 + r, y0); p.absarc(x0 + r, y0 + r, r, Math.PI * 1.5, Math.PI, true);
+  p.lineTo(x0, y1 - r); p.absarc(x0 + r, y1 - r, r, Math.PI, Math.PI / 2, true);
+  p.lineTo(x1 - r, y1); p.absarc(x1 - r, y1 - r, r, Math.PI / 2, 0, true);
+  p.lineTo(x1, y0 + r); p.absarc(x1 - r, y0 + r, r, 0, -Math.PI / 2, true);
+  return p;
+}
+function holeCircle(x, y, r) { const p = new THREE.Path(); p.absarc(x, y, r, 0, Math.PI * 2, true); return p; }
+function annulus(r0, r1, a0 = 0, a1 = Math.PI * 2) {
+  const s = new THREE.Shape();
+  if (a1 - a0 >= Math.PI * 2 - 1e-6) { s.absarc(0, 0, r1, 0, Math.PI * 2); s.holes.push(holeCircle(0, 0, r0)); }
+  else { s.absarc(0, 0, r1, a0, a1); s.absarc(0, 0, r0, a1, a0, true); }
+  return s;
+}
+// extrude a shape (x, y) between z0 and z1 with rounded edges of radius b; grow pushes the outline out
+function slab(shape, z0, z1, b = 0, o = {}) {
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: Math.max(1e-3, z1 - z0 - 2 * b), bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelOffset: (o.grow || 0) - b,
+    bevelSegments: o.seg ?? 4, curveSegments: o.curve ?? 24, steps: o.steps ?? 1,
+  });
+  g.translate(0, 0, b > 0 ? z0 + b : z0);
+  return g;
+}
+// same, but the shape lies in the x–z plane and is extruded upward between y0 and y1
+function vslab(shape, y0, y1, b, o) { const g = slab(shape, y0, y1, b, o); g.rotateX(-Math.PI / 2); return g; }
+// shape in the z–y plane, extruded sideways between x0 and x1
+function xslab(shape, x0, x1, b, o) { const g = slab(shape, -x1, -x0, b, o); g.rotateY(-Math.PI / 2); return g; }
+// shape point helper for vslab: takes (x, z)
+const xz = (x, z) => [x, -z];
+const smoothN = (g, a = 40) => toCreasedNormals(g, a * DEG);
+
+let M = {};      // materials
+const S = {};    // parts render() animates
+const root = new THREE.Group(); root.scale.setScalar(0.01); scene.add(root); // mm → scene units
+
+function add(geo, mat, parent = root, o = {}) {
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = o.cast ?? true; m.receiveShadow = o.receive ?? true;
+  if (o.pos) m.position.set(...o.pos);
+  if (o.rot) m.rotation.set(...o.rot);
+  parent.add(m); return m;
+}
+// rounded cylinder (button, collar…) turned on the lathe: radius r, height h, edge fillet f; axis +y
+function puck(r, h, f = 0.5, dome = 0) {
+  const pts = [new THREE.Vector2(0, h + dome)];
+  for (let i = 1; i <= 6; i++) { const k = i / 6; pts.push(new THREE.Vector2((r - f) * k, h + dome * (1 - k * k))); }
+  for (let i = 1; i <= 6; i++) { const a = (i / 6) * Math.PI / 2; pts.push(new THREE.Vector2(r - f + Math.sin(a) * f, h - f + Math.cos(a) * f)); }
+  pts.push(new THREE.Vector2(r, 0));
+  return new THREE.LatheGeometry(pts, 64);
+}
+// a flat print (white on transparent) of size w×h facing +y (top), +z (front) or -z (back)
+function print(tex, w, h, face, pos, mat = M.print, parent = root) {
+  const g = new THREE.PlaneGeometry(w, h);
+  if (face === 'top') { g.rotateX(-Math.PI / 2); g.rotateY(Math.PI); }
+  if (face === 'back') g.rotateY(Math.PI);
+  const m = mat.clone(); m.map = tex;
+  const mesh = add(g, m, parent, { pos, cast: false });
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+// ---------- textures ----------
+const loader = new THREE.TextureLoader();
+const TEX = {};
+async function loadTextures() {
+  const names = ['leather-n', 'leather-r', 'grain-n', 'disc-n', 'disc-aniso', 'knurl-n', 'ridge-n', 'lumix', 'lumix-n', 's5', 's5-n',
+    'dial-mode', 'dial-drive', 'btn-wb', 'btn-iso', 'btn-ev', 'top-onoff', 'top-plane', 'panasonic',
+    'btn-play', 'btn-lvf', 'btn-af', 'btn-afon', 'btn-q', 'btn-menu', 'btn-back', 'btn-disp', 'back-trash'];
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  await Promise.all([...names.map(async (n) => {
+    const t = await loader.loadAsync(`assets/${n}.png`);
+    t.anisotropy = maxAniso;
+    if (!/-n$|-r$|aniso/.test(n)) t.colorSpace = THREE.SRGBColorSpace;
+    TEX[n] = t;
+  }), (async () => { TEX.screen = await loader.loadAsync('assets/screen.jpg'); TEX.screen.colorSpace = THREE.SRGBColorSpace; })()]);
+  const tile = (t, sx, sy = sx, ox = 0, oy = 0) => { const c = t.clone(); c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(sx, sy); c.offset.set(ox, oy); c.needsUpdate = true; return c; };
+  TEX.tile = tile;
+}
+
+function materials() {
+  const { tile } = TEX;
+  const leatherN = tile(TEX['leather-n'], 1 / 24), leatherR = tile(TEX['leather-r'], 1 / 24), grainN = tile(TEX['grain-n'], 1 / 4);
+  const machined = (color, rough, mount) => new THREE.MeshPhysicalMaterial({
+    color, metalness: 1, roughness: rough, anisotropy: 0.75, anisotropyMap: mount ? tile(TEX['disc-aniso'], 1 / 64.6, 1 / 64.6, 0.5, 0.5) : TEX['disc-aniso'],
+    normalMap: mount ? tile(TEX['disc-n'], 1 / 64.6, 1 / 64.6, 0.5, 0.5) : TEX['disc-n'], normalScale: new THREE.Vector2(mount ? 0.04 : 0.18, mount ? 0.04 : 0.18),
+  });
+  M = {
+    paint: new THREE.MeshStandardMaterial({ color: '#16171A', roughness: 0.5, metalness: 0.1, normalMap: grainN, normalScale: new THREE.Vector2(0.45, 0.45) }),
+    leather: new THREE.MeshStandardMaterial({ color: '#111214', roughness: 1, roughnessMap: leatherR, normalMap: leatherN, normalScale: new THREE.Vector2(1.1, 1.1) }),
+    gloss: new THREE.MeshPhysicalMaterial({ color: '#08090A', roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06 }),
+    rubber: new THREE.MeshStandardMaterial({ color: '#0F1011', roughness: 0.82, normalMap: grainN, normalScale: new THREE.Vector2(1.2, 1.2) }),
+    void: new THREE.MeshStandardMaterial({ color: '#030303', roughness: 0.95 }),
+    voidIn: new THREE.MeshStandardMaterial({ color: '#050505', roughness: 0.9, side: THREE.BackSide }),
+    mount: machined('#D4D7DB', 0.22, true),
+    dialTop: machined('#2A2C30', 0.3),
+    screw: new THREE.MeshStandardMaterial({ color: '#C9CCD0', metalness: 1, roughness: 0.3 }),
+    chrome: new THREE.MeshStandardMaterial({ color: '#E3E5E8', metalness: 1, roughness: 0.14 }),
+    gunmetal: new THREE.MeshStandardMaterial({ color: '#2B2D31', metalness: 0.9, roughness: 0.28 }),
+    knurl: new THREE.MeshStandardMaterial({ color: '#141518', metalness: 0.55, roughness: 0.36 }),
+    red: new THREE.MeshPhysicalMaterial({ color: '#B3121C', metalness: 0.55, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
+    rec: new THREE.MeshPhysicalMaterial({ color: '#C8141C', roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 }),
+    gold: new THREE.MeshStandardMaterial({ color: '#D8A84E', metalness: 1, roughness: 0.28 }),
+    sensor: new THREE.MeshPhysicalMaterial({
+      color: '#ffffff', metalness: 0.2, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.02,
+      iridescence: 1, iridescenceIOR: 1.75, iridescenceThicknessRange: [220, 820], emissive: '#ffffff', emissiveIntensity: 0.32,
+    }),
+    sensorPkg: new THREE.MeshPhysicalMaterial({ color: '#202A2E', metalness: 0.4, roughness: 0.25, clearcoat: 0.6, emissive: '#0A3A46', emissiveIntensity: 0.25 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: '#020203', roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 0.7, iridescenceIOR: 1.6, iridescenceThicknessRange: [300, 600] }),
+    lamp: new THREE.MeshPhysicalMaterial({ color: '#1A0705', roughness: 0.05, clearcoat: 1 }),
+    print: new THREE.MeshStandardMaterial({ color: '#DADADA', roughness: 0.55, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
+    logo: new THREE.MeshStandardMaterial({ color: '#E2E4E7', metalness: 1, roughness: 0.16, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
+  };
+}
+
+// ---------- the camera body ----------
+function build() {
+  materials();
+
+  // main shell, painted magnesium: a front block with the mount throat cut through it, overlapping a solid back
+  // block (the overlap hides both bevels, so the shell reads as one piece)
+  const shell = () => rrect(-BW, 0, BW, TOP, 3.2);
+  const front = shell(); front.holes.push(holeCircle(MOUNT[0], MOUNT[1], 26.2));
+  add(smoothN(slab(front, -24, 0, 2.2, { curve: 64 })), M.paint);
+  add(smoothN(slab(shell(), -DEPTH, -16, 2.2)), M.paint);
+
+  // grip: outline seen from below, extruded upward
+  const grip = () => {
+    const s = new THREE.Shape();
+    s.moveTo(...xz(-27.5, -DEPTH)); s.lineTo(...xz(-27.5, 0));
+    s.quadraticCurveTo(...xz(-30.5, 17), ...xz(-40.5, 23.6));
+    s.quadraticCurveTo(...xz(-45, 25.6), ...xz(-52, 25.6));
+    s.quadraticCurveTo(...xz(-66.3, 25.6), ...xz(-66.3, 12));
+    s.lineTo(...xz(-66.3, -DEPTH + 3)); s.quadraticCurveTo(...xz(-66.3, -DEPTH), ...xz(-63.3, -DEPTH));
+    s.lineTo(...xz(-27.5, -DEPTH));
+    return s;
+  };
+  // the grip's front bulges forward towards mid-height, like the real hand grip
+  const bulge = (g) => {
+    const a = g.attributes.position;
+    for (let i = 0; i < a.count; i++) {
+      const y = a.getY(i), z = a.getZ(i), k = clamp(z / 25.6) * Math.sin(Math.PI * clamp((y - 2) / 66));
+      a.setZ(i, z + 2.2 * k); a.setX(i, a.getX(i) - 1.2 * k * clamp((-a.getX(i) - 40) / 26));
+    }
+    return g;
+  };
+  add(smoothN(bulge(vslab(grip(), 0, 67, 3.2, { steps: 12 }))), M.paint);
+  add(smoothN(bulge(vslab(grip(), LEATHER[0], LEATHER[1], 0.45, { grow: 0.75, steps: 12 }))), M.leather);
+  // top deck of the grip: raised platform for WB/ISO/±, a lower step behind it for REC and the rear dial,
+  // and the front edge sloping down under the shutter button
+  const deck = vslab(grip(), 66, 78.9, 3.4, { seg: 5 });
+  const dp = deck.attributes.position;
+  for (let i = 0; i < dp.count; i++) {
+    const y = dp.getY(i), z = dp.getZ(i);
+    const top = lerp(DECK_LOW, 78.9, E.sine(clamp((z + 15) / 6)));
+    let yy = 66 + (y - 66) * (top - 66) / (78.9 - 66);
+    yy -= clamp(z / 25.6) * 3.2 * clamp((yy - 68) / 10.9);
+    dp.setY(i, yy);
+  }
+  add(smoothN(deck), M.paint);
+
+  // EVF hump: side profile extruded across, then tapered towards the top
+  const prof = new THREE.Shape();
+  prof.moveTo(1, 72); prof.lineTo(-3.3, 87.5); prof.lineTo(-14, HUMP.y1); prof.lineTo(-DEPTH, HUMP.y1); prof.lineTo(-DEPTH, 72); prof.lineTo(1, 72);
+  const hump = xslab(prof, HUMP.cx - HUMP.base, HUMP.cx + HUMP.base, 1.5, { seg: 4 });
+  const hp = hump.attributes.position;
+  for (let i = 0; i < hp.count; i++) {
+    const k = clamp((hp.getY(i) - HUMP.y0) / (HUMP.y1 - HUMP.y0));
+    hp.setX(i, HUMP.cx + (hp.getX(i) - HUMP.cx) * lerp(HUMP.base, HUMP.top, k) / HUMP.base);
+  }
+  add(smoothN(hump), M.paint);
+  // LUMIX on the hump's front face (tilted back 15.5°)
+  const face = { tilt: Math.atan(4.3 / 15.5), z: (y) => 1 - (y - 72) * 4.3 / 15.5 };
+  const lumix = print(TEX.lumix, 28.67, 7.17, 'front', [18.64, 83.87, face.z(83.87) + 0.06], M.logo);
+  lumix.material.normalMap = TEX['lumix-n']; lumix.material.normalScale = new THREE.Vector2(1, 1);
+  lumix.rotation.x = -face.tilt;
+
+  // stereo mic slots on top of the hump
+  for (const x of [10.3, 26.3]) add(vslab(rrect(x - 2.3, 16.9, x + 2.3, 18.1, 0.6), HUMP.y1 - 0.4, HUMP.y1 + 0.05, 0), M.void, root, { cast: false });
+
+  // hot shoe
+  add(smoothN(vslab(rrect(6.5, 20, 30.5, 42.5, 1.2), HUMP.y1 - 0.2, HUMP.y1 + 1.0, 0.4)), M.paint);
+  for (const [x0, x1] of [[6.8, 9.6], [27.4, 30.2]]) {
+    add(vslab(rrect(x0, 20.5, x1, 42.2, 0.3), HUMP.y1 + 0.8, HUMP.y1 + 3.4, 0.25), M.gunmetal);
+    const lipX = x0 < 18 ? [x0, x1 + 2.2] : [x0 - 2.2, x1];
+    add(vslab(rrect(lipX[0], 20.5, lipX[1], 42.2, 0.3), HUMP.y1 + 2.7, HUMP.y1 + 3.4, 0.2), M.gunmetal);
+  }
+  add(puck(2.3, 0.5, 0.2), M.screw, root, { pos: [18.5, HUMP.y1 + 0.95, -33.5] });
+  for (const [x, z, m] of [[16.2, -36.8, M.gold], [20.8, -36.8, M.screw], [16.2, -39.8, M.screw], [20.8, -39.8, M.screw]]) add(puck(0.8, 0.35, 0.15), m, root, { pos: [x, HUMP.y1 + 0.95, z] });
+
+  // eyecup (rubber frame), window and eye sensor
+  const cup = rrect(-2.7, 61.8, 38.8, 95.1, 8.5);
+  cup.holes.push(holeRect(6.2, 70.0, 30.4, 89.4, 4));
+  add(smoothN(slab(cup, -DEPTH - 11.5, -DEPTH + 0.2, 2.6, { seg: 5 })), M.rubber);
+  add(new THREE.PlaneGeometry(24.2, 19.4).rotateY(Math.PI), M.glass, root, { pos: [18.3, 79.7, -DEPTH - 4], cast: false });
+  add(slab(rrect(15.7, 64.9, 20.9, 67.0, 1), -DEPTH - 11.6, -DEPTH - 11.4, 0), M.glass, root, { cast: false });
+  print(TEX.panasonic, 14.6, 3.66, 'top', [18.3, 95.12, -DEPTH - 5.7]);
+
+  // front leather: two panels whose inner edges follow the mount flange, holes for the two buttons
+  const [mx, my] = MOUNT, mr = 36.2, [y0, y1] = LEATHER;
+  const cut = (y) => Math.sqrt(mr * mr - (y - my) ** 2);
+  const ang = (x, y) => Math.atan2(y - my, x - mx);
+  const lfL = new THREE.Shape(); lfL.moveTo(-29, y0); lfL.lineTo(mx - cut(y0), y0);
+  lfL.absarc(mx, my, mr, ang(mx - cut(y0), y0) + Math.PI * 2, ang(mx - cut(y1), y1), true); lfL.lineTo(-29, y1); lfL.lineTo(-29, y0);
+  lfL.holes.push(holeCircle(-24.4, 52.7, 6.2), holeCircle(-16.7, 17.7, 7.6));
+  const lfR = new THREE.Shape(); lfR.moveTo(mx + cut(y0), y0); lfR.lineTo(65.2, y0); lfR.lineTo(65.2, y1); lfR.lineTo(mx + cut(y1), y1);
+  lfR.absarc(mx, my, mr, ang(mx + cut(y1), y1), ang(mx + cut(y0), y0), true);
+  for (const sh of [lfL, lfR]) add(smoothN(slab(sh, 0, 0.9, 0.35, { curve: 48 })), M.leather);
+  // side leather on the camera-left end
+  const ls = new THREE.Shape(); rrect(-40.5, LEATHER[0], -2.5, LEATHER[1], 1.5, ls);
+  add(smoothN(xslab(ls, BW - 0.4, BW + 0.5, 0.3)), M.leather);
+
+  // lens mount
+  const mount = new THREE.Group(); mount.position.set(MOUNT[0], MOUNT[1], 0); root.add(mount);
+  add(smoothN(slab(annulus(32.0, 35.8), 0, 3.0, 0.9, { curve: 128 })), M.gloss, mount);
+  add(smoothN(slab(annulus(26.3, 32.3), 0, 5.4, 0.45, { curve: 128 })), M.mount, mount);
+  for (const [a0, a1] of [[20, 78], [112, 168], [198, 252], [286, 334]]) add(slab(annulus(23.9, 26.5, a0 * DEG, a1 * DEG), 1.6, 2.9, 0.2), M.gunmetal, mount);
+  const throat = new THREE.CylinderGeometry(26.2, 26.2, 18, 96, 1, true); throat.rotateX(Math.PI / 2);
+  add(throat, M.voidIn, mount, { pos: [0, 0, -3.6] });
+  add(new THREE.CircleGeometry(26.2, 64), M.void, mount, { pos: [0, 0, -15.2] });
+  const frame = rrect(-21.2, -15.4, 21.2, 15.4, 1.2); frame.holes.push(holeRect(-19.4, -13.6, 19.4, 13.6, 0.6));
+  add(slab(frame, -13.6, -12.2, 0.3), M.void, mount);
+  add(new THREE.PlaneGeometry(38.6, 27.0), M.sensorPkg, mount, { pos: [0, 0, -14.7] });
+  add(new THREE.PlaneGeometry(36, 24), M.sensor, mount, { pos: [0, 0, -14.6] });
+  // sensor face: blue-violet to teal gradient with a thin green border, like the reference photo
+  const sc0 = document.createElement('canvas'); sc0.width = 720; sc0.height = 480;
+  const g0 = sc0.getContext('2d'), lg = g0.createLinearGradient(0, 0, 720, 480);
+  lg.addColorStop(0, '#3B3F9A'); lg.addColorStop(0.45, '#13708A'); lg.addColorStop(1, '#0B4E6E');
+  g0.fillStyle = lg; g0.fillRect(0, 0, 720, 480);
+  const rg = g0.createRadialGradient(250, 180, 10, 250, 180, 420); rg.addColorStop(0, 'rgba(120,200,220,.35)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  g0.fillStyle = rg; g0.fillRect(0, 0, 720, 480);
+  g0.strokeStyle = '#3FCB9F'; g0.lineWidth = 3; g0.strokeRect(16, 16, 688, 448);
+  const st = new THREE.CanvasTexture(sc0); st.colorSpace = THREE.SRGBColorSpace;
+  M.sensor.map = st; M.sensor.emissiveMap = st;
+  add(slab(annulus(18.6, 22.2, 58 * DEG, 122 * DEG), -0.6, 0.6, 0.2), M.void, mount);
+  for (let i = 0; i < 11; i++) { const a = (60 + i * 6) * DEG; add(puck(0.5, 0.35, 0.15).rotateX(Math.PI / 2), M.gold, mount, { pos: [Math.cos(a) * 20.4, Math.sin(a) * 20.4, 0.6] }); }
+  for (const a of [138, 70, 10, -55, -120, -171]) {
+    const g = new THREE.Group(); g.position.set(Math.cos(a * DEG) * 28.9, Math.sin(a * DEG) * 28.9, 5.4); g.rotation.z = (a + 45) * DEG; mount.add(g);
+    add(puck(1.55, 0.25, 0.25).rotateX(Math.PI / 2), M.screw, g);
+    add(new THREE.BoxGeometry(2.1, 0.34, 0.2), M.void, g, { pos: [0, 0, 0.22] });
+    add(new THREE.BoxGeometry(0.34, 2.1, 0.2), M.void, g, { pos: [0, 0, 0.22] });
+  }
+  add(puck(0.85, 0.15, 0.1).rotateX(Math.PI / 2), M.rec, mount, { pos: [Math.cos(219 * DEG) * 28.3, Math.sin(219 * DEG) * 28.3, 5.4] });
+  add(puck(0.75, 0.15, 0.1).rotateX(Math.PI / 2), M.rec, root, { pos: [-7.9, 18.3, 0.9] });
+
+  // front buttons, AF lamp, badge
+  add(smoothN(slab(annulus(4.3, 5.9), 0.5, 1.6, 0.4)), M.paint, root, { pos: [-24.4, 52.7, 0] });
+  add(puck(4.1, 1.5, 0.6, 0.5).rotateX(Math.PI / 2), M.gloss, root, { pos: [-24.4, 52.7, 0.3] });
+  add(smoothN(slab(annulus(4.6, 7.3), 0.5, 2.4, 0.6)), M.paint, root, { pos: [-16.7, 17.7, 0] });
+  add(puck(4.3, 2.2, 0.7, 0.6).rotateX(Math.PI / 2), M.gloss, root, { pos: [-16.7, 17.7, 0.4] });
+  add(puck(1.9, 0.5, 0.3, 0.2).rotateX(Math.PI / 2), M.lamp, root, { pos: [55.8, 70.6, 0] });
+  add(smoothN(slab(rrect(44.8, 58.8, 58.8, 65.8, 1.2), 0.4, 1.6, 0.4)), M.gloss);
+  const s5 = print(TEX.s5, 9.18, 4.95, 'front', [52.9, 62.4, 1.63], M.logo);
+  s5.material.normalMap = TEX['s5-n']; s5.material.color.set('#AEB1B5');
+
+  // dials
+  const knurl = (n) => { const m = M.knurl.clone(); m.normalMap = TEX.tile(TEX['knurl-n'], n, 3); m.normalScale = new THREE.Vector2(1.4, 1.4); return m; };
+  const ridged = (n) => { const m = M.knurl.clone(); m.normalMap = TEX.tile(TEX['ridge-n'], n, 1); m.normalScale = new THREE.Vector2(1.2, 1.2); return m; };
+  function dial({ x, z, y0, r, band, side, top, red }) {
+    const g = new THREE.Group(); g.position.set(x, y0, z); root.add(g);
+    add(puck(r + 0.25, 1.3, 0.3), M.gunmetal, g);
+    let y = 1.3;
+    if (red) { add(new THREE.CylinderGeometry(r + 0.35, r + 0.35, 1.3, 96, 1, true), M.red, g, { pos: [0, y + 0.65, 0] }); y += 1.3; }
+    const turn = new THREE.Group(); turn.position.y = y; g.add(turn);
+    add(new THREE.CylinderGeometry(r, r, band, 128, 1, true), side, turn, { pos: [0, band / 2, 0] });
+    const lip = [new THREE.Vector2(r, band), new THREE.Vector2(r - 0.15, band + 0.35), new THREE.Vector2(r - 0.55, band + 0.6), new THREE.Vector2(r - 0.9, band + 0.65)];
+    add(new THREE.LatheGeometry(lip, 128), M.gunmetal, turn);
+    add(new THREE.CircleGeometry(r - 0.85, 96).rotateX(-Math.PI / 2), M.dialTop, turn, { pos: [0, band + 0.62, 0] });
+    if (top) print(top, r * 2, r * 2, 'top', [0, band + 0.66, 0], M.print, turn);
+    return turn;
+  }
+  S.modeDial = dial({ x: -16, z: -18.8, y0: TOP, r: 12, band: 6.2, side: knurl(52), top: TEX['dial-mode'] });
+  dial({ x: 51.6, z: -19.2, y0: TOP, r: 11, band: 5.6, side: knurl(48), top: TEX['dial-drive'], red: true });
+  dial({ x: -46.2, z: 11.8, y0: 74.4, r: 9, band: 2.6, side: ridged(56) });
+  add(puck(5.3, 1.4, 1.2, 0.9), M.gunmetal, root, { pos: [-46.2, 78.2, 11.8] });
+  dial({ x: -50.9, z: -31.2, y0: 72.4, r: 10.6, band: 3.6, side: ridged(60) });
+
+  // top buttons on the grip deck
+  const btnTop = (x, z, r, tex, mat = M.gloss) => { add(puck(r, 1.1, 0.45, 0.15), mat, root, { pos: [x, 78.7, z] }); if (tex) print(tex, 7.33, 7.33, 'top', [x, 79.97, z]); };
+  btnTop(-39.0, -3.4, 3.5, TEX['btn-wb']); btnTop(-47.8, -3.4, 3.5, TEX['btn-iso']); btnTop(-56.6, -3.4, 3.5, TEX['btn-ev']);
+  const btnLow = (x, z, r, mat) => add(puck(r, 1.1, 0.45, 0.15), mat, root, { pos: [x, DECK_LOW - 0.2, z] });
+  btnLow(-44.1, -16.5, 3.4, M.rec);
+  print(TEX['top-onoff'], 6.8, 8.05, 'top', [-36.9, DECK_LOW + 0.03, -26.2]);
+  print(TEX['top-plane'], 5.5, 3.4, 'top', [-58.8, DECK_LOW + 0.03, -18.1]);
+  // power lever on the mode dial
+  const lever = new THREE.Group(); lever.position.set(-16, TOP + 0.6, -18.8); lever.rotation.y = 149 * DEG; root.add(lever);
+  add(smoothN(slab(rrect(10.5, -1.6, 16.5, 1.6, 0.8), -0.6, 0.6, 0.3)), M.gunmetal, lever, { rot: [-Math.PI / 2, 0, 0] });
+
+  // strap lugs
+  for (const [x, y, z] of [[BW + 2.6, 70.0, -9.7], [-BW - 2.6, 71.7, -22.4]]) {
+    add(new THREE.TorusGeometry(2.3, 0.75, 20, 40), M.chrome, root, { pos: [x, y, z] });
+    add(new THREE.CylinderGeometry(1.1, 1.1, 2.4, 24).rotateZ(Math.PI / 2), M.gunmetal, root, { pos: [x - Math.sign(x) * 2.1, y, z] });
+  }
+
+  // back: screen, buttons, thumb rest
+  add(smoothN(slab(rrect(-25.6, 0.7, 56.3, 54.0, 2.4), -DEPTH - 2.6, -DEPTH + 0.2, 0.8)), M.paint);
+  const sc = document.createElement('canvas'); sc.width = 1600; sc.height = Math.round(1600 * 51.5 / 76.5);
+  const sx = sc.width / 76.5, g2 = sc.getContext('2d');
+  g2.fillStyle = '#000'; g2.fillRect(0, 0, sc.width, sc.height);
+  // image area relative to the glass (glass spans x 52 → -24.5 seen from the back, y 52.9 → 1.4)
+  g2.drawImage(TEX.screen.image, (52 - 48.6) * sx, (52.9 - 49.1) * sx, 65.4 * sx, 44 * sx);
+  const screenTex = new THREE.CanvasTexture(sc); screenTex.colorSpace = THREE.SRGBColorSpace; screenTex.anisotropy = 8;
+  const screen = new THREE.MeshPhysicalMaterial({ color: '#000', roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03, emissive: '#fff', emissiveMap: screenTex, emissiveIntensity: 0.9 });
+  add(new THREE.PlaneGeometry(76.5, 51.5).rotateY(Math.PI), screen, root, { pos: [13.75, 27.15, -DEPTH - 2.62], cast: false });
+  const back = -DEPTH - 0.05, thumb = -DEPTH - 0.8;
+  const btnBack = (x, y, r, tex, size, z = back) => { add(puck(r, 1.3, 0.5, 0.2).rotateX(-Math.PI / 2), M.gloss, root, { pos: [x, y, z] }); if (tex) print(tex, size, size, 'back', [x, y, z - 1.55]); };
+  btnBack(54.4, 62.9, 3.2, TEX['btn-play'], 5.72); btnBack(43.3, 62.9, 3.2, TEX['btn-lvf'], 5.72);
+  add(smoothN(slab(annulus(3.7, 6.6), 0, 1.2, 0.45)).rotateY(Math.PI), M.paint, root, { pos: [-10.8, 63.8, back] });
+  btnBack(-10.8, 63.8, 3.5, TEX['btn-af'], 5.72);
+  btnBack(-38.8, 67.5, 4.3, TEX['btn-afon'], 7.15); btnBack(-36.6, 48.2, 3.6, TEX['btn-q'], 5.72, thumb);
+  add(puck(4.3, 2.2, 0.6, 0.4).rotateX(-Math.PI / 2), M.knurl, root, { pos: [-29.1, 60.8, back] });
+  const cd = new THREE.Group(); cd.position.set(-40.9, 26.4, thumb); root.add(cd);
+  add(new THREE.CylinderGeometry(11.8, 11.8, 1.6, 96, 1, true).rotateX(Math.PI / 2), ridged(64), cd, { pos: [0, 0, -0.8] });
+  add(slab(annulus(7.3, 11.8), 0, 0.3, 0).rotateY(Math.PI), M.gunmetal, cd, { pos: [0, 0, -1.6] });
+  add(puck(7.2, 1.2, 0.6).rotateX(-Math.PI / 2), M.gloss, cd);
+  btnBack(-40.9, 26.4, 3.7, TEX['btn-menu'], 7.15, thumb - 1.2);
+  btnBack(-34.7, 9.1, 3.4, TEX['btn-back'], 5.72, thumb); btnBack(-46.9, 9.1, 3.4, TEX['btn-disp'], 6.43, thumb);
+  print(TEX['back-trash'], 2.86, 2.86, 'back', [-29.5, 5.7, back - 0.05]);
+
+  // tripod socket
+  add(slab(annulus(3.2, 6.2), 0, 0.4, 0.15).rotateX(Math.PI / 2), M.screw, root, { pos: [18.1, 0, -10] });
+}
+
+// ---------- shots ----------
+// each pose: camera (target in scene units, azimuth/elevation in degrees, distance, fov, roll), focus point,
+// aperture radius (scene units), studio strips, key light, exposure, background glow
+const SHOTS = [
+  {
+    t0: 0, t1: 1.5,
+    pose(k, s) {
+      const m = E.out4(k);
+      return {
+        target: [0.19, 0.40, 0.0], az: lerp(-30, -13, m), el: lerp(11, 5, m), dist: lerp(1.32, 1.1, m), fov: 28, roll: lerp(8, 0, m),
+        focus: [0.12, 0.43, 0.054], aperture: 0.025,
+        env: {
+          top: strip(0, 80, 8, 8, 4, 0.6), rimL: strip(-120, 15, 8, 2, 10, 1.6), rimR: strip(110, 25, 8, 2, 8, 0.8), fill: strip(-20, 5, 8, 10, 6, 0.1),
+          sweep: strip(lerp(-75, 75, E.io(clamp((s - 0.1) / 1.25))), 5, 8, 0.7, 14, 7),
+        },
+        key: [-3, 5, 4, 0.9], exposure: 1.05, glow: 0.0,
+      };
+    },
+  },
+  {
+    t0: 1.5, t1: 2.7,
+    pose(k, s) {
+      const m = E.out4(k);
+      return {
+        target: [0.186, 0.835, -0.02], az: lerp(36, 21, m), el: lerp(-4, 3, m), dist: lerp(0.62, 0.53, m), fov: 26, roll: lerp(-4, 0, m),
+        focus: [0.186, 0.838, -0.022], aperture: 0.02,
+        env: {
+          top: strip(0, 75, 8, 6, 2, 0.5), rimR: strip(115, 10, 8, 2, 10, 1.0),
+          sweep: strip(lerp(-70, 70, E.io(clamp((s - 0.12) / 0.95))), 18, 8, 0.8, 16, 9, -24),
+        },
+        key: [-2, 5, 5, 0.6], exposure: 1.0, glow: 0.0,
+      };
+    },
+  },
+  {
+    t0: 2.7, t1: 3.9,
+    pose(k, s) {
+      const m = E.out4(k);
+      return {
+        target: [-0.30, 0.79, -0.11], az: lerp(214, 197, m), el: lerp(57, 48, m), dist: lerp(1.25, 1.07, m), fov: 30, roll: 0,
+        focus: [-0.16, 0.835, -0.19], aperture: 0.025,
+        env: {
+          rimL: strip(-140, 20, 8, 2, 10, 1.4), rimR: strip(-60, 30, 8, 1.5, 10, 1.2), fill: strip(180, 25, 8, 10, 5, 0.18),
+          sweep: strip(180, lerp(35, 145, E.io(clamp((s - 0.05) / 1.1))), 8, 0.9, 14, 7, 0, [1, 0, 0]),
+        },
+        key: [-4, 6, -2, 1.3], exposure: 1.05, glow: 0.0,
+      };
+    },
+  },
+  {
+    t0: 3.9, t1: DUR,
+    pose(k, s) {
+      const m = E.out(k);
+      return {
+        target: [0.03, 0.44, -0.12], az: lerp(-56, -34, m), el: lerp(16, 9, m), dist: lerp(4.0, 4.5, m), fov: 22, roll: lerp(-2, 0, m),
+        focus: [0.1, 0.45, 0.02], aperture: 0.04,
+        env: {
+          top: strip(-10, 72, 8, 9, 4, lerp(0.3, 1.1, P(s, 0.3, 1.2))), rimR: strip(130, 12, 8, 1.5, 12, 2.2), rimL: strip(-150, 20, 8, 1.5, 12, 1.4), fill: strip(-30, 10, 8, 10, 5, 0.14),
+          sweep: strip(lerp(-170, -35, E.io(clamp((s - 0.05) / 1.6))), 10, 8, 0.8, 14, 8),
+        },
+        key: [-3, 5, 4, 1.45], exposure: 1.05, glow: 0.014,
+      };
+    },
+  },
+];
+const shotAt = (t) => SHOTS.find((s) => t < s.t1) || SHOTS[SHOTS.length - 1];
+
+// mode dial clicks from P to M during the top shot (30° per click)
+function modeDialAngle(t) {
+  let a = 0;
+  for (const c of [3.0, 3.22, 3.44]) a += 30 * P(t, c, 0.12, E.out4);
+  return a * DEG;
+}
+function flash(t) {
+  let f = 0;
+  for (const [c, v] of [[2.7, 0.55], [3.9, 0.3]]) if (t >= c) f = Math.max(f, v * (1 - clamp((t - c) / 0.12)));
+  return f;
+}
+const fade = (t) => Math.max(1 - clamp(t / 0.25), clamp((t - (DUR - 0.45)) / 0.4));
+
+// ---------- per-sample camera ----------
+const _f = new THREE.Vector3(), _t = new THREE.Vector3();
+function pose(t) {
+  const s = shotAt(t);
+  const p = s.pose(clamp((t - s.t0) / (s.t1 - s.t0)), t - s.t0);
+  p.shot = s;
+  return p;
+}
+function applyPose(p, t, lens = [0, 0], px = [0, 0]) {
+  const [tx, ty, tz] = p.target, a = p.az * DEG, e = p.el * DEG;
+  cam.position.set(tx + p.dist * Math.sin(a) * Math.cos(e), ty + p.dist * Math.sin(e), tz + p.dist * Math.cos(a) * Math.cos(e));
+  cam.up.set(0, 1, 0); cam.lookAt(tx, ty, tz); cam.rotateZ(p.roll * DEG);
+  cam.fov = p.fov; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+  // focus distance along the view axis
+  cam.getWorldDirection(_f); const focus = Math.max(0.05, _t.set(...p.focus).sub(cam.position).dot(_f));
+  // thin-lens depth of field: move the camera on the aperture, then skew the frustum back so the focus plane stays put
+  const lx = lens[0] * p.aperture, ly = lens[1] * p.aperture;
+  cam.translateX(lx); cam.translateY(ly); cam.updateMatrixWorld();
+  const el = cam.projectionMatrix.elements;
+  el[8] = -(el[0] * lx) / focus + (2 * px[0]) / W;
+  el[9] = -(el[5] * ly) / focus + (2 * px[1]) / H;
+  cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+
+  const [kx, ky, kz, ki] = p.key;
+  key.position.set(kx + lens[0] * 0.3, ky + lens[1] * 0.3, kz); key.target.position.set(0, 0.45, -0.15); key.intensity = ki;
+  rim.position.set(3, 3, -5); rim.target.position.set(0, 0.45, -0.15); rim.intensity = p.rim ?? 0.8;
+  S.modeDial.rotation.y = modeDialAngle(t);
+}
+
+// low-discrepancy sample sets: time, lens disc, sub-pixel
+const halton = (i, b) => { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };
+function draw(t, n) {
+  const p0 = pose(t);
+  setEnv(p0.env);
+  renderer.toneMappingExposure = p0.exposure;
+  bg.material.color.setScalar(p0.glow);
+  const s = p0.shot, span = SHUTTER / FPS;
+  renderer.setRenderTarget(rtAcc); renderer.clear();
+  for (let i = 0; i < n; i++) {
+    const ts = n === 1 ? t : clamp(t + ((i + 0.5) / n - 0.5) * span, s.t0, s.t1 - 1e-4);
+    const j = (i * 7) % n, r = Math.sqrt((j + 0.5) / n), a = j * 2.39996 + t * 3.1;
+    const lens = n === 1 ? [0, 0] : [r * Math.cos(a), r * Math.sin(a)];
+    const px = n === 1 ? [0, 0] : [halton(i + 1, 2) - 0.5, halton(i + 1, 3) - 0.5];
+    applyPose(pose(ts), ts, lens, px);
+    renderer.setRenderTarget(rtScene); renderer.clear(); renderer.render(scene, cam);
+    accMat.uniforms.w.value = 1 / n;
+    renderer.setRenderTarget(rtAcc); renderer.render(accScene, accCam);
+  }
+  finish.uniforms.flash.value = flash(t);
+  finish.uniforms.fade.value = fade(t);
+  finish.uniforms.seed.value = Math.floor(t * FPS) * 0.618;
+  renderer.setRenderTarget(null);
+  composer.render();
+}
+
+// ---------- player ----------
+let cur = POSTER, playing = false, last = 0;
+const btnPlay = $('btnPlay'), playLabel = $('playLabel'), playIcon = $('playIcon'), scrub = $('scrub'), clock = $('clock');
+const shotBtns = [...document.querySelectorAll('#shots button')];
+const fmt = (s) => `${pad(Math.floor(s / 60))}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+function syncUI() {
+  if (RENDER) return;
+  scrub.value = cur;
+  clock.textContent = `${fmt(cur)} / ${fmt(DUR)}`;
+  playLabel.textContent = playing ? '暂停' : cur >= DUR ? '重播' : '播放';
+  playIcon.setAttribute('d', playing ? 'M2.5 1 H5 V11 H2.5Z M7 1 H9.5 V11 H7Z' : 'M2.5 1 L11 6 L2.5 11Z');
+  const i = SHOTS.indexOf(shotAt(cur));
+  shotBtns.forEach((b, k) => b.parentElement.classList.toggle('on', k === i));
+}
+function tick(now) {
+  if (!playing) return;
+  cur = Math.min(DUR, cur + (now - last) / 1000); last = now;
+  draw(cur, 1);
+  if (cur >= DUR) playing = false;
+  syncUI();
+  if (playing) requestAnimationFrame(tick);
+}
+function play(from) {
+  if (typeof from === 'number') cur = from; else if (cur >= DUR - 0.01) cur = 0;
+  playing = true; last = performance.now(); syncUI(); requestAnimationFrame(tick);
+}
+function pause() { playing = false; syncUI(); }
+function seek(t) { cur = clamp(t, 0, DUR); draw(cur, 1); syncUI(); }
+function fit() {
+  if (RENDER) return;
+  const availW = document.querySelector('.viewer').clientWidth;
+  const availH = Math.max(240, window.innerHeight - 170);
+  const s = Math.min(availW / W, availH / H);
+  $('stageBox').style.width = `${W * s}px`; $('stageBox').style.height = `${H * s}px`;
+  $('stage').style.transform = `scale(${s})`;
+  $('controls').style.width = `${W * s}px`;
+}
+
+const ready = (async () => {
+  await loadTextures();
+  build();
+  draw(cur, RENDER ? 1 : 4);
+  return true;
+})();
+
+if (!RENDER) {
+  btnPlay.addEventListener('click', () => (playing ? pause() : play()));
+  scrub.addEventListener('input', () => { pause(); seek(parseFloat(scrub.value)); });
+  $('btnHQ').addEventListener('click', () => { pause(); draw(cur, SAMPLES); });
+  shotBtns.forEach((b) => b.addEventListener('click', () => play(parseFloat(b.dataset.t))));
+  document.addEventListener('keydown', (e) => {
+    const tag = e.target.tagName;
+    if (e.key === ' ' && tag !== 'BUTTON' && tag !== 'INPUT') { e.preventDefault(); playing ? pause() : play(); }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && tag !== 'INPUT') {
+      e.preventDefault(); pause(); seek(cur + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 1 : 1 / FPS));
+    }
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  ready.then(syncUI);
+}
+
+// ---------- render hook for render.mjs ----------
+// reading one pixel back makes seek() return only once the GPU has finished the frame,
+// so the screenshot that follows never waits on queued work (slow under software WebGL)
+const gl = renderer.getContext(), px1 = new Uint8Array(4);
+window.__motion = { duration: DUR, poster: POSTER, width: W, height: H, ready, seek: (t) => { cur = t; draw(t, SAMPLES); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px1); } };
+</script>
+</body>
+</html>
