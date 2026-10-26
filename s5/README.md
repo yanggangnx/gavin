@@ -45,8 +45,11 @@
 python3 -I s5/tools/crop_xianyu.py     # 从 evidence/raw 裁卡片、打码（只在本地）
 python3 -I s5/tools/build_assets.py    # → data/sample.js、build/cards.js
 python3 -I s5/tools/build_fonts.py     # 改过画面上的字之后重跑：重新抽取字形
+python3 -I s5/tools/build_single.py    # → s5/out/s5-storyboard.html，单个文件，双击即可预览和导出
 node s5/render.mjs                     # → s5/out/s5.mp4
 ```
+
+`s5-storyboard.html` 把字体、闲鱼卡片和导出库全部内联进一个约 6 MB 的文件，拷到哪台电脑都能直接用 Chrome / Edge 打开，不联网。里面有别人商品的截图，所以只放在 `out/`，不进 git。
 
 ## 导出
 
@@ -100,7 +103,7 @@ node s5/render.mjs --letterbox 0 --grain 0 --mb 0
 - `index.html`：动画本体、预览播放器和导出面板
 - `render.mjs`：逐帧导出脚本
 - `evidence/`：证据台账、抽样表；`raw/` 和 `xianyu/` 是截图，只在本地
-- `tools/`：裁切、统计、打包截图、抽取字形、质检的脚本
+- `tools/`：裁切、统计、打包截图、抽取字形、打包单文件、质检的脚本
 - `data/sample.js`、`fonts/fonts.js`：生成的数据和字体子集
 - `vendor/`：mp4-muxer 5.2.2、webm-muxer 5.1.4（MIT，页面导出用）
 - `build/`、`out/`：本地生成物，不进 git
