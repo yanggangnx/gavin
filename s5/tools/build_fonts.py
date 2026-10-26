@@ -3,7 +3,7 @@
 
 Usage: python3 -I s5/tools/build_fonts.py      (run again after changing any on-screen text)
 
-Collects every character in index.html and data/sample.js, asks the Google Fonts API for a
+Collects every character in the episode pages (s5/*.html), lib/ and data/sample.js, asks the Google Fonts API for a
 subset of each face containing just those characters, and writes s5/fonts/fonts.js with the
 faces as data URIs. Both families are under the SIL Open Font License.
 """
@@ -31,7 +31,9 @@ def get(url):
 
 
 def main():
-    text = "".join((ROOT / p).read_text(encoding="utf-8") for p in ("index.html", "data/sample.js"))
+    # One shared subset for every episode page, plus the engine's own on-canvas strings.
+    sources = [*ROOT.glob("*.html"), *ROOT.glob("lib/*.js"), ROOT / "data" / "sample.js"]
+    text = "".join(p.read_text(encoding="utf-8") for p in sources if p.exists())
     chars = sorted({ch for ch in text if ord(ch) >= 32} | {chr(c) for c in range(32, 127)})
     subset = "".join(chars)
     faces = []

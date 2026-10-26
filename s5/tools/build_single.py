@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """Inline every script into one HTML file you can hand over and open with a double click.
 
-Usage: python3 -I s5/tools/build_single.py      → s5/out/s5-storyboard.html
+Usage: python3 -I s5/tools/build_single.py [page.html]
+  index.html (default) → s5/out/s5-storyboard.html
+  ep2.html             → s5/out/ep2-storyboard.html
 
-Fonts, listing cards and the muxers are all inlined, so the file works offline. It contains
-the third-party screenshots from build/cards.js, so it lands in out/ and stays out of git.
+Fonts, listing cards, the engine and the muxers are all inlined, so the file works offline.
+Episode 1 contains the third-party screenshots from build/cards.js, so output lands in out/
+and stays out of git.
 """
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
-    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    page = sys.argv[1] if len(sys.argv) > 1 else "index.html"
+    stem = "s5" if page == "index.html" else Path(page).stem
+    html = (ROOT / page).read_text(encoding="utf-8")
 
     def inline(m):
         src = ROOT / m.group(1)
@@ -25,7 +31,7 @@ def main():
         return f"<script>/* {m.group(1)} */\n{body}\n</script>"
 
     out = re.sub(r'<script src="([^"]+)"></script>', inline, html)
-    dst = ROOT / "out" / "s5-storyboard.html"
+    dst = ROOT / "out" / f"{stem}-storyboard.html"
     dst.parent.mkdir(exist_ok=True)
     dst.write_text(out, encoding="utf-8")
     print(f"{dst.relative_to(ROOT.parent)}：{dst.stat().st_size / 1048576:.1f} MB")

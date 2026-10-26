@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Render s5/index.html frame by frame: open it in headless Chromium, seek to t = i / fps,
+// Render an episode page (s5/index.html by default) frame by frame: open it in headless Chromium, seek to t = i / fps,
 // read the canvas as PNG and pipe it to ffmpeg. Output is tagged BT.709 so players and
 // editors read the colours the same way.
 //
@@ -8,6 +8,7 @@
 //   node s5/render.mjs --format png             → s5/out/frames/     PNG sequence
 //   node s5/render.mjs --still 8.4              → s5/out/still-8.4.png
 //   node s5/render.mjs --size 3840x2160         → 4K (any size; the page redraws at that resolution)
+//   node s5/render.mjs --page ep2.html          → episode 2 → s5/out/ep2.mp4
 //   node s5/render.mjs --greybox --guide        → grey-box animatic with timecode and read-along
 //   node s5/render.mjs --letterbox 0 --grain 0 --mb 0
 //
@@ -24,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const opts = { fps: 24, size: '1920x1080', out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1' };
+const opts = { page: 'index.html', fps: 24, size: '1920x1080', out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1' };
 const PAGE_FLAGS = ['greybox', 'guide', 'letterbox', 'grain', 'mb'];
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
@@ -57,7 +58,8 @@ const server = createServer(async (req, res) => {
 server.listen(0, '127.0.0.1');
 await once(server, 'listening');
 const query = ['render', ...PAGE_FLAGS.map((k) => `${k}=${opts[k]}`)].join('&');
-const url = `http://127.0.0.1:${server.address().port}/index.html?${query}`;
+const url = `http://127.0.0.1:${server.address().port}/${opts.page}?${query}`;
+const stem = opts.page === 'index.html' ? 's5' : opts.page.replace(/\.html$/, '');
 
 async function launch() {
   try {
@@ -104,7 +106,7 @@ try {
   };
 
   if (opts.still != null && !Number.isNaN(opts.still)) {
-    const out = resolve(here, opts.out ?? `out/still-${opts.still}.png`);
+    const out = resolve(here, opts.out ?? `out/${stem}-still-${opts.still}.png`);
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, await grab(opts.still));
     console.log(`已保存 ${out}`);
@@ -113,7 +115,7 @@ try {
     const to = Math.min(duration, opts.to ?? duration);
     const frames = Math.round((to - from) * opts.fps);
     const ext = { h264: 'mp4', prores: 'mov' }[opts.format];
-    const out = resolve(here, opts.out ?? (opts.format === 'png' ? 'out/frames' : `out/s5.${ext}`));
+    const out = resolve(here, opts.out ?? (opts.format === 'png' ? `out/${stem}-frames` : `out/${stem}.${ext}`));
     mkdirSync(opts.format === 'png' ? out : dirname(out), { recursive: true });
     const ff = opts.format === 'png' ? null : encoder(out);
 
@@ -124,7 +126,7 @@ try {
       if (ff) {
         if (!ff.stdin.write(png)) await once(ff.stdin, 'drain');
       } else {
-        writeFileSync(join(out, `s5_${String(i).padStart(4, '0')}.png`), png);
+        writeFileSync(join(out, `${stem}_${String(i).padStart(4, '0')}.png`), png);
       }
       if (i % 12 === 0 || i === frames - 1) {
         const left = ((Date.now() - started) / (i + 1)) * (frames - i - 1) / 1000;
