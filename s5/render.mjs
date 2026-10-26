@@ -7,6 +7,7 @@
 //   node s5/render.mjs --format prores          → s5/out/s5.mov      ProRes 422 HQ, 10-bit, for the edit
 //   node s5/render.mjs --format png             → s5/out/frames/     PNG sequence
 //   node s5/render.mjs --still 8.4              → s5/out/still-8.4.png
+//   node s5/render.mjs --size 3840x2160         → 4K (any size; the page redraws at that resolution)
 //   node s5/render.mjs --greybox --guide        → grey-box animatic with timecode and read-along
 //   node s5/render.mjs --letterbox 0 --grain 0 --mb 0
 //
@@ -23,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const opts = { fps: 24, out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1' };
+const opts = { fps: 24, size: '1920x1080', out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1' };
 const PAGE_FLAGS = ['greybox', 'guide', 'letterbox', 'grain', 'mb'];
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
@@ -96,11 +97,9 @@ try {
   await page.waitForFunction(() => window.__motion, null, { timeout: 60000 });
   await page.evaluate(() => window.__motion.ready);
   const { duration } = await page.evaluate(() => ({ duration: window.__motion.duration }));
+  const [w, h] = opts.size.split('x').map(Number);
   const grab = async (t) => {
-    const b64 = await page.evaluate((tt) => {
-      window.__motion.seek(tt);
-      return document.getElementById('stage').toDataURL('image/png').split(',')[1];
-    }, t);
+    const b64 = await page.evaluate(([tt, ww, hh, fps]) => window.__motion.capture(tt, ww, hh, fps), [t, w, h, opts.fps]);
     return Buffer.from(b64, 'base64');
   };
 
