@@ -129,7 +129,7 @@ python3 -I s5/tools/qc.py s5/out/ep2.mp4 --nograin s5/out/ep2-qc-nograin.mp4 --c
 
 ## 改什么在哪
 
-- **节奏**：每个页面顶部的 `T`（镜头起止秒数）；朗读提示 `VO`，时间轴节拍 `BEATS`；第 2 集的字级节拍 `B`。
+- **节奏**：第 1 集是页面顶部的 `T`（镜头起止秒数），第 2 集是字级节拍 `B` 和镜头关键帧 `CAM`；朗读提示 `VO`，时间轴节拍 `BEATS`。
 - **第 1 集数据**：`CAMERAS`（对照表）、`LAUNCH`（官方定价）；二手价来自 `evidence/xianyu-sample.csv`，改完重跑 `build_assets.py`，中位数自动重算。
 - **第 2 集**：镜头关键帧 `CAM`；数据 `SENSOR`、`ROW`（2400 万像素级机型）、`LINE`（像素档位横轴）、`FACTS`（三行）、`MODES`（录制规格，`hl` 标出高亮行，`aps` 是裁切框出现时亮起的 60p 行）。
 - **配色、颗粒、字体**：`lib/stage.js` 里的 `C`、`GRAIN_K`、`F`。
