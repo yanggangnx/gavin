@@ -9,16 +9,19 @@
 <script src="fonts/fonts.js"></script>
 <script src="vendor/mp4-muxer-5.2.2.js"></script>
 <script src="vendor/webm-muxer-5.1.4.js"></script>
+<script src="build/cameras.js"></script>
 <script src="lib/stage.js"></script>
 <script>
 'use strict';
-// Episode 2 · 18 seconds, one continuous shot. The sensor is the subject and never leaves the
-// frame: it is drawn, joins a row of identical 24 MP sensors, takes its place on the resolution
-// line, comes back for three facts, and finally shows its recording area going from an APS-C
-// crop to the full width while the list of recording modes lights the two uncropped 4:2:2 10-bit
-// rows. Like Keynote's Magic Move, objects keep their identity and only their properties
-// interpolate. Sources for every number: evidence/ep2-ledger.csv (none are cited on screen).
-const { W, H, ML, C, F, lerp, E, P, mix, font, txt, rule } = S5;
+// Episode 2 · 18 seconds, one continuous shot. The S5 is the subject and never leaves the frame:
+// a front photo with the lens off, it joins a row of seven other ~24 MP bodies, then the camera
+// pushes into its mount and the sensor glass becomes a drawn sensor on the resolution line. It
+// pulls back out to the photo for three facts, and pushes in once more to show the recording area
+// going from an APS-C crop to the full width while the list of recording modes lights the two
+// uncropped 4:2:2 10-bit rows. Like Keynote's Magic Move, objects keep their identity and only
+// their properties interpolate. Sources for every number: evidence/ep2-ledger.csv (none are cited
+// on screen); for the photos: evidence/ep2-camera-sources.csv.
+const { W, H, ML, C, F, IMG, lerp, E, P, mix, font, txt, rule, makeCanvas } = S5;
 const DURATION = 18;
 
 // Word-level beats in seconds, from an estimated read of about six characters a second of the
@@ -49,18 +52,38 @@ const SW = SENSOR.w * MM, SH = SENSOR.h * MM;
 const HOME = { x: 1390, y: 540 };                 // the S5 sensor's centre in world space; it never moves
 const PITCH = (width, px) => (width / px) * 1000;  // µm
 
-// B · bodies with ~24 MP full-frame sensors, in release order; the S5 is slot 3 (A03).
+// B · bodies with ~24 MP full-frame sensors, in release order; the S5 is slot 3 (A03). Each is an
+// 800 × 800 front photo with the lens off (build/cameras.js). In photo pixels, glass is the sensor's
+// cover glass and body the camera's outline, both measured by hand.
 const ROW_STEP = 761;
 const ROW = [
-  { name: '索尼 A7 III', mp: '2420 万像素' },
-  { name: '尼康 Z6', mp: '2450 万像素' },
-  { name: '松下 LUMIX S1', mp: '2420 万像素' },
-  { name: '松下 LUMIX S5', mp: '2420 万像素', self: true },
-  { name: '佳能 EOS R6 Mark II', mp: '2420 万像素' },
-  { name: '佳能 EOS R8', mp: '2420 万像素' },
-  { name: '松下 LUMIX S5II', mp: '2420 万像素' },
-  { name: '尼康 Z6III', mp: '2450 万像素' },
+  { name: '索尼 A7 III', mp: '2420 万像素', img: 'Sony_A7_III', glass: [375, 376, 554, 499], body: [61, 163, 738, 634] },
+  { name: '尼康 Z6', mp: '2450 万像素', img: 'Nikon_Z6', glass: [387, 382, 574, 512], body: [60, 155, 739, 644] },
+  { name: '松下 LUMIX S1', mp: '2420 万像素', img: 'Panasonic_LUMIX_S1', glass: [403, 393, 570, 508], body: [60, 159, 739, 640] },
+  { name: '松下 LUMIX S5', mp: '2420 万像素', img: 'Panasonic_LUMIX_S5', glass: [392, 377, 575, 502], body: [60, 166, 739, 632], self: true },
+  { name: '佳能 EOS R6 Mark II', mp: '2420 万像素', img: 'Canon_EOS_R6_Mark_II', glass: [398, 366, 582, 491], body: [60, 154, 739, 646] },
+  { name: '佳能 EOS R8', mp: '2420 万像素', img: 'Canon_EOS_R8', glass: [404, 379, 589, 502], body: [60, 174, 738, 625] },
+  { name: '松下 LUMIX S5II', mp: '2420 万像素', img: 'Panasonic_LUMIX_S5II', glass: [380, 386, 566, 513], body: [60, 148, 738, 651] },
+  { name: '尼康 Z6III', mp: '2450 万像素', img: 'Nikon_Z6III', glass: [385, 374, 566, 500], body: [61, 163, 739, 635] },
 ].map((m, k) => ({ ...m, x: HOME.x + (k - 3) * ROW_STEP }));
+const S5_BODY = ROW[3];
+
+// Every photo is scaled so its sensor glass is as wide as the S5's (all eight are full frame), which
+// leaves the bodies at their true relative size, and is placed by the centre of that glass.
+const REST = 0.9;                                  // world px per S5 photo px: a body about 610 px wide
+const glassW = (m) => m.glass[2] - m.glass[0];
+const DIVE = SW / (glassW(S5_BODY) * REST);        // how much the S5 photo grows for its glass to fill SW
+
+function place(k, m, wx, grow = 1) {
+  const g = m.glass, b = m.body, s = REST * glassW(S5_BODY) / glassW(m) * grow;
+  const o = scr(k, wx - (g[0] + g[2]) / 2 * s, HOME.y - (g[1] + g[3]) / 2 * s), z = s * k.z;
+  return { o, z, x: o.x + b[0] * z, y: o.y + b[1] * z, w: (b[2] - b[0]) * z, h: (b[3] - b[1]) * z };
+}
+// The row's labels share one baseline under the lowest body.
+const LABEL_Y = Math.max(...ROW.map((m) => {
+  const s = REST * glassW(S5_BODY) / glassW(m);
+  return HOME.y + (m.body[3] - (m.glass[1] + m.glass[3]) / 2) * s;
+}));
 
 // C · full-frame bodies from fewest to most pixels, placed on a log scale with the S5 fixed (A04).
 const LINE_LEN = 4005;
@@ -127,16 +150,58 @@ function cam(t) {
 }
 const scr = (k, wx, wy) => ({ x: W / 2 + (wx - k.x) * k.z, y: H / 2 + (wy - k.y) * k.z });
 
-// A sensor at world centre (wx, wy), drawn in screen space so lines stay hairline at any zoom.
+// 0: the S5 is a photo. 1: the camera has pushed into its mount and the glass is the drawn sensor.
+const dive = (t) => P(t, B.line, B.line + 0.85) * (1 - P(t, B.photo - 0.15, B.photo + 0.6)) + P(t, B.value, B.value + 0.7);
+
+// The photos, a little desaturated so the sensor glass and red trim sit in the grey palette.
+const STILL = {};
+function still(id) {
+  if (!STILL[id] && IMG[id]) {
+    const cv = makeCanvas(800, 800), g = cv.getContext('2d');
+    g.filter = 'saturate(0.8)';
+    g.drawImage(IMG[id], 0, 0);
+    STILL[id] = cv;
+  }
+  return STILL[id];
+}
+
+function photo(c, k, m, wx, alpha, grow = 1) {
+  const p = place(k, m, wx, grow);
+  if (alpha <= 0) return p;
+  c.save();
+  c.globalAlpha *= alpha;
+  // A faint pool of light behind the body, so black plastic separates from the black background.
+  c.save();
+  c.translate(p.x + p.w / 2, p.y + p.h * 0.55); c.scale(1, 0.62);
+  const r = p.w * 0.78, pool = c.createRadialGradient(0, 0, 0, 0, 0, r);
+  pool.addColorStop(0, 'rgba(236,235,230,0.07)'); pool.addColorStop(1, 'rgba(236,235,230,0)');
+  c.fillStyle = pool; c.fillRect(-r, -r, 2 * r, 2 * r);
+  c.restore();
+  const im = still(m.img);
+  if (im) {
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(im, p.o.x, p.o.y, 800 * p.z, 800 * p.z);
+  } else {
+    // No build/cameras.js: outline the body and its sensor instead.
+    const g = m.glass;
+    c.strokeStyle = C.ink3; c.lineWidth = 1;
+    c.strokeRect(p.x, p.y, p.w, p.h);
+    c.strokeRect(p.o.x + g[0] * p.z, p.o.y + g[1] * p.z, (g[2] - g[0]) * p.z, (g[3] - g[1]) * p.z);
+  }
+  c.restore();
+  return p;
+}
+
+// A sensor centred on world x = wx, drawn in screen space so lines stay hairline at any zoom.
 function sensor(c, k, wx, o = {}) {
-  const a = o.alpha ?? 1;
-  const s = scr(k, wx - SW / 2, HOME.y - SH / 2), w = SW * k.z, h = SH * k.z;
+  const a = o.alpha ?? 1, sc = o.scale ?? 1;
+  const s = scr(k, wx - SW * sc / 2, HOME.y - SH * sc / 2), w = SW * sc * k.z, h = SH * sc * k.z;
   if (a <= 0) return { ...s, w, h };
   c.save();
   c.globalAlpha *= a;
   if (o.grid > 0) {
     // Pixel grid, spaced in proportion to the real pixel size (illustrative, not one line per pixel).
-    const g = o.pitch * 9 * k.z;
+    const g = o.pitch * 9 * k.z * sc;
     c.save();
     c.globalAlpha *= o.grid;
     c.strokeStyle = C.rule; c.lineWidth = 1;
@@ -147,8 +212,6 @@ function sensor(c, k, wx, o = {}) {
     c.restore();
   }
   c.strokeStyle = o.color || C.ink2; c.lineWidth = o.lw || 1.5;
-  const perim = 2 * (w + h);
-  if ((o.draw ?? 1) < 1) c.setLineDash([perim * o.draw, perim]);
   c.strokeRect(s.x, s.y, w, h);
   c.restore();
   return { ...s, w, h };
@@ -161,15 +224,15 @@ const TOKEN = { family: F.serif, weight: 700 };
 // "万像素" is a small suffix next to the big number, but the same size as the number once it is a label.
 const suffix = (size) => lerp(1, 0.42, Math.min(1, Math.max(0, (size - 24) / (190 - 24))));
 
-function tokenAt(c, k, t, s5) {
-  // Layout A/D: big on the left. B: under the S5 in the row. C: under the S5 on the line.
+function tokenAt(c, t, rowAt, s5) {
+  // Layout A/D: big on the left. B: under the S5 photo in the row. C: under the S5 sensor on the line.
   const big = { x: ML, y: 578, size: 190 };
-  const under = (dy, size) => {
+  const centred = (x, y, size) => {
     font(c, size, 700, F.serif);
     const w = c.measureText('2420').width + size * 0.12 + measure(c, '万像素', size * suffix(size));
-    return { x: s5.x + s5.w / 2 - w / 2, y: s5.y + s5.h + dy, size };
+    return { x: x - w / 2, y, size };
   };
-  const row = under(72, 24), line = under(46, 28);
+  const row = centred(rowAt.x, rowAt.y, 24), line = centred(s5.x + s5.w / 2, s5.y + s5.h + 46, 28);
   const mix3 = (a, b, p) => ({ x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p), size: lerp(a.size, b.size, p) });
   if (t < B.known) return big;
   if (t < B.line) return mix3(big, row, P(t, B.known, B.known + 0.9));
@@ -179,9 +242,9 @@ function tokenAt(c, k, t, s5) {
 
 function measure(c, s, size, weight = 600) { font(c, size, weight, F.serif); return c.measureText(s).width; }
 
-function drawToken(c, k, t, s5, alpha) {
+function drawToken(c, t, rowAt, s5, alpha) {
   if (alpha <= 0) return;
-  const p = tokenAt(c, k, t, s5);
+  const p = tokenAt(c, t, rowAt, s5);
   font(c, p.size, 700, F.serif);
   const nw = c.measureText('2420').width;
   txt(c, '2420', p.x, p.y, { ...TOKEN, size: p.size, alpha });
@@ -195,12 +258,13 @@ function frame(c, u, t) {
   const lineA = fade(t, B.line + 0.15, B.line + 0.7, B.photo - 0.15, B.photo + 0.25);
   const balance = P(t, B.balance - 0.1, B.balance + 0.3);
 
-  // World: the other sensors of the row, then of the line, then the S5 itself on top.
+  // World: the other cameras of the row, the sensors of the line, then the S5 itself on top.
+  const ly = scr(k, 0, LABEL_Y).y;
   ROW.forEach((m) => {
     if (m.self || rowA <= 0) return;
-    const s = sensor(c, k, m.x, { alpha: rowA, color: C.ink3 });
-    txt(c, m.name, s.x + s.w / 2, s.y + s.h + 34, { size: 18, color: C.ink3, align: 'center', alpha: rowA });
-    txt(c, m.mp, s.x + s.w / 2, s.y + s.h + 72, { family: F.serif, size: 22, weight: 600, color: C.ink2, align: 'center', alpha: rowA });
+    const p = photo(c, k, m, m.x, rowA);
+    txt(c, m.name, p.x + p.w / 2, ly + 34, { size: 18, color: C.ink3, align: 'center', alpha: rowA });
+    txt(c, m.mp, p.x + p.w / 2, ly + 72, { family: F.serif, size: 22, weight: 600, color: C.ink2, align: 'center', alpha: rowA });
   });
   LINE.forEach((m) => {
     if (m.self || lineA <= 0) return;
@@ -209,13 +273,21 @@ function frame(c, u, t) {
     txt(c, `${m.mp} 万像素`, s.x + s.w / 2, s.y + s.h + 46, { family: F.serif, size: 26, weight: 600, color: C.ink2, align: 'center', alpha: lineA * lerp(1, 0.6, balance) });
     txt(c, `单个像素约 ${m.pitch.toFixed(1)} 微米`, s.x + s.w / 2, s.y + s.h + 80, { size: 17, color: C.ink3, align: 'center', alpha: lineA });
   });
+  // The S5: the photo grows around its sensor glass while the drawn sensor grows out of that glass to
+  // full size, so the two outlines coincide all the way through the push-in (and the pull-out).
+  const v = dive(t), grow = Math.exp(v * Math.log(DIVE));
+  const rest = place(k, S5_BODY, HOME.x);
+  // The last push-in clears the photo sooner, before the list of modes arrives on the left.
+  const gone = t > B.value ? P(v, 0.1, 0.55, E.lin) : P(v, 0.25, 0.85, E.lin);
+  photo(c, k, S5_BODY, HOME.x, P(t, 0.1, 1.1) * (1 - gone), grow);
   const self = LINE.find((m) => m.self);
-  const s5 = sensor(c, k, HOME.x, {
-    draw: P(t, 0.15, 1.2, E.inout3),
+  sensor(c, k, HOME.x, {
+    alpha: P(v, 0.05, 0.6, E.lin), scale: grow / DIVE,
     color: mix(C.ink2, C.ink, balance * lineA),
     lw: lerp(1.5, 2, balance * lineA),
     grid: lineA, pitch: self.pitch,
   });
+  const s5 = sensor(c, k, HOME.x, { alpha: 0 });   // the full-size sensor: anchors labels and the box
 
   // C · the axis under the line of sensors.
   if (lineA > 0) {
@@ -232,16 +304,7 @@ function frame(c, u, t) {
     txt(c, '松下 LUMIX S5', s5.x + s5.w / 2, s5.y - 22, { size: 19, color: C.ink, align: 'center', alpha: lineA });
     txt(c, `单个像素约 ${self.pitch.toFixed(1)} 微米`, s5.x + s5.w / 2, s5.y + s5.h + 80, { size: 17, color: C.ink2, align: 'center', alpha: lineA });
   }
-  if (rowA > 0) txt(c, '松下 LUMIX S5', s5.x + s5.w / 2, s5.y + s5.h + 34, { size: 18, color: C.ink, align: 'center', alpha: rowA });
-
-  // A / D · dimension lines on the S5 when it fills the frame.
-  const dim = fade(t, 1.1, 1.5, B.known, B.known + 0.3) + fade(t, B.photo + 0.4, B.photo + 0.8, B.value, B.value + 0.3);
-  if (dim > 0) {
-    rule(c, s5.x, s5.x + s5.w, s5.y + s5.h + 34, dim, C.ink3);
-    txt(c, `${SENSOR.w} mm`, s5.x + s5.w / 2, s5.y + s5.h + 70, { size: 20, color: C.ink3, align: 'center', alpha: dim });
-    c.save(); c.globalAlpha *= dim; c.fillStyle = C.ink3; c.fillRect(s5.x + s5.w + 34, s5.y, 1, s5.h); c.restore();
-    txt(c, `${SENSOR.h} mm`, s5.x + s5.w + 50, s5.y + s5.h / 2 + 7, { size: 20, color: C.ink3, alpha: dim });
-  }
+  if (rowA > 0) txt(c, '松下 LUMIX S5', rest.x + rest.w / 2, ly + 34, { size: 18, color: C.ink, align: 'center', alpha: rowA });
 
   // F · the recording area on the S5: an APS-C crop first, then the full width.
   const box = fade(t, B.crop - 0.05, B.crop + 0.15, DURATION + 1, DURATION + 2);
@@ -275,7 +338,7 @@ function frame(c, u, t) {
 
   const leftA = fade(t, 0, 0.01, B.value, B.value + 0.3);
   const tokA = P(t, B.mp - 0.05, B.mp + 0.15, E.lin) * leftA * lerp(1, 0.25, P(t, B.px - 0.05, B.px + 0.25));
-  drawToken(c, k, t, s5, tokA);
+  drawToken(c, t, { x: rest.x + rest.w / 2, y: ly + 72 }, s5, tokA);
   const ff = P(t, B.ff - 0.05, B.ff + 0.15, E.lin) * (1 - P(t, B.known, B.known + 0.3, E.lin) + P(t, B.photo + 0.3, B.photo + 0.6, E.lin)) * leftA;
   txt(c, '全画幅 CMOS', ML, 664, { family: F.serif, size: 40, weight: 600, alpha: ff * lerp(1, 0.25, P(t, B.frame - 0.05, B.frame + 0.25)) });
   FACTS.forEach((f, i) => {
@@ -337,6 +400,7 @@ S5.run({
   shots: [[0, DURATION, frame]],
   vo: VO,
   beats: BEATS,
+  images: window.S5_CAMERAS,
   label: (t) => (t < B.known ? 'A 传感器' : t < B.line ? 'B 不陌生' : t < B.photo ? 'C 平衡线' : t < B.px ? 'D 够用' : t < B.value ? 'E 不是卖点' : 'F 录制规格'),
 });
 </script>
