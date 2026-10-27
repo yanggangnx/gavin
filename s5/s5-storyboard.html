@@ -3779,8 +3779,8 @@ const CAM = [
   [2.75, 925, 540, 1.05],
   [3.70, 960, 540, 1.00],    // the table, and its four dots on the axis
   [4.50, 955, 540, 1.00],
-  [5.40, 875, 548, 1.07],    // in on 13,998
-  [7.35, 855, 552, 1.10],
+  [5.40, 935, 548, 1.06],    // in on 13,998 and the body
+  [7.35, 930, 552, 1.08],
   [8.40, 960, 540, 1.00],    // out again as the playhead runs to 现在
   [10.0, 972, 536, 0.985],
 ];
@@ -3828,7 +3828,7 @@ const yearSteps = (d) => [1, 2, 3, 4, 5, 6].reduce((s, k) => s + E.inout3(clamp(
 const runPrice = (d) => lerp(LAUNCH, MEDIAN, clamp((d - D_LAUNCH) / (D_NOW - D_LAUNCH)));
 
 // ---- 4K: the 2020 headline, then one cell in a table of cheap cameras that all have it ----------
-const COL = { name: ML, date: 720, spec: 1010, price: 1770 };
+const COL = { name: ML, date: 590, spec: 775, price: 1245 };   // the S5 itself stands to the right
 const ROW_S5 = 404;
 const ROW_Y = CAMERAS.map((_, i) => 512 + i * 68);
 const rowIn = (t, i) => P(t - T.s2b, 0.7 + i * 0.09, 0.9 + i * 0.09, E.out3);
@@ -3910,9 +3910,9 @@ function spec(c, t) {
   const fly = P(t, tb, tb + 0.8, E.inout3);
   c.save();
   c.translate(lerp(ML, COL.spec, fly), lerp(580 + 46 * (1 - rise), ROW_S5, fly));
-  const s = lerp(1, 34 / 170, fly);
+  const s = lerp(1, 34 / 156, fly);
   c.scale(s, s);
-  txt(c, '4K 60p 10bit', 0, 0, { family: F.serif, size: 170, weight: 700, alpha: rise * (1 - tableOut(t)) });
+  txt(c, '4K 60p 10bit', 0, 0, { family: F.serif, size: 156, weight: 700, alpha: rise * (1 - tableOut(t)) });
   c.restore();
 }
 
@@ -4052,10 +4052,13 @@ function wallLayout() {
 
 // The listings, cheapest first, laid out like the feed they came from and scrolling slowly
 // upwards; they fade out above the time axis. Muted until the median lights up in its own colours.
+const wallIn = (t) => P(t, T.s4 + 0.45, T.s4 + 0.95, E.out3);
+const midIn = (t) => P(t, T.s4 + 0.32, T.s4 + 0.62, E.lin);   // where the S5 lands, a beat before the rest
+const wallShift = (t) => lerp(56, -36, P(t, T.s4, T.end, E.lin)) + (1 - wallIn(t)) * 20;
+
 function wall(c, t) {
-  const a = P(t, T.s4 + 0.45, T.s4 + 0.95, E.out3);
-  if (a <= 0) return;
-  const drift = lerp(56, -36, P(t, T.s4, T.end, E.lin));
+  const a = wallIn(t);
+  if (a <= 0 && midIn(t) <= 0) return;
   const mid = P(t, T.roll + 0.05, T.land);
   const layer = buffers(c.canvas.width, c.canvas.height).layer;
   const g = layer.getContext('2d');
@@ -4064,9 +4067,9 @@ function wall(c, t) {
   g.setTransform(c.getTransform());
   for (const s of wallLayout()) {
     const isMid = s.id === MID.id;
-    const y = s.y + drift + (1 - a) * 20;
+    const y = s.y + wallShift(t);
     g.save();
-    g.globalAlpha = a * (isMid ? lerp(0.78, 1, mid) : lerp(0.78, 0.3, mid));
+    g.globalAlpha = isMid ? Math.max(a, midIn(t)) * lerp(0.78, 1, mid) : a * lerp(0.78, 0.3, mid);
     g.beginPath(); g.roundRect(s.x, y, WALL.w, s.h, 6);
     const im = IMG[s.id];
     if (im && !OPT.greybox) {
@@ -4100,6 +4103,178 @@ function wall(c, t) {
   c.restore();
 }
 
+// ---- the S5 itself ---------------------------------------------------------------------------
+// The body in front view, drawn rather than photographed so it stays sharp at any export size.
+// Millimetres from the bottom-left corner, y up. The outline follows the published size
+// (132.6 × 97.1 mm) and the listing photos; the details are simplified.
+const S5 = { w: 132.6, h: 97.1, top: 80, mx: 75, my: 46 };  // top: the shoulders; mx, my: mount centre
+const S5_AT = { x: 1342, y: 610, k: 3 };                   // bottom-left on the stage, and px per mm
+
+const S5_PATH = (() => {
+  const body = new Path2D();
+  body.moveTo(6, 0);
+  body.lineTo(S5.w - 4, 0);
+  body.quadraticCurveTo(S5.w, 0, S5.w, 4);
+  body.lineTo(S5.w, S5.top - 6);
+  body.quadraticCurveTo(S5.w, S5.top, S5.w - 6, S5.top);  // right shoulder
+  body.lineTo(97, S5.top);                                   // the viewfinder hump
+  body.lineTo(93.2, 95.4);
+  body.quadraticCurveTo(92.8, S5.h, 91, S5.h);
+  body.lineTo(59, S5.h);
+  body.quadraticCurveTo(57.2, S5.h, 56.8, 95.4);
+  body.lineTo(53, S5.top);
+  body.lineTo(39, S5.top);                                   // left shoulder, up onto the grip
+  body.bezierCurveTo(35, S5.top, 34, 82, 30, 82);
+  body.lineTo(13, 82);
+  body.bezierCurveTo(4, 82, 0, 76, 0, 66);
+  body.lineTo(0, 7);
+  body.quadraticCurveTo(0, 0, 6, 0);
+  body.closePath();
+
+  const grip = new Path2D();                                 // the rubber, out to where the grip turns
+  grip.moveTo(-2, -2);
+  grip.lineTo(35, -2);
+  grip.bezierCurveTo(39.5, 22, 39.5, 52, 36.5, 82);
+  grip.lineTo(-2, 90);
+  grip.closePath();
+
+  const edge = new Path2D();
+  edge.moveTo(35, 2);
+  edge.bezierCurveTo(39.5, 22, 39.5, 52, 36.5, 79);
+
+  const dials = new Path2D();                                // top: front dial, rear dial, drive/mode dial, hot shoe
+  for (const [x0, x1, y0, y1] of [[9, 27, 82, 87], [40, 51, S5.top, 85.5], [104, 124, S5.top, 88], [63, 87, S5.h, 98.8]]) {
+    dials.roundRect(x0, y0 - 0.6, x1 - x0, y1 - y0 + 0.6, [0, 0, 1.2, 1.2]);
+  }
+  const knurl = new Path2D();
+  for (const [x0, x1, y0, y1] of [[9, 27, 82.6, 86.4], [104, 124, 83.5, 87.4]]) {
+    for (let x = x0 + 1.2; x < x1 - 0.6; x += 1.3) { knurl.moveTo(x, y0); knurl.lineTo(x, y1); }
+  }
+  const lugs = new Path2D();
+  lugs.roundRect(S5.w - 0.4, 64, 3, 6, 1.2);
+  lugs.roundRect(-2.6, 68, 3, 6, 1.2);
+  return { body, grip, edge, dials, knurl, lugs };
+})();
+
+let S5_TEXTURE = null;
+function s5Texture(c) {
+  // The grip's pebbled rubber: a seeded tile of specks, sized in millimetres so it scales with the body.
+  if (!S5_TEXTURE) {
+    const t = makeCanvas(96, 96), g = t.getContext('2d');
+    let s = 0x55;
+    const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < 900; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255,250,240,0.07)' : 'rgba(0,0,0,0.35)';
+      g.beginPath(); g.arc(rnd() * 96, rnd() * 96, 0.6 + rnd() * 0.9, 0, Math.PI * 2); g.fill();
+    }
+    S5_TEXTURE = t;
+  }
+  const p = c.createPattern(S5_TEXTURE, 'repeat');
+  p.setTransform(new DOMMatrix().scale(0.18));
+  return p;
+}
+
+// x, y: the bottom-left corner on the stage; k: px per mm.
+function drawS5(c, x, y, k, alpha = 1) {
+  if (alpha <= 0 || k <= 0) return;
+  const { mx, my } = S5, px = 1 / k;                         // px: one stage pixel, in mm
+  const ring = (r0, r1, fill) => {
+    c.beginPath(); c.arc(mx, my, r1, 0, Math.PI * 2); if (r0) c.arc(mx, my, r0, 0, Math.PI * 2, true);
+    c.fillStyle = fill; c.fill('evenodd');
+  };
+  c.save();
+  c.globalAlpha *= alpha;
+  c.translate(x, y);
+  c.scale(k, -k);
+
+  const shade = c.createLinearGradient(0, 0, 0, S5.h);
+  shade.addColorStop(0, '#0d0d0c'); shade.addColorStop(1, '#1b1a18');
+  c.fillStyle = '#171614'; c.fill(S5_PATH.dials);
+  c.fillStyle = shade; c.fill(S5_PATH.body);
+  c.fillStyle = '#121211'; c.fill(S5_PATH.lugs);
+  c.save();
+  c.clip(S5_PATH.body);
+  c.fillStyle = '#121110'; c.fill(S5_PATH.grip);
+  c.fillStyle = s5Texture(c); c.fill(S5_PATH.grip);
+  c.restore();
+
+  c.lineWidth = px;
+  c.strokeStyle = C.ink3;
+  c.stroke(S5_PATH.dials); c.stroke(S5_PATH.lugs);
+  c.globalAlpha *= 0.6; c.stroke(S5_PATH.knurl); c.stroke(S5_PATH.edge); c.globalAlpha /= 0.6;
+  c.save(); c.globalAlpha *= 0.5; c.fillStyle = C.ink3;      // where the top plate meets the leatherette
+  c.fillRect(37.5, 70, mx - 37.5, 0.5 * px * 2); c.fillRect(mx, 70, S5.w - mx, 0.5 * px * 2);
+  c.restore();
+  c.lineWidth = 1.4 * px; c.strokeStyle = C.ink2;
+  c.globalAlpha *= 0.75; c.stroke(S5_PATH.body); c.globalAlpha /= 0.75;
+
+  // The L-mount: flange, bayonet ring, throat, contacts, and the full-frame sensor inside.
+  ring(0, 31.5, '#131312');
+  const metal = c.createLinearGradient(mx - 30, my + 30, mx + 30, my - 30);
+  metal.addColorStop(0, '#8d8a83'); metal.addColorStop(0.45, '#4a4945'); metal.addColorStop(0.7, '#6e6c66'); metal.addColorStop(1, '#3a3936');
+  ring(25.8, 29.6, metal);
+  ring(0, 25.8, '#060606');
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + (i * Math.PI) / 2;
+    ring(0, 0.8, '#2a2927');
+    c.beginPath(); c.arc(mx + 27.7 * Math.cos(a), my + 27.7 * Math.sin(a), 0.75, 0, Math.PI * 2); c.fillStyle = '#25241f'; c.fill();
+  }
+  c.fillStyle = '#5f5a4c';
+  for (let i = 0; i < 11; i++) {
+    const a = Math.PI * (0.36 + 0.028 * i);
+    c.save(); c.translate(mx + 23.6 * Math.cos(a), my + 23.6 * Math.sin(a)); c.rotate(a);
+    c.fillRect(-0.5, -0.45, 1, 0.9); c.restore();
+  }
+  const glass = c.createLinearGradient(mx - 18, my - 12, mx + 18, my + 12);
+  glass.addColorStop(0, '#101116'); glass.addColorStop(0.55, '#1d1f27'); glass.addColorStop(0.62, '#2a2c35'); glass.addColorStop(1, '#121318');
+  c.fillStyle = '#1a1a19'; c.fillRect(mx - 20, my - 14, 40, 28);
+  c.fillStyle = glass; c.fillRect(mx - 18, my - 12, 36, 24);
+  c.lineWidth = px; c.strokeStyle = '#3d3c39'; c.strokeRect(mx - 18, my - 12, 36, 24);
+  c.beginPath(); c.arc(mx, my, 31.5, 0, Math.PI * 2); c.strokeStyle = C.ink3; c.stroke();
+
+  for (const [ang, r] of [[150, 2.6], [212, 4.2]]) {           // the two buttons on the grip side
+    const a = (ang * Math.PI) / 180, bx = mx + 35.5 * Math.cos(a), by = my + 35.5 * Math.sin(a);
+    c.beginPath(); c.arc(bx, by, r, 0, Math.PI * 2); c.fillStyle = '#1c1b19'; c.fill();
+    c.strokeStyle = C.ink3; c.stroke();
+  }
+  c.restore();
+
+  // Lettering, upright.
+  const letter = (s, lx, ly, size, weight, color, track = 0) => {
+    c.save();
+    c.globalAlpha *= alpha;
+    font(c, size * k, weight, F.sans);
+    c.fillStyle = color; c.textBaseline = 'alphabetic';
+    const ws = [...s].map((ch) => c.measureText(ch).width), tw = ws.reduce((a, b) => a + b, 0) + track * k * (s.length - 1);
+    let cx = x + lx * k - tw / 2;
+    [...s].forEach((ch, i) => { c.fillText(ch, cx, y - ly * k); cx += ws[i] + track * k; });
+    c.restore();
+  };
+  letter('LUMIX', mx, 85.2, 6.6, 500, C.ink2, 1.1);
+  letter('S5', 120.5, 63, 6, 600, C.ink3);
+}
+
+// On the right from the launch caption on; when the price falls it shrinks into the median
+// listing, the same body second-hand.
+function s5(c, t) {
+  const rise = P(t, T.s2 + 0.35, T.s2 + 0.95, E.out3);
+  if (rise <= 0) return;
+  const fly = P(t, T.s4, T.s4 + 0.6, E.inout3);
+  let { x, y, k } = S5_AT;
+  y += 30 * (1 - rise);
+  if (fly > 0) {
+    const card = wallLayout().find((s) => s.id === MID.id);
+    if (card) {
+      const k1 = 0.62 * WALL.w / S5.w;
+      const cx = card.x + 0.4 * WALL.w, cy = card.y + wallShift(t) + 0.25 * card.h;
+      x = lerp(x, cx - (S5.w / 2) * k1, fly);
+      y = lerp(y, cy + (S5.h / 2) * k1, fly);
+      k = lerp(k, k1, fly);
+    }
+  }
+  drawS5(c, x, y, k, rise * (1 - P(fly, 0.55, 1, E.lin)));
+}
+
 // ---- frame composition -----------------------------------------------------------------------
 function drawScene(c, t) {
   c.save();
@@ -4115,6 +4290,7 @@ function drawScene(c, t) {
   table(c, t);
   price(c, t);
   wall(c, t);
+  s5(c, t);
   c.restore();
 }
 
