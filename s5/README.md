@@ -6,6 +6,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | `index.html` | 10 s（240 帧） | 六年，足够让 4K 从旗舰卖点变成基础配置，也足够让一台 14000 元的机身，掉到现在只剩个零头。 | `evidence/ledger.csv`、`evidence/xianyu-sample.csv` |
 | 2 | `ep2.html` | 18 s（432 帧），一镜到底 | S5 用的是一块 2420 万像素全画幅 CMOS……它真正值钱的，是能无裁切录制 C4K 或 4K 30 帧的 4:2:2 10-bit。 | `evidence/ep2-ledger.csv` |
+| 3 | `ep3.html` | 10 s（240 帧），一镜到底 | 第一段 3 秒：S5 和索尼 A7 IV 的 4K 60p 都有约 1.5× 裁切。第二段 7 秒：S5 一代固件更新记录，高亮“外录 6K 12-bit RAW”。 | `evidence/ep3-ledger.csv` |
 
 还没有配音，节拍是估算的：第 1 集按每秒约 5 个字，第 2 集按每秒约 6 个字。录配音时打开预览页的“朗读提示”，跟着屏幕底部的字念；录好后按真实波形改页面顶部的 `T`（第 1 集）或字级节拍 `B`（第 2 集）。
 
@@ -67,11 +68,24 @@
 | 15.00 / 15.65 s | 360 / 376 | C4K / 4K 30 帧 | 两行依次高亮，框比例切换 |
 | 16.65 s | 400 | 4:2:2 10-bit | 大字出现、下划线 |
 
+## 第 3 集 · 裁切与固件（10 秒，一镜到底）
+
+两段之间不切：同一个镜头先看两台机器，再横移到 S5 和它的固件记录。S5 上第一段画出的 4K 60p 裁切框一直留在传感器上，到最后直接撑开成 RAW 区域，前后两段靠这一个框接起来。画面上不标来源，来源在 `evidence/ep3-ledger.csv`。
+
+| 时间 | 画面 | 证据 |
+| --- | --- | --- |
+| 0 – 3 s | S5 和 A7 IV 两块传感器按同一比例并排（35.6 × 23.8 / 35.9 × 23.9 mm）。16:9 录制框先是全宽（“4K 30p：全宽”），0.45 s 起同时缩到 1/1.5（“4K 60p”），下面写“约 1.5× 裁切”和各自的 APS-C / Super 35 | C01–C03 |
+| 3 – 3.85 s | 镜头向右平移并略微拉远，A7 IV 移出画面，S5 停在右侧 | |
+| 3.65 – 6.4 s | 左侧出现固件更新记录，从最新的 2.9 往下滚到 2.0；每个版本只留一两句精简后的要点（2.0、2.2–2.9，官方没有 2.1） | C04 |
+| 6.6 – 10 s | 2.0 里“外录 6K 12-bit RAW（Atomos Ninja V，ProRes RAW）”亮起并加下划线，其余变暗；S5 的裁切框撑开到 5888 × 3312（传感器宽度的 98%），传感器下方大字“外录 6K 12-bit RAW”，小字“5.9K · 5888 × 3312 · 固件 2.0 起” | C05 |
+
+官方标称是 5.9K（5888 × 3312），大字按口播写“6K”，准确值放在下面那行小字里。第 3 集没有提供口播，节拍点在 `ep3.html` 的 `B`。
+
 ## 预览
 
 直接用 Chrome 或 Edge 打开页面（`s5/index.html`、`s5/ep2.html`）。字体打包成了 data URI，不联网也能看。空格播放/暂停，← → 逐帧，Shift + ← → 跳 1 秒；勾选项可以切换灰盒、朗读提示、遮幅、颗粒和运动模糊。
 
-单文件版：`python3 -I s5/tools/build_single.py [ep2.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html` 约 0.5 MB），拷到哪台电脑都能直接打开。
+单文件版：`python3 -I s5/tools/build_single.py [ep2.html | ep3.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html`、`out/ep3-storyboard.html` 各约 0.5 MB），拷到哪台电脑都能直接打开。
 
 改过画面上的字要重跑 `python3 -I s5/tools/build_fonts.py`：它扫描所有页面和 `lib/`，生成一份共用的字形子集 `fonts/fonts.js`。
 
@@ -84,6 +98,7 @@
 ```bash
 node s5/render.mjs                          # 第 1 集 H.264 MP4，24 fps，运动模糊开 → out/s5.mp4
 node s5/render.mjs --page ep2.html          # 第 2 集 → out/ep2.mp4
+node s5/render.mjs --page ep3.html          # 第 3 集 → out/ep3.mp4
 node s5/render.mjs --format prores          # ProRes 422 HQ 10-bit，进剪辑用 → out/s5.mov
 node s5/render.mjs --format png             # PNG 序列 → out/s5-frames/
 node s5/render.mjs --size 3840x2160         # 4K（任意尺寸，页面按该分辨率重绘）
@@ -107,9 +122,13 @@ python3 -I s5/tools/qc.py s5/out/s5.mp4 --nograin s5/out/qc-nograin-5-6s.mp4    
 node s5/render.mjs --page ep2.html --from 1.5 --to 2.5 --grain 0 --out out/ep2-qc-nograin.mp4
 python3 -I s5/tools/qc.py s5/out/ep2.mp4 --nograin s5/out/ep2-qc-nograin.mp4 --clip-start 1.5 \
     --at 2.0 --strip 1100,1680 --rows 360,440,520,600,680 --out s5/out/qc/ep2
+# 第 3 集：取 5.0 s 传感器下方的空白暗部
+node s5/render.mjs --page ep3.html --from 4.5 --to 5.5 --grain 0 --out out/ep3-qc-nograin.mp4
+python3 -I s5/tools/qc.py s5/out/ep3.mp4 --nograin s5/out/ep3-qc-nograin.mp4 --clip-start 4.5 \
+    --at 5.0 --strip 1200,1760 --rows 760,800,840,880 --out s5/out/qc/ep3
 ```
 
-当前结果：压缩后有颗粒最长 17 / 14 像素（第 1 / 2 集），无颗粒 248 / 92 像素。
+当前结果：压缩后有颗粒最长 17 / 14 / 18 像素（第 1 / 2 / 3 集），无颗粒 248 / 92 / 172 像素。
 
 ## 冷启动观众测试
 
@@ -136,7 +155,7 @@ python3 -I s5/tools/qc.py s5/out/ep2.mp4 --nograin s5/out/ep2-qc-nograin.mp4 --c
 
 ## 文件
 
-- `index.html`、`ep2.html`：两集的镜头
+- `index.html`、`ep2.html`、`ep3.html`：三集的镜头
 - `lib/stage.js`：共用引擎（绘制、颗粒、运动模糊）、预览播放器、导出面板、`window.__motion` 渲染接口
 - `render.mjs`：逐帧导出脚本，`--page` 选集
 - `evidence/`：证据台账、抽样表；`raw/` 和 `xianyu/` 是截图，只在本地

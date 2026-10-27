@@ -4,6 +4,7 @@
 Usage: python3 -I s5/tools/build_single.py [page.html]
   index.html (default) → s5/out/s5-storyboard.html
   ep2.html             → s5/out/ep2-storyboard.html
+  ep3.html             → s5/out/ep3-storyboard.html
 
 Fonts, listing cards, the engine and the muxers are all inlined, so the file works offline.
 Episode 1 contains the third-party screenshots from build/cards.js, so output lands in out/
