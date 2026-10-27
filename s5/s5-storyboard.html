@@ -3732,6 +3732,7 @@ function rollDigit(c, x, by, size, w, g, o) {
 
 // ---- assets ----------------------------------------------------------------------------------
 const IMG = {};
+let S5_IMG = null;                               // a cut-out product photo, if the build has one (s5/tools/cutout.py)
 let GRAIN = [];
 
 function buildGrain() {
@@ -3766,6 +3767,14 @@ const ready = (async () => {
     im.onerror = res;
     im.src = src;
   })));
+  if (window.S5_PHOTO) {
+    await new Promise((res) => {
+      const im = new Image();
+      im.onload = () => { S5_IMG = im; res(); };
+      im.onerror = res;
+      im.src = window.S5_PHOTO;
+    });
+  }
   buildGrain();
 })();
 
@@ -4254,6 +4263,24 @@ function drawS5(c, x, y, k, alpha = 1) {
   letter('S5', 120.5, 63, 6, 600, C.ink3);
 }
 
+// The product photo instead of the drawing, in the same box: as wide as the body plus its strap
+// lugs, standing on the same baseline. Graded down a little to sit in the dark, with a faint
+// light behind it so a black body still separates from a black stage.
+function drawS5Photo(c, x, y, k, alpha = 1) {
+  if (alpha <= 0 || k <= 0) return;
+  const w = (S5.w + 5) * k, h = w * S5_IMG.height / S5_IMG.width;
+  const cx = x + (S5.w / 2) * k, top = y - h;
+  c.save();
+  c.globalAlpha *= alpha;
+  const gy = top + h * 0.55, r = w * 0.8;
+  const back = c.createRadialGradient(cx, gy, 0, cx, gy, r);
+  back.addColorStop(0, 'rgba(255,250,240,0.07)'); back.addColorStop(1, 'rgba(255,250,240,0)');
+  c.fillStyle = back; c.fillRect(cx - r, gy - r, 2 * r, 2 * r);
+  c.filter = 'brightness(0.9) contrast(1.06) saturate(0.85)';
+  c.drawImage(S5_IMG, cx - w / 2, top, w, h);
+  c.restore();
+}
+
 // On the right from the launch caption on; when the price falls it shrinks into the median
 // listing, the same body second-hand.
 function s5(c, t) {
@@ -4272,7 +4299,7 @@ function s5(c, t) {
       k = lerp(k, k1, fly);
     }
   }
-  drawS5(c, x, y, k, rise * (1 - P(fly, 0.55, 1, E.lin)));
+  (S5_IMG && !OPT.greybox ? drawS5Photo : drawS5)(c, x, y, k, rise * (1 - P(fly, 0.55, 1, E.lin)));
 }
 
 // ---- frame composition -----------------------------------------------------------------------
