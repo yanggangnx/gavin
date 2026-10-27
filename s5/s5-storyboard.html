@@ -4263,12 +4263,14 @@ function drawS5(c, x, y, k, alpha = 1) {
   letter('S5', 120.5, 63, 6, 600, C.ink3);
 }
 
-// The product photo instead of the drawing, in the same box: as wide as the body plus its strap
-// lugs, standing on the same baseline. Graded down a little to sit in the dark, with a faint
+// The product photo instead of the drawing, in the same box: the body as wide as the drawn one
+// (the strap lugs stick out past it), standing on the same baseline. Graded down a little to sit in the dark, with a faint
 // light behind it so a black body still separates from a black stage.
+const PHOTO_BODY = 0.91;                         // the body's share of the photo's width; the rest is strap lugs
+
 function drawS5Photo(c, x, y, k, alpha = 1) {
   if (alpha <= 0 || k <= 0) return;
-  const w = (S5.w + 5) * k, h = w * S5_IMG.height / S5_IMG.width;
+  const w = S5.w * k / PHOTO_BODY, h = w * S5_IMG.height / S5_IMG.width;
   const cx = x + (S5.w / 2) * k, top = y - h;
   c.save();
   c.globalAlpha *= alpha;
@@ -4276,7 +4278,7 @@ function drawS5Photo(c, x, y, k, alpha = 1) {
   const back = c.createRadialGradient(cx, gy, 0, cx, gy, r);
   back.addColorStop(0, 'rgba(255,250,240,0.07)'); back.addColorStop(1, 'rgba(255,250,240,0)');
   c.fillStyle = back; c.fillRect(cx - r, gy - r, 2 * r, 2 * r);
-  c.filter = 'brightness(0.9) contrast(1.06) saturate(0.85)';
+  c.filter = 'brightness(0.9) contrast(1.05) saturate(0.7)';
   c.drawImage(S5_IMG, cx - w / 2, top, w, h);
   c.restore();
 }

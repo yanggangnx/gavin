@@ -8,7 +8,8 @@ Writes a trimmed, transparent PNG and, with --js, the same image as
 
 How: the background is whatever is close to the border colour *and* connected
 to the border, so white inside the body (LUMIX lettering, highlights on the
-mount) stays. Edges get a soft alpha from how far each pixel is from the
+mount) stays; enclosed patches of exactly the background colour (the hole in a
+strap lug) go too. Edges get a soft alpha from how far each pixel is from the
 background, and the background is un-mixed from edge colours so no white rim
 shows on a dark stage. A soft drop shadow lighter than --tol goes with the
 background; raise --tol if a shadow is left attached under the body.
@@ -23,7 +24,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 
-def cutout(im, tol=40, soft=60, max_width=1600):
+def cutout(im, tol=40, soft=60, max_width=1600, hole_tol=10, hole_min=25):
     rgb = np.asarray(im.convert('RGB'), dtype=np.float32)
     h, w, _ = rgb.shape
     border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]])
@@ -40,6 +41,27 @@ def cutout(im, tol=40, soft=60, max_width=1600):
                 [(0, j) for j in range(0, sh, 8)] + [(sw - 1, j) for j in range(0, sh, 8)]:
         if fill.getpixel((x, y)) == 255:
             ImageDraw.floodfill(fill, (x, y), 128)
+    # Holes the background shows through (strap lugs): enclosed patches that are the background
+    # colour almost exactly. Lettering and metal highlights sit well below it, and specks are skipped.
+    filled = np.asarray(fill).copy()
+    cand = np.asarray(Image.fromarray(((dist < hole_tol) * 255).astype(np.uint8)).resize((sw, sh), Image.NEAREST)).copy()
+    cand[filled == 128] = 0
+    core = np.asarray(Image.fromarray(cand).filter(ImageFilter.MinFilter(3))).copy()  # specks vanish here
+    holes = []
+    while True:
+        ys, xs = np.nonzero(core == 255)
+        if not len(xs):
+            break
+        comp = Image.fromarray(cand).copy()       # floodfill doesn't write to an array-backed image
+        ImageDraw.floodfill(comp, (int(xs[0]), int(ys[0])), 100)
+        part = np.asarray(comp) == 100
+        core[ys[0], xs[0]] = 0
+        core[part] = 0
+        cand[part] = 50
+        if part.sum() >= hole_min:
+            filled[part] = 128
+            holes.append((int(xs[0] / scale), int(ys[0] / scale), int(part.sum())))
+    fill = Image.fromarray(filled)
     bgmask = Image.fromarray(((np.asarray(fill) == 128) * 255).astype(np.uint8)).resize((w, h), Image.BILINEAR)
     bgmask = np.asarray(bgmask, dtype=np.float32) / 255
 
@@ -64,7 +86,7 @@ def cutout(im, tol=40, soft=60, max_width=1600):
         res = res.crop((max(0, box[0] - pad), max(0, box[1] - pad), min(w, box[2] + pad), min(h, box[3] + pad)))
     if res.width > max_width:
         res = res.resize((max_width, round(res.height * max_width / res.width)), Image.LANCZOS)
-    return res
+    return res, holes
 
 
 def main():
@@ -75,8 +97,10 @@ def main():
     ap.add_argument('--tol', type=float, default=40, help='how far from the background still counts as background (0-255)')
     ap.add_argument('--soft', type=float, default=60, help='distance at which an edge pixel is fully opaque')
     ap.add_argument('--max-width', type=int, default=1600)
+    ap.add_argument('--hole-tol', type=float, default=10, help='enclosed patches this close to the background are holes')
+    ap.add_argument('--hole-min', type=int, default=25, help='smallest hole, in pixels of the 900 px working copy')
     args = ap.parse_args()
-    res = cutout(Image.open(args.src), args.tol, args.soft, args.max_width)
+    res, holes = cutout(Image.open(args.src), args.tol, args.soft, args.max_width, args.hole_tol, args.hole_min)
     res.save(args.out, optimize=True)
     if args.js:
         buf = io.BytesIO()
@@ -84,6 +108,8 @@ def main():
         with open(args.js, 'w', encoding='utf-8') as f:
             f.write('window.S5_PHOTO = "data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode() + '";\n')
     print(f'{args.out}: {res.width}×{res.height}')
+    for x, y, n in holes:
+        print(f'  hole punched at ({x}, {y}) in the source, {n} px: check it is really background')
 
 
 if __name__ == '__main__':
