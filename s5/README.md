@@ -87,7 +87,7 @@
 
 直接用 Chrome 或 Edge 打开页面（`s5/index.html`、`s5/ep2.html`）。字体打包成了 data URI，不联网也能看。空格播放/暂停，← → 逐帧，Shift + ← → 跳 1 秒；勾选项可以切换灰盒、朗读提示、遮幅、颗粒和运动模糊。
 
-单文件版：`python3 -I s5/tools/build_single.py [ep2.html | ep3.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html`、`out/ep3-storyboard.html` 各约 0.5 MB），拷到哪台电脑都能直接打开。
+单文件版：`python3 -I s5/tools/build_single.py [ep2.html | ep3.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html` 约 6 MB，`out/ep3-storyboard.html` 约 0.5 MB），拷到哪台电脑都能直接打开。第 1、2 集的单文件里有闲鱼截图和相机照片，只在本地传，不进 git。
 
 改过画面上的字要重跑 `python3 -I s5/tools/build_fonts.py`：它扫描所有页面和 `lib/`，生成一份共用的字形子集 `fonts/fonts.js`。
 
@@ -130,7 +130,7 @@ python3 -I s5/tools/qc.py s5/out/ep3.mp4 --nograin s5/out/ep3-qc-nograin.mp4 --c
     --at 5.0 --strip 1200,1760 --rows 760,800,840,880 --out s5/out/qc/ep3
 ```
 
-当前结果：压缩后有颗粒最长 17 / 14 / 18 像素（第 1 / 2 / 3 集），无颗粒 248 / 92 / 172 像素。
+当前结果：压缩后有颗粒最长 17 / 18 / 18 像素（第 1 / 2 / 3 集），无颗粒 248 / 410 / 172 像素。
 
 ## 冷启动观众测试
 
