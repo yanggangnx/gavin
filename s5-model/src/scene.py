@@ -93,17 +93,17 @@ def lights():
     """Thin, distant strips: bright specular streaks, black diffuse."""
     L = {}
     L["sweep"] = _area("Light_SweepStrip", 2.2, 0.018, 240.0)
-    L["rim_l"] = _area("Light_RimLeft", 0.018, 0.7, 120.0, (0.9, 0.95, 1.0))
+    L["rim_l"] = _area("Light_RimLeft", 0.018, 0.7, 160.0, (0.9, 0.95, 1.0))
     L["rim_l"].location = (0.55, 0.45, 0.22)
     _look(L["rim_l"], (0, 0.02, 0.05))
-    L["rim_r"] = _area("Light_RimRight", 0.018, 0.7, 120.0, (1.0, 0.96, 0.92))
+    L["rim_r"] = _area("Light_RimRight", 0.018, 0.7, 160.0, (1.0, 0.96, 0.92))
     L["rim_r"].location = (-0.62, 0.40, 0.25)
     _look(L["rim_r"], (-0.02, 0.02, 0.05))
     L["fill"] = _area("Light_TopFill", 1.0, 1.0, 0.5)
     L["fill"].location = (-0.05, 0.05, 0.9)
     _look(L["fill"], (-0.02, 0.0, 0.0))
     # large gradient card camera-left: long soft reflections that describe the shape
-    L["card"] = _area("Light_GradientCard", 0.5, 1.2, 2.2)
+    L["card"] = _area("Light_GradientCard", 0.5, 1.2, 3.5)
     L["card"].location = (-0.75, -0.55, 0.35)
     _look(L["card"], (0, 0, 0.05))
     for ob in L.values():
@@ -127,6 +127,12 @@ def lights():
     L["ring"] = ring
     L["ring_emit"] = em
     return L
+
+
+def link_lights(L, coll):
+    """Key lights only light the camera, so the glossy floor shows no light streaks."""
+    for k in ("sweep", "rim_l", "rim_r", "card"):
+        L[k].light_linking.receiver_collection = coll
 
 
 def camera(name, lens=85.0):

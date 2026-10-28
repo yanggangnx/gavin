@@ -121,6 +121,9 @@ def recesses(body, x, y, z):
                              (l["x1"] - l["x0"]) / 2 + 0.8, (l["z1"] - l["z0"]) / 2 + 0.8, 2.5),
                      np.maximum(D.Y_BACK - 0.8 - y, y - 60))
     body = d_round(body, bed, 0.3)
+    rr = np.sqrt((x - 38.0) ** 2 + (z - 29.0) ** 2)
+    arc = np.maximum(np.maximum(np.abs(rr - 17.0) - 0.4, np.abs(z - 29.0) - 11.5), D.Y_BACK - 1.4 - y)
+    body = d_round(body, np.maximum(arc, x - 40.0), 0.2)
     cd = D.CONTROL_DIAL
     well = np.maximum(sd_circle(x, z, cd["x"], cd["z"], cd["r"] + 0.6), np.maximum(D.Y_BACK - 1.2 - y, y - 60))
     body = d_round(body, well, 0.3)
@@ -206,7 +209,8 @@ def build(h, chunk=24):
             t = np.clip(fj - j0, 0, 1)
             col = d_gr_xy[:, j0] * (1 - t) + d_gr_xy[:, j0 + 1] * t
             g[:, :, kk] = col * (0.5 + 0.5 * sc)
-        grip = i_round(g, d_gr_yz[None, :, k0:k1], 3.0)
+        r_grip = (3.0 + 1.6 * smoothstep(-74.0, -82.0, x)).astype(np.float32)[:, None, None]
+        grip = i_round(g, d_gr_yz[None, :, k0:k1], r_grip)
         # fillet: grip root into the front face, plateau wall into the shoulder
         r_front = 5.0 * smoothstep(3.0, 0.0, Y3) * smoothstep(4.0, 7.0, Z3) * smoothstep(68.0, 65.0, Z3)
         r_plat = 0.8 * smoothstep(72.0, 74.0, Z3) * smoothstep(D.PLATEAU_Y_BACK - 1.0, D.PLATEAU_Y_BACK - 4.0, Y3) \
@@ -254,10 +258,10 @@ def build_eyecup(h):
     zc = (e["z0"] + e["z1"]) / 2
     t = np.clip((Y - 50.0) / 10.6, 0, 1)
     hx, hz = 19.4 + 1.1 * t, (e["z1"] - e["z0"]) / 2 - 1.0 + 1.0 * t
-    outer2d = sd_box2(X, Z, e["x"], zc, hx, hz, 8.5)
+    outer2d = sd_box2(X, Z, e["x"], zc, hx, hz, 6.5)
     xr = (X - e["x"]) / e["hx"]
     y_rear = e["y1"] - 2.2 * (1 - np.clip(xr * xr, 0, 1))
-    outer = i_round(outer2d, np.maximum(50.0 - Y, Y - y_rear), 2.8)
+    outer = i_round(outer2d, np.maximum(50.0 - Y, Y - y_rear), 2.2)
     wx, wz, wcx, wcz = 10.2, 7.35, -0.4, 79.4
     s = np.clip((Y - 53.8) / 6.0, 0, 1)
     hole = sd_box2(X, Z, wcx, wcz, wx + 3.2 * s, wz + 2.8 * s, 3.0 + 3.0 * s)

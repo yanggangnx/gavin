@@ -50,6 +50,7 @@ def main():
     ap.add_argument("--cam", action="append", default=[],
                     help="name:x,y,z:tx,ty,tz:lens  (mm, studio lighting at the current frame)")
     ap.add_argument("--frame", type=int, default=40)
+    ap.add_argument("--lcd-open", type=float, default=0.0, help="swing the screen out by this many degrees")
     ap.add_argument("--anim", action="store_true", help="render the whole timeline into --out")
     ap.add_argument("--step", type=int, default=1)
     a = ap.parse_args(argv)
@@ -62,6 +63,9 @@ def main():
                 ob.hide_render = True
     if a.samples:
         sc.cycles.samples = a.samples
+    if a.lcd_open:
+        import math
+        bpy.data.objects["LCD_Pivot"].rotation_euler[2] = -math.radians(a.lcd_open)
     if a.check:
         sc.timeline_markers.clear()          # markers would override the check cameras
         press_lighting()

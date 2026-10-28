@@ -182,15 +182,19 @@ def front_dial_and_shutter(c):
     base = Vector((d["x"], d["y"], zb - 0.3))
     m = place(n_axis, (0, math.cos(tilt), math.sin(tilt)), base)
     root = 8.5
+    sr = D.SHUTTER_R
     prof = [(0, -1.2), (8.3, -1.2), (8.3, 0.4), (8.5, 0.6), (root, 0.8), (root, 3.9), (8.95, 4.15), (9.0, 4.4),
-            (8.2, 5.1), (6.4, 5.1), (6.2, 4.8), (0, 4.8)]
+            (8.2, 5.1), (sr + 1.0, 5.1), (sr + 0.8, 4.8), (0, 4.8)]
     me = lathe("FrontDial", prof, 44 * 4, mats=[0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2],
                radial=ribs(44, 0.55, root, 0.8, 3.9, flat=0.0))
     c.add("FrontDial", me, ["dial_metal", "spun_metal", "paint"], m)
-    ring = lathe("ShutterRing", [(5.55, 4.7), (6.15, 4.7), (6.15, 5.2), (5.95, 5.45), (5.55, 5.45), (5.55, 4.7)], 128)
-    c.add("ShutterRing", ring, ["chrome"], m)
-    btn = lathe("Shutter", [(0, 4.6), (5.4, 4.6), (5.4, 5.9), (5.2, 6.25), (4.6, 6.35), (2.0, 6.2), (0, 6.15)], 128,
-                mats=[0, 0, 0, 0, 0, 0])
+    ring = lathe("ShutterRing", [(sr - 0.1, 4.7), (sr + 0.5, 4.7), (sr + 0.5, 5.2), (sr + 0.3, 5.45), (sr - 0.1, 5.45),
+                                 (sr - 0.1, 4.7)], 128)
+    c.add("ShutterRing", ring, ["dial_metal"], m)
+    collar = lathe("FrontDialCollar", [(0, -3.0), (10.6, -3.0), (10.6, -0.4), (10.1, 0.3), (8.4, 0.45), (0, 0.45)], 128)
+    c.add("FrontDialCollar", collar, ["paint"], m)
+    btn = lathe("Shutter", [(0, 4.6), (sr - 0.25, 4.6), (sr - 0.25, 5.9), (sr - 0.45, 6.25), (sr - 1.0, 6.35),
+                            (2.0, 6.2), (0, 6.15)], 128)
     return c.add("ShutterButton", btn, ["gloss_black"], m)
 
 
@@ -276,9 +280,9 @@ def front_buttons(c):
     me = text_mesh("S5", "S5", font(FONT_SEMI), 4.0, 0.12, spacing=1.05, stretch=1.08)
     c.add("S5_Letters", me, ["silver_logo"], at((cx + 0.2, 0.4 - 0.62, cz), FRONT_N, UP))
     # LUMIX on the hump face
-    me = text_mesh("LUMIX", "LUMIX", font(FONT_SEMI), 4.6, 0.22, spacing=1.12)
+    me = text_mesh("LUMIX", "LUMIX", font(FONT_SEMI), 5.0, 0.22, spacing=1.12)
     w = me_width(me)
-    me.transform(Matrix.Diagonal((26.6 / w, 1, 1, 1)))
+    me.transform(Matrix.Diagonal((28.0 / w, 1, 1, 1)))
     c.add("Logo_LUMIX", me, ["silver_logo"], at((0.3, D.HUMP_Y_FRONT, 83.7), FRONT_N, UP))
     # red mount index dot on the boss
     p = (-26.4, D.BOSS_Y - 0.01, 18.6)
@@ -567,15 +571,28 @@ def doors(c):
         cy, cz = (p["y0"] + p["y1"]) / 2, (p["z0"] + p["z1"]) / 2
         outline = rrect(0, 0, (p["y1"] - p["y0"]) / 2, (p["z1"] - p["z0"]) / 2, 1.5, 6)
         me = rounded_slab(f"PortDoor{i}", outline, -0.7, 0.0, r_top=0.35)
-        c.add(f"PortDoor{i}", me, ["plastic"], place((1, 0, 0), UP, (D.X_MAX, cy, cz)))
+        c.add(f"PortDoor{i}", me, ["leather"], place((1, 0, 0), UP, (D.X_MAX, cy, cz)))
+    f = font(FONT_BOLD)
+    side = lambda y, z: place((1, 0, 0), UP, (D.X_MAX + 0.01, y, z))
+    for s, y, z, cap in (("MIC", 31.0, 62.5, 1.7), ("HDMI", 31.0, 33.0, 1.6), ("SS", 31.0, 20.5, 1.6)):
+        c.add("Emboss_" + s, text_mesh(s, s, f, cap, 0.08), ["paint"], side(y, z))
+    band = sweep_circle("band", [(1.25 * math.cos(a), 1.25 * math.sin(a), 0.04) for a in np.linspace(0, math.pi, 16)],
+                        0.13, 6, closed=False)
+    cups = [rounded_box("cup", 0.65, 1.2, 0.08, 0.2, 2) for _ in range(2)]
+    cups[0].transform(Matrix.Translation((1.25, -0.4, 0.04)))
+    cups[1].transform(Matrix.Translation((-1.25, -0.4, 0.04)))
+    phones = merge_meshes("phones", [band] + cups, sharp=None, weld_dist=0)
+    c.add("Emboss_Phones", phones, ["paint"], side(31.0, 56.0))
     s = D.SD_DOOR
     cy, cz = (s["y0"] + s["y1"]) / 2, (s["z0"] + s["z1"]) / 2
     me = rounded_slab("SDDoor", rrect(0, 0, (s["y1"] - s["y0"]) / 2, (s["z1"] - s["z0"]) / 2, 1.9, 6), -0.7, 0.0,
                       r_top=0.4)
     c.add("SDDoor", me, ["paint"], place((-1, 0, 0), UP, (D.X_MIN, cy, cz)))
-    for k in range(5):
-        c.add("SDDoor_grip", rounded_box("g", 0.25, 0.5, 3.0, 0.1, 1), ["paint"],
-              place((-1, 0, 0), UP, (D.X_MIN - 0.05, s["y1"] - 2.2 - k * 0.9, cz)))
+    for y in (28.2, 29.0):
+        c.add("SDDoor_slide", rounded_box("g", 0.3, 21.0, 0.12, 0.1, 1), ["gloss_black"],
+              place((-1, 0, 0), UP, (D.X_MIN - 0.03, y, 36.5)))
+    arrow = _tri_icon(1.5)
+    c.add("SDDoor_arrow", arrow, ["paint"], place((-1, 0, 0), UP, (D.X_MIN - 0.04, 31.7, 44.0)))
     r = D.REMOTE_COVER
     cy, cz = (r["y0"] + r["y1"]) / 2, (r["z0"] + r["z1"] - 1.0) / 2
     me = rounded_slab("Remote", rrect(0, 0, (r["y1"] - r["y0"]) / 2, (r["z1"] - 1.0 - r["z0"]) / 2, 1.6, 6), -0.6, 0.0,

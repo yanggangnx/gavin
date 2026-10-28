@@ -90,8 +90,8 @@ def front_ring(path, size=2048, half=34.0):
             im.alpha_composite(g, (int(x * s - g.width / 2), int(y * s - g.height / 2)))
             ang = ang - step if outward else ang + step
 
-    arc_text("LUMIX", 31.1, 1.75, 90, True)
-    arc_text("S 1:3.5-5.6 / 20-60mm Φ67", 30.0, 1.45, 270, False)
+    arc_text("LUMIX", 31.5, 2.0, 90, True)
+    arc_text("S 1:3.5-5.6 / 20-60mm Φ67", 30.3, 1.6, 270, False)
     im.save(path)
 
 

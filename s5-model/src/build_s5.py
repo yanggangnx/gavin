@@ -99,6 +99,7 @@ def main():
     if not a.no_scene:
         S.world_and_floor()
         L = S.lights()
+        S.link_lights(L, coll)
         S.animate(L, *S.focus_targets())
         S.render_settings()
     bpy.ops.file.pack_all()

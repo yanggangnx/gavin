@@ -41,10 +41,10 @@ SENSOR_Y = MOUNT_FACE_Y + 20.0      # L-mount flange back 20 mm
 MODE_DIAL = dict(x=-34.1, y=20.1, r=11.85, z0=Z_SHOULDER, z1=83.3)
 DRIVE_DIAL = dict(x=33.3, y=19.5, r=11.0, z0=Z_SHOULDER, z1=83.3)
 FRONT_DIAL = dict(x=-64.4, y=-13.9, r=9.0)
-SHUTTER_R = 5.65
+SHUTTER_R = 4.9
 REAR_DIAL = dict(x=-69.1, y=31.7, r=9.9, z0=Z_SHOULDER - 1.4, z1=77.6)
 TOP_BUTTONS = [("WB", -57.0, 3.6), ("ISO", -65.4, 3.6), ("EV", -74.5, 3.6)]
-TOP_BUTTON_R = 3.0
+TOP_BUTTON_R = 3.35
 REC_BUTTON = dict(x=-61.9, y=16.8, r=3.6)
 POWER_LEVER = dict(x=-47.6, y=24.0)
 HOTSHOE = dict(x0=-10.8, x1=10.8, y0=25.6, y1=44.0)
@@ -74,8 +74,8 @@ LCD = dict(x0=-44.6, x1=38.2, z0=4.3, z1=53.8, y0=Y_BACK, y1=50.0)
 # sides
 LUG_LEFT = dict(x=X_MAX, y=9.6, z=71.0)
 LUG_RIGHT = dict(x=X_MIN, y=24.0, z=70.5)
-PORT_DOORS = [dict(y0=20.0, y1=40.0, z0=41.5, z1=67.0),   # MIC / headphones
-              dict(y0=20.0, y1=40.0, z0=10.5, z1=40.0)]   # HDMI / USB-C
+PORT_DOORS = [dict(y0=11.6, y1=40.5, z0=41.5, z1=66.6),   # MIC / headphones, leather covered
+              dict(y0=11.6, y1=40.5, z0=10.5, z1=40.9)]   # HDMI / USB-C
 SD_DOOR = dict(y0=20.5, y1=45.0, z0=7.5, z1=66.5)
 REMOTE_COVER = dict(y0=1.0, y1=17.5, z0=68.8, z1=76.0)
 

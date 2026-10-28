@@ -23,6 +23,10 @@ VIEWS = {
     "back": dict(loc=(-18.8, 600, 48.0), up=(0, 0, 1), ortho=1024 / 7.17, res=(1024, 724)),
     "left": dict(loc=(600, 18, 48.5), up=(0, 0, 1), ortho=100.0, res=(700, 700)),
     "right": dict(loc=(-600, 18, 48.5), up=(0, 0, 1), ortho=100.0, res=(700, 700)),
+    # the user's photos: 1.webp (front with lens, 2000 px), 2.png (top, 1200 px), 5.png (back, 1200 px)
+    "front_u": dict(loc=(-18.47, -600, 66.7), up=(0, 0, 1), ortho=2000 / 12.51, res=(1000, 1000)),
+    "top_u": dict(loc=(-18.3, -15.2, 600), up=(0, -1, 0), ortho=1200 / 5.837, res=(1200, 1200)),
+    "back_u": dict(loc=(-18.8, 600, 46.6), up=(0, 0, 1), ortho=1200 / 5.882, res=(1200, 1200)),
     "hero": dict(loc=(-260, -330, 190), look=(-15, 10, 42), lens=105, res=(1024, 820)),
     "heroback": dict(loc=(150, 330, 230), look=(-15, 15, 45), lens=105, res=(1024, 820)),
 }
