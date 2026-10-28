@@ -12,9 +12,10 @@
 <script src="lib/stage.js"></script>
 <script>
 'use strict';
-// Episode 4 · 8 seconds. V-Log's two native ISOs, 640 and 4000, as two marks on V-Log's ISO
-// scale. A two-second entrance (the axis draws, the two marks rise), then the frame holds still;
-// only the grain moves. Sources: evidence/ep4-ledger.csv (none are cited on screen).
+// Episode 4 · 8 seconds. V-Log's two native ISOs, 640 and 4000, as two marks on a log ISO axis,
+// with the other photo styles' pairs above them as quiet context. A short entrance (the axis
+// draws, V-Log's marks rise, then the other rows), then the frame holds still; only the grain
+// moves. Sources: evidence/ep4-ledger.csv (none are cited on screen).
 const { ML, C, F, P, lerp, txt, rule } = S5;
 const DURATION = 8;                  // nothing moves after B.still: change the hold freely
 
@@ -22,43 +23,74 @@ const B = {
   head: 0.1,
   axis: 0.3,                         // the axis draws from left to right
   low: 0.8,                          // 640
-  high: 1.15,                        // 4000
-  still: 2.0,
+  high: 1.1,                         // 4000
+  rows: 1.5,                         // the other photo styles, one every 0.15 s
+  still: 2.4,
 };
-const BEATS = [[B.axis, '坐标轴'], [B.low, '640'], [B.high, '4000'], [B.still, '定格']];
+const BEATS = [[B.axis, '坐标轴'], [B.low, '640'], [B.high, '4000'], [B.rows, '其他照片风格'], [B.still, '定格']];
 
 // ---- data ------------------------------------------------------------------------------------
-const MARKS = [                      // D01
+// D01: V-Log, the subject.
+const VLOG = [
   { iso: 640, note: '低 ISO 电路的基准', at: B.low },
   { iso: 4000, note: '高 ISO 电路的基准', at: B.high },
 ];
-const ISO_MAX = 51200;               // D02: V-Log runs from ISO 640 to 51200
+// D03: the same two circuits under the other photo styles, from the lowest base up.
+const OTHERS = [
+  { name: '常规照片风格', low: 100, high: 640 },
+  { name: 'Cinelike D2 / V2', low: 200, high: 1250 },
+  { name: 'HLG', low: 400, high: 2500 },
+];
+const ISO_MAX = 51200;               // D02
 
 // ---- layout ----------------------------------------------------------------------------------
-// V-Log's ISO range on a log axis, so equal distances are equal numbers of stops.
-const AX = { x0: ML, x1: 1770, y: 690, lo: 640, hi: ISO_MAX };
-const X = (iso) => AX.x0 + Math.log2(iso / AX.lo) / Math.log2(AX.hi / AX.lo) * (AX.x1 - AX.x0);
-const MARK_TOP = 530;
+// One log axis for every row, so equal distances are equal numbers of stops.
+const AX = { x0: 430, x1: 1770, y: 740, lo: 100, hi: ISO_MAX };
+const X = (iso) => Math.round(AX.x0 + Math.log2(iso / AX.lo) / Math.log2(AX.hi / AX.lo) * (AX.x1 - AX.x0));
+const ROW_Y = (i) => 330 + i * 45;
+const NUM_Y = 600;                   // V-Log's numbers
+const MARK_TOP = 628;
+
+const tick = (c, x, y, h, color, a) => {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha *= a; c.fillStyle = color; c.fillRect(x, y, 1, h); c.restore();
+};
 
 function frame(c, u, t) {
-  const head = P(t, B.head, B.head + 0.5);
-  txt(c, '松下 LUMIX S5 · V-Log 的双原生 ISO', ML, 330, { size: 28, color: C.ink2, alpha: head });
+  txt(c, '松下 LUMIX S5 · 双原生 ISO', ML, 262, { size: 28, color: C.ink2, alpha: P(t, B.head, B.head + 0.5) });
 
+  // The axis.
   const draw = P(t, B.axis, B.axis + 0.8);
   rule(c, AX.x0, lerp(AX.x0, AX.x1, draw), AX.y, 1, C.ink3);
-  const end = P(t, B.axis + 0.6, B.axis + 1.0);
-  c.save(); c.globalAlpha *= end; c.fillStyle = C.ink3; c.fillRect(AX.x1 - 1, AX.y, 1, 8); c.restore();
-  txt(c, `ISO ${ISO_MAX}`, AX.x1, AX.y + 46, { size: 20, color: C.ink3, align: 'right', alpha: end });
-  txt(c, '对数刻度', AX.x1, AX.y + 76, { size: 17, color: C.ink3, align: 'right', alpha: end });
+  const ends = P(t, B.axis + 0.6, B.axis + 1.0);
+  tick(c, AX.x0, AX.y, 8, C.ink3, P(t, B.axis, B.axis + 0.3));
+  tick(c, AX.x1 - 1, AX.y, 8, C.ink3, ends);
+  txt(c, 'ISO 100', AX.x0, AX.y + 44, { size: 17, color: C.ink3, align: 'center', alpha: P(t, B.axis, B.axis + 0.4) });
+  txt(c, String(ISO_MAX), AX.x1, AX.y + 44, { size: 17, color: C.ink3, align: 'right', alpha: ends });
+  txt(c, '对数刻度', AX.x1, AX.y + 72, { size: 17, color: C.ink3, align: 'right', alpha: ends });
 
-  // Each native ISO: a hairline rising from the axis, its number on top and its circuit below.
-  MARKS.forEach((m) => {
-    const x = Math.round(X(m.iso));
+  // V-Log: a hairline rising from the axis for each native ISO, its number on top, its circuit below.
+  txt(c, 'V-Log', ML, NUM_Y, { size: 30, weight: 500, alpha: P(t, B.low, B.low + 0.5) });
+  VLOG.forEach((m) => {
+    const x = X(m.iso);
     const rise = P(t, m.at, m.at + 0.5);
     const a = P(t, m.at + 0.15, m.at + 0.6);
-    c.save(); c.fillStyle = C.ink2; c.fillRect(x, lerp(AX.y, MARK_TOP, rise), 1, (AX.y - MARK_TOP) * rise); c.restore();
-    txt(c, String(m.iso), x - 4, MARK_TOP - 30, { family: F.serif, size: 110, weight: 700, alpha: a });
-    txt(c, m.note, x, AX.y + 46, { size: 20, color: C.ink2, alpha: a });
+    tick(c, x, lerp(AX.y, MARK_TOP, rise), (AX.y - MARK_TOP) * rise, C.ink2, 1);
+    txt(c, String(m.iso), x - 4, NUM_Y, { family: F.serif, size: 110, weight: 700, alpha: a });
+    txt(c, m.note, x, AX.y + 44, { size: 20, color: C.ink2, alpha: a });
+  });
+
+  // The other photo styles: the same two circuits, small and grey, stepping down towards V-Log.
+  OTHERS.forEach((r, i) => {
+    const y = ROW_Y(i), t0 = B.rows + i * 0.15;
+    const a = P(t, t0, t0 + 0.4), grow = P(t, t0 + 0.05, t0 + 0.45);
+    const x0 = X(r.low), x1 = X(r.high);
+    txt(c, r.name, ML, y + 6, { size: 18, color: C.ink3, alpha: a });
+    rule(c, x0, lerp(x0, x1, grow), y, a, C.ink3);
+    tick(c, x0, y - 6, 12, C.ink3, a);
+    tick(c, x1, y - 6, 12, C.ink3, grow >= 1 ? a : 0);
+    txt(c, String(r.low), x0 - 12, y + 6, { size: 17, color: C.ink3, align: 'right', alpha: a });
+    txt(c, String(r.high), x1 + 12, y + 6, { size: 17, color: C.ink3, alpha: P(t, t0 + 0.3, t0 + 0.55) });
   });
 }
 
