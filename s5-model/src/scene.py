@@ -10,7 +10,6 @@ import math
 import bpy
 from mathutils import Euler, Vector
 
-from geom import place
 
 FPS = 30
 

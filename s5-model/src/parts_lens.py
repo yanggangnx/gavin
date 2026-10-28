@@ -8,11 +8,10 @@ import math
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Matrix, Vector
 
 import dims as D
 import mats as M
-from geom import TAU, lathe, merge_meshes, obj, place, rounded_box, rrect
+from geom import TAU, lathe, obj, place, rounded_box
 
 N = 960                      # angular resolution shared by every barrel part
 

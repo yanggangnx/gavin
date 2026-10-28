@@ -189,7 +189,6 @@ def build(h, chunk=24):
     vol = np.empty((nx, ny, nz), np.float32)
     X3 = x[:, None, None]
     Y3 = y[None, :, None]
-    jy = np.arange(ny)
     for k0 in range(0, nz, chunk):
         k1 = min(nz, k0 + chunk)
         zc = z[k0:k1]

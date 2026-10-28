@@ -4,7 +4,6 @@ the reference photos' scale, so renders can be overlaid on the photos.
     python preview.py --npz ../build/body.npz --out ../build/preview --views front,top,back,left,right,hero
 """
 import argparse
-import math
 import os
 import sys
 
@@ -107,7 +106,6 @@ def render_view(name, out):
     if "ortho" in v:
         cd.type = "ORTHO"
         cd.ortho_scale = v["ortho"] * MM
-        d = Vector((0, 0, 0))
         loc = Vector(v["loc"])
         # look straight along the dominant axis
         axis = max(range(3), key=lambda i: abs(loc[i]))

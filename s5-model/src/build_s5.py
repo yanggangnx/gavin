@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import bpy  # noqa: E402
 
-import mats as M  # noqa: E402
 import parts_body as PB  # noqa: E402
 import parts_lens as PL  # noqa: E402
 import prints  # noqa: E402
@@ -95,7 +94,7 @@ def main():
     PB.lcd(c)
     PB.lugs(c)
     PB.doors(c)
-    lens = PL.build(c, tex)
+    PL.build(c, tex)
 
     if not a.no_scene:
         S.world_and_floor()

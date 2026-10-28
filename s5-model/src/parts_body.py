@@ -8,7 +8,7 @@ from mathutils import Matrix, Vector
 import body as B
 import dims as D
 import mats as M
-from geom import (TAU, font, knurl_pyramid, lathe, merge_meshes, mesh_from_npz, obj, place,
+from geom import (TAU, font, lathe, merge_meshes, mesh_from_npz, obj, place,
                   pyramid_band, ribs, rounded_box, rounded_slab, rrect, sweep_circle, text_mesh, torus)
 from sdf import sd_polygon
 
@@ -399,7 +399,7 @@ def pyramid_disc(r, h, n=9):
 def control_dial(c):
     cd = D.CONTROL_DIAL
     base = Vector((cd["x"], D.Y_BACK - 1.2, cd["z"]))
-    R, root = cd["r"], cd["r"] - 0.25
+    root = cd["r"] - 0.25
     prof = [(0, -0.4), (12.1, -0.4), (12.1, 0.1), (root, 0.2), (root, 2.25), (12.2, 2.55), (11.8, 2.75),
             (6.4, 2.75), (6.2, 2.5), (0, 2.5)]
     me = lathe("ControlDial", prof, 100 * 4, mats=[0] * 9, radial=ribs(100, 0.25, root, 0.2, 2.25, flat=0.3))
@@ -521,7 +521,6 @@ def hot_shoe(c):
 def eyecup(c, npz):
     me = mesh_from_npz("Eyecup", npz)
     c.add("Eyecup", me, ["rubber", "screen", "interior"])
-    e = D.EYECUP
     c.add("EVF_Glass", rounded_box("eg", 19.4, 13.8, 0.6, 2.5, 4), ["lens_glass_b"],
           place(BACK_N, UP, (-0.4, 53.6, 79.4)))
     c.add("EVF_Back", rounded_box("eb", 22, 16, 0.5, 2.5, 3), ["interior"], place(BACK_N, UP, (-0.4, 51.8, 79.4)))
@@ -541,7 +540,7 @@ def lcd(c):
     hinge.empty_display_size = 5
     m = lambda mat: Matrix.Translation(-pivot) @ mat
     body = rounded_slab("LCD_Body", rrect(0, 0, hx, hz, 2.5, 6), -0.8, l["y1"] - l["y0"] - 0.25, r_top=0.6, r_bot=0.2)
-    ob = obj("LCD_Body", body, hinge, [M.get("plastic")], m(place(BACK_N, UP, (cx, l["y0"], cz))), c.coll)
+    obj("LCD_Body", body, hinge, [M.get("plastic")], m(place(BACK_N, UP, (cx, l["y0"], cz))), c.coll)
     glass = rounded_slab("LCD_Glass", rrect(0, 0, hx - 0.8, hz - 0.8, 1.9, 6), 0, 0.28, r_top=0.15)
     obj("LCD_Glass", glass, hinge, [M.get("screen")], m(place(BACK_N, UP, (cx, l["y1"] - 0.25, cz))), c.coll)
     for z0, z1 in ((36.0, 53.6), (2.6, 19.5)):

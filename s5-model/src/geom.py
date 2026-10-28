@@ -141,18 +141,6 @@ def lathe(name, prof, n=128, mats=None, uv=False, sharp=30.0, radial=None, th0=0
     return _mesh(name, verts, faces, fm, luv if uv else None, sharp=sharp)
 
 
-def knurl_pyramid(n_col, z0, z1, n_row, depth, root):
-    """radial() for a square-pyramid knurl band between z0 and z1."""
-    def f(th, z, r):
-        inband = (z > z0 - 1e-6) & (z < z1 + 1e-6) & (np.abs(r - root) < 1e-6)
-        u = (th / TAU * n_col) % 1.0 * 2 - 1
-        v = ((z - z0) / (z1 - z0) * n_row) % 1.0 * 2 - 1
-        v = np.where(z >= z1 - 1e-6, -1.0, v)
-        h = 1 - np.maximum(np.abs(u), np.abs(v))
-        return np.where(inband, r + depth * h, r)
-    return f
-
-
 def pyramid_band(name, root, z0, z1, n_col, n_row, depth, sub=4, n_flat_top=0):
     """Knurled ring of square pyramids with ridge-following triangulation."""
     nu, nv = n_col * sub, n_row * sub
