@@ -9,17 +9,19 @@
 <script src="fonts/fonts.js"></script>
 <script src="vendor/mp4-muxer-5.2.2.js"></script>
 <script src="vendor/webm-muxer-5.1.4.js"></script>
+<script src="build/cameras.js"></script>
 <script src="lib/stage.js"></script>
 <script>
 'use strict';
-// Episode 5 · 15 seconds, three shots joined by short crossfades. 1: the S5's stabilization
+// Episode 5 · 15.5 seconds, three shots joined by short crossfades. 1: the S5's stabilization
 // settings, beside a sketch of sensor-shift stabilization (the mount shakes, the sensor holds
-// still). 2: body plus lens stabilization, 5 stops to 6.5 on a stops scale. 3: the two video
-// options, E-Stabilization (Video) and Boost I.S. (Video), side by side. Each shot has a short
-// entrance and then holds. Sources: evidence/ep5-ledger.csv (none are cited on screen).
-const { ML, C, F, E, P, lerp, font, txt, rule } = S5;
+// still). 2: body alone against body plus lens, side by side: a photo of each, 5 stops against
+// 6.5, what that means for the shutter, and one bar per column on the same scale. 3: the two
+// video options, E-Stabilization (Video) and Boost I.S. (Video), side by side. Each shot has a
+// short entrance and then holds. Sources: evidence/ep5-ledger.csv (none are cited on screen).
+const { ML, C, F, E, P, IMG, lerp, font, txt, rule, makeCanvas } = S5;
 
-const T = [0, 4.5, 9.0, 15.0];       // shot starts and the end
+const T = [0, 4.5, 9.5, 15.5];       // shot starts and the end
 const DURATION = T[3];
 const XF = 0.4;                      // crossfade between shots
 const BEATS = [[T[0] + 0.3, '防抖设置'], [T[1], '6.5 档'], [T[2], '视频防抖']];
@@ -32,9 +34,12 @@ const SETTINGS = [                   // E01–E05
   ['电子防抖（视频）', '开 / 关'],
   ['Boost I.S.（视频）', '开 / 关'],
 ];
-const STOPS = [                      // E01, E02
-  { stops: 5, label: '5 档 · 机身单独（60 mm，S-R2060）' },
-  { stops: 6.5, label: '6.5 档 · 机身 + 镜头（200 mm，S-E70200）', self: true },
+// E01, E02, E06: the two columns of shot 2. img: a key of build/cameras.js (assets/cameras/).
+const COMPARE = [
+  { title: '只有机身防抖', img: 'Panasonic_LUMIX_S5', stops: 5, num: '5',
+    times: '快门可以慢 32 倍', example: '例：60 mm 手持，1/60 秒 → 约 1/2 秒', test: 'CIPA 标准，用无防抖的 S-R2060 镜头测得' },
+  { title: '机身 + 镜头一起防抖（Dual I.S. 2）', img: 'Panasonic_LUMIX_S5_with_lens', stops: 6.5, num: '6.5',
+    times: '快门可以慢约 90 倍', example: '例：200 mm 手持，1/200 秒 → 约 1/2 秒', test: 'CIPA 标准，用 S-E70200 镜头测得', self: true },
 ];
 const MODES = [                      // E04, E05
   { title: '电子防抖（视频）', lines: ['机身、镜头、电子三者一起修正 5 个方向', '构图可以移动', '画面会裁掉一圈，视角变窄'], crop: true },
@@ -84,43 +89,91 @@ function shot1(c, t, A) {
   }
 }
 
-// ---- shot 2 · body + lens: 6.5 stops ------------------------------------------------------------
-const SCALE = { x0: ML, perStop: 170, y: 770, max: 7 };
-const SX = (s) => SCALE.x0 + s * SCALE.perStop;
+// ---- shot 2 · body alone against body + lens -------------------------------------------------------
+const COLS = [ML, 1010];
+const PHOTO = { w: 330, h: 240, bottom: 640 };   // each photo fits this box, bottom-left aligned
+const PER_STOP = 85;                             // the same scale for both bars
+const BAR_Y = 702;
+
+// The photos, a little desaturated as in episode 2, and the box their opaque pixels fill.
+const STILL = {};
+function still(id) {
+  if (!STILL[id] && IMG[id]) {
+    const im = IMG[id], w = im.naturalWidth, h = im.naturalHeight;
+    const cv = makeCanvas(w, h), g = cv.getContext('2d');
+    g.filter = 'saturate(0.8)';
+    g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 128) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    }
+    STILL[id] = { cv, x0, y0, x1: x1 + 1, y1: y1 + 1 };
+  }
+  return STILL[id];
+}
+
+function photo(c, id, x, alpha) {
+  if (alpha <= 0) return;
+  const p = still(id);
+  c.save();
+  c.globalAlpha *= alpha;
+  if (p) {
+    const s = Math.min(PHOTO.w / (p.x1 - p.x0), PHOTO.h / (p.y1 - p.y0));
+    const w = (p.x1 - p.x0) * s, h = (p.y1 - p.y0) * s, y = PHOTO.bottom - h;
+    // A faint pool of light, so the black body separates from the black background.
+    c.save();
+    c.translate(x + w / 2, y + h * 0.55); c.scale(1, 0.62);
+    const r = w * 0.78, pool = c.createRadialGradient(0, 0, 0, 0, 0, r);
+    pool.addColorStop(0, 'rgba(236,235,230,0.07)'); pool.addColorStop(1, 'rgba(236,235,230,0)');
+    c.fillStyle = pool; c.fillRect(-r, -r, 2 * r, 2 * r);
+    c.restore();
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(p.cv, x - p.x0 * s, y - p.y0 * s, p.cv.width * s, p.cv.height * s);
+  } else {
+    // The photo is not in assets/cameras/ yet: mark its place.
+    c.strokeStyle = C.ink3; c.lineWidth = 1; c.setLineDash([4, 6]);
+    c.strokeRect(x, PHOTO.bottom - PHOTO.h, PHOTO.w, PHOTO.h);
+    c.setLineDash([]);
+    txt(c, '待放入：S5 装镜头的照片', x + PHOTO.w / 2, PHOTO.bottom - PHOTO.h / 2 + 7, { size: 18, color: C.ink3, align: 'center' });
+  }
+  c.restore();
+}
 
 function shot2(c, t, A) {
   const l = t - T[1];
-  txt(c, '机身防抖 + 镜头防抖（Dual I.S. 2）', ML, 262, { size: 28, color: C.ink2, alpha: A * P(l, 0.1, 0.5) });
+  txt(c, '防抖档数对比', ML, 262, { size: 28, color: C.ink2, alpha: A * P(l, 0.1, 0.5) });
 
-  // The stops scale.
-  const axis = P(l, 0.2, 0.8);
-  rule(c, SCALE.x0, lerp(SCALE.x0, SX(SCALE.max), axis), SCALE.y, A, C.ink3);
-  for (let s = 0; s <= SCALE.max; s++) {
-    const a = A * Math.min(1, Math.max(0, (lerp(SCALE.x0, SX(SCALE.max), axis) - SX(s)) / 40 + 1));
-    c.save(); c.globalAlpha *= a; c.fillStyle = C.ink3; c.fillRect(SX(s), SCALE.y, 1, 7); c.restore();
-    txt(c, s === SCALE.max ? `${s} 档` : String(s), SX(s), SCALE.y + 34, { size: 17, color: C.ink3, align: 'center', alpha: a });
-  }
+  COMPARE.forEach((m, i) => {
+    const x = COLS[i], t0 = 0.3 + i * 1.1;                  // the right column follows the left
+    const at = (a, b) => A * P(l, t0 + a, t0 + b);
+    txt(c, m.title, x, 350, { size: 30, weight: 500, alpha: at(0, 0.45) });
+    photo(c, m.img, x, A * P(l, t0 + 0.15, t0 + 0.65, E.lin));
 
-  // Two bars from 0: the body alone, then body and lens.
-  STOPS.forEach((b, i) => {
-    const y = 640 + i * 66, t0 = 0.6 + i * 0.35;
-    const grow = P(l, t0, t0 + 0.8);
-    const x1 = lerp(SCALE.x0, SX(b.stops), grow);
-    bar(c, SCALE.x0, x1, y, b.self ? 4 : 2, b.self ? C.ink : C.ink3, A);
-    const a = A * P(l, t0 + 0.6, t0 + 0.95);
-    txt(c, b.label, SX(b.stops) + 22, y + 7, { size: 20, weight: b.self ? 500 : 400, color: b.self ? C.ink : C.ink2, alpha: a });
+    // The number and what it means for the shutter.
+    const nx = x + PHOTO.w + 50, na = at(0.4, 0.85);
+    font(c, 120, 700, F.serif);
+    const w = c.measureText(m.num).width;
+    txt(c, m.num, nx, 560, { family: F.serif, size: 120, weight: 700, alpha: na });
+    txt(c, '档', nx + w + 14, 560, { family: F.serif, size: 46, weight: 600, color: C.ink2, alpha: na });
+    txt(c, m.times, nx, 612, { size: 24, alpha: at(0.55, 0.95) });
+
+    // One bar per column on the same scale, a tick per stop. On the right, the stops it adds
+    // beyond the body alone are drawn brighter.
+    const grow = P(l, t0 + 0.5, t0 + 1.2);
+    const len = m.stops * PER_STOP * grow;
+    bar(c, x, x + Math.min(len, 5 * PER_STOP), BAR_Y, 3, C.ink2, A);
+    if (len > 5 * PER_STOP) bar(c, x + 5 * PER_STOP, x + len, BAR_Y, 3, C.ink, A);
+    for (let s = 1; s <= Math.floor(m.stops); s++) {
+      const ta = A * Math.min(1, Math.max(0, (len - s * PER_STOP) / 20 + 1));
+      c.save(); c.globalAlpha *= ta; c.fillStyle = C.ink3; c.fillRect(x + s * PER_STOP, BAR_Y + 4, 1, 7); c.restore();
+    }
+    if (m.self) txt(c, '多 1.5 档', x + 5.75 * PER_STOP, BAR_Y - 14, { size: 18, color: C.ink2, align: 'center', alpha: at(1.1, 1.4) });
+
+    txt(c, m.example, x, 770, { size: 22, color: C.ink2, alpha: at(0.9, 1.3) });
+    txt(c, m.test, x, 808, { size: 18, color: C.ink3, alpha: at(1.0, 1.4) });
   });
-
-  // The headline number, and what 6.5 stops means for a shutter speed.
-  const big = A * P(l, 1.5, 1.95);
-  font(c, 150, 700, F.serif);
-  const w = c.measureText('6.5').width;
-  txt(c, '6.5', ML, 450, { family: F.serif, size: 150, weight: 700, alpha: big });
-  txt(c, '档', ML + w + 18, 450, { family: F.serif, size: 56, weight: 600, color: C.ink2, alpha: big });
-  const ex = A * P(l, 1.9, 2.3);
-  txt(c, '按安全快门 1 / 焦距 换算', 1130, 380, { size: 20, color: C.ink3, alpha: ex });
-  txt(c, '200 mm 手持：1/200 秒 → 约 1/2 秒', 1130, 424, { size: 26, color: C.ink2, alpha: ex });
-  txt(c, '需要支持 Dual I.S. 2 的松下镜头，如 S-R24105、S-E70200、S-R70200', ML, 872, { size: 18, color: C.ink3, alpha: A * P(l, 2.1, 2.5) });
+  txt(c, 'Dual I.S. 2 需要支持它的松下镜头，如 S-R24105、S-E70200、S-R70200；每格 1 档，快门时间翻一倍', ML, 872, { size: 18, color: C.ink3, alpha: A * P(l, 2.6, 3.0) });
 }
 
 // ---- shot 3 · the two video options ------------------------------------------------------------
@@ -173,6 +226,7 @@ S5.run({
   shots: [[0, DURATION, frame]],
   vo: [],
   beats: BEATS,
+  images: window.S5_CAMERAS,
   label: (t) => (t < T[1] ? 'A 防抖设置' : t < T[2] ? 'B 6.5 档' : 'C 电子防抖与 Boost'),
 });
 </script>
