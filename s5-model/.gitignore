@@ -1,3 +1,7 @@
 ref/
+build/
 *.blend1
 renders/tmp/
+renders/anim/
+__pycache__/
+!out/
