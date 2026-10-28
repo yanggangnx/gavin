@@ -355,12 +355,15 @@ def _tri_icon(s):
 
 
 def _return_icon():
-    pts = [(0.9 * math.cos(a), 0.9 * math.sin(a), 0.03) for a in np.linspace(-math.pi / 2, math.pi / 2, 14)]
-    pts = [(-0.8, 0.9, 0.03)] + [(p[0] + 0.1, p[1], p[2]) for p in reversed(pts)][::-1] + [(-0.8, -0.9, 0.03)]
+    """Hook arrow: in from the left along the top, round the right side, back left with a head."""
+    r, cx = 0.62, 0.35
+    pts = [(-0.75, r, 0.03)]
+    pts += [(cx + r * math.cos(a), r * math.sin(a), 0.03) for a in np.linspace(math.pi / 2, -math.pi / 2, 16)]
+    pts += [(-0.35, -r, 0.03)]
     arc = sweep_circle("ret", pts, 0.13, 6, closed=False)
     import bmesh
     bm = bmesh.new()
-    tri = [(-1.35, -0.9, 0.03), (-0.6, -0.4, 0.03), (-0.6, -1.4, 0.03)]
+    tri = [(-0.95, -r, 0.03), (-0.3, -r + 0.45, 0.03), (-0.3, -r - 0.45, 0.03)]
     bm.faces.new([bm.verts.new(p) for p in tri])
     head = bpy.data.meshes.new("rh")
     bm.to_mesh(head)
@@ -560,10 +563,11 @@ def lcd(c):
 def lugs(c):
     for name, l, sx in (("Lug_L", D.LUG_LEFT, 1), ("Lug_R", D.LUG_RIGHT, -1)):
         x = l["x"]
-        post = lathe("post", [(0, -1.0), (2.1, -1.0), (2.1, 1.6), (1.7, 2.1), (0, 2.2)], 48)
+        post = lathe("post", [(0, -1.0), (2.2, -1.0), (2.2, 0.6), (2.9, 1.1), (3.0, 2.0), (2.6, 2.9), (1.6, 3.4),
+                              (0, 3.5)], 64)
         c.add(name + "_post", post, ["steel"], place((sx, 0, 0), UP, (x, l["y"], l["z"])))
-        ring = torus("ring", 2.75, 0.85, 64, 18)
-        c.add(name + "_ring", ring, ["steel"], place((0, 1, 0), (sx, 0, 0), (x + sx * 4.3, l["y"], l["z"])))
+        ring = torus("ring", 2.9, 0.9, 64, 18)
+        c.add(name + "_ring", ring, ["steel"], place((0, 1, 0), (sx, 0, 0), (x + sx * 5.0, l["y"], l["z"])))
 
 
 def doors(c):

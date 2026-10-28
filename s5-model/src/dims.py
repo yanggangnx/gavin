@@ -57,7 +57,7 @@ AF_LAMP = dict(x=37.1, z=70.6, r=1.7)
 S5_BADGE = dict(x0=26.5, x1=40.5, z0=59.6, z1=66.0)
 
 # back controls (x, z), all on the back plate at Y_BACK
-EYECUP = dict(x=-0.8, hx=20.5, z0=62.0, z1=95.0, y0=50.0, y1=60.6)
+EYECUP = dict(x=-0.8, hx=20.5, z0=62.0, z1=95.0, y0=47.6, y1=60.6)
 BACK_BUTTONS = {
     "PLAY": dict(x=35.8, z=62.2, r=2.6, bezel=3.6),
     "LVF": dict(x=24.7, z=62.2, r=2.6, bezel=3.6),
@@ -81,7 +81,7 @@ REMOTE_COVER = dict(y0=1.0, y1=17.5, z0=68.8, z1=76.0)
 
 # bottom
 TRIPOD = dict(x=0.0, y=21.0)
-BATTERY_DOOR = dict(x0=-82.0, x1=-50.5, y0=-16.0, y1=30.0)
+BATTERY_DOOR = dict(x0=-79.0, x1=-53.5, y0=-12.5, y1=27.0)
 
 # lens S-R2060 (radius profile along -Y from the flange plane)
 LENS_LEN = 87.2

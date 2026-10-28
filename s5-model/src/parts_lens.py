@@ -13,7 +13,7 @@ import dims as D
 import mats as M
 from geom import TAU, lathe, obj, place, rounded_box
 
-N = 960                      # angular resolution shared by every barrel part
+N = 1440                     # angular resolution shared by every barrel part
 
 
 def lens_root(c):
@@ -54,18 +54,18 @@ def build(c, tex):
     # zoom ring: printed scale band + ribbed rubber grip
     zr_root = 35.4
     zoom = [(33.6, 29.9), (35.3, 29.95), (35.5, 30.2), (35.5, 32.8), (35.3, 33.1), (35.0, 33.4), (35.0, 33.9),
-            (zr_root, 34.3), (zr_root, 53.7), (35.1, 54.1), (34.4, 54.3)]
-    me = lathe("Lens_ZoomRing", zoom, N, mats=[0, 0, 0, 0, 0, 1, 1, 1, 1, 1], uv_z=(29.7, 33.0),
+            (zr_root, 34.3), (zr_root, 34.7), (zr_root, 53.3), (zr_root, 53.7), (35.1, 54.1), (34.4, 54.3)]
+    me = lathe("Lens_ZoomRing", zoom, N, mats=[0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], uv_z=(29.7, 33.0),
                radial=_ribs_z(160, 0.42, zr_root, 34.3, 53.7, 0.45))
     _add(c, L, "Lens_ZoomRing", me, [M.printed("lens_scale_print", "lens_plastic", tex["scale"]), "lens_rubber"])
     # front housing, focus ring and hood bayonet
     fr_root = 37.75
     front = [(34.4, 54.4), (35.5, 54.5), (35.7, 55.0), (37.8, 60.2), (38.0, 60.6), (38.0, 62.4), (37.8, 62.6),
-             (fr_root, 62.8), (fr_root, 73.2), (37.9, 73.5), (37.7, 73.8), (34.4, 74.6), (34.2, 75.0),
+             (fr_root, 62.8), (fr_root, 63.1), (fr_root, 72.9), (fr_root, 73.2), (37.9, 73.5), (37.7, 73.8), (34.4, 74.6), (34.2, 75.0),
              (34.2, 76.3), (36.4, 76.45), (36.6, 76.7), (36.6, 78.1), (36.4, 78.3), (34.7, 78.35), (34.7, 80.35),
              (36.4, 80.4), (36.6, 80.6), (36.6, 83.1), (36.4, 83.3), (34.7, 83.35), (34.7, 86.6), (34.45, 87.05),
              (34.0, 87.2), (33.65, 87.1), (33.5, 86.8), (33.5, 84.4), (33.3, 84.2)]
-    mats = [0] * 6 + [1] * 3 + [0] * 23
+    mats = [0] * 6 + [1] * 5 + [0] * 23
     focus_rad = _ribs_z(240, 0.32, fr_root, 62.8, 73.2, 0.4)
     me = lathe("Lens_Front", front, N, mats=mats, radial=lambda th, z, r: _notches(th, z, focus_rad(th, z, r)))
     _add(c, L, "Lens_Front", me, ["lens_plastic", "lens_rubber"])

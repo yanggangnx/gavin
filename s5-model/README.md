@@ -9,11 +9,11 @@
 | --- | --- |
 | ![](renders/shot2_lens.png) | ![](renders/shot3_top.png) |
 
-白底对照（灯光仿官方产品图，用来核对造型）：
+白底产品照（暗棚柔光箱布光，抠到白底，和官方产品图同角度对照）：
 
-| 正面 | 斜后方 |
+| 正面斜侧 | 背面斜侧 |
 | --- | --- |
-| ![](renders/press_front.png) | ![](renders/press_heroback.png) |
+| ![](renders/photo_beauty.png) | ![](renders/photo_beauty_back.png) |
 
 预览动画（640×360，低采样）：`renders/S5_lightsweep_preview.mp4`
 
@@ -83,14 +83,15 @@ Blender 自带的 Python 需要先装上 `numpy scipy scikit-image pillow`。也
 | `src/parts_body.py`、`src/parts_lens.py` | 机身零件和镜头 |
 | `src/mats.py`、`src/prints.py` | 材质和镜头印字贴图 |
 | `src/scene.py` | 影棚、灯光、相机和动画 |
-| `src/render.py`、`src/preview.py` | 渲染（含和参考图同比例的正交对照视图） |
+| `src/render.py`、`src/preview.py` | 渲染：动画帧、白底产品照（`--photo`）、和参考图同比例的正交对照视图（`--check`） |
+| `tools/swatch.py` | 皮纹材质调参小样 |
 | `src/export.py` | 导出 glb / fbx |
 
 尺寸怎么来的见 [MEASUREMENTS.md](MEASUREMENTS.md)。
 
 ## 已知限制
 
-- 皮纹和漆面颗粒是 Blender 程序化纹理，只在 `.blend` 里有。glb / fbx 只带基础颜色和粗糙度；要在别的软件里用，需要另外烘焙法线贴图。
+- 皮纹（约 1 mm 的颗粒、细粒和褶皱，深 0.2 mm）和漆面喷砂颗粒是 Blender 程序化纹理，只在 `.blend` 里有。glb / fbx 只带基础颜色和粗糙度；要在别的软件里用，需要另外烘焙法线贴图。
 - 尺寸是按官方外形尺寸和产品图量的，并用你提供的正面、顶部、背面和两侧照片逐个视角叠图校准过，部件位置误差约 ±1 mm。
 - 接口盖、卡仓门都是关着的，里面的接口没有建。底部细节比较简化。
 - 屏幕是关机的黑色。

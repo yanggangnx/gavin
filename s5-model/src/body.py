@@ -157,6 +157,9 @@ def recesses(body, x, y, z):
     rd = D.REAR_DIAL
     pocket = np.maximum(sd_circle(x, y, rd["x"], rd["y"], rd["r"] + 0.9), D.Z_SHOULDER - z)
     body = d_round(body, pocket, 0.8)
+    # speaker slot on the grip side of the hump
+    spk = np.maximum(sd_box2(y, z, 15.5, 89.0, 3.6, 0.55, 0.55), np.maximum(x + 12.0, -40.0 - x))
+    body = d_round(body, spk, 0.15)
     # stereo mic slots on the hump slope
     for mx, my in D.MIC_HOLES:
         slot = np.maximum(sd_box2(x, y, mx, my, 1.5, 0.45, 0.45), np.maximum(80 - z, z - 120))
@@ -252,20 +255,20 @@ def face_materials(verts, faces, trap):
 def build_eyecup(h):
     e = D.EYECUP
     x = np.arange(-24.0, 23.0 + h, h, dtype=np.float32)
-    y = np.arange(49.0, 62.0 + h, h, dtype=np.float32)
+    y = np.arange(46.6, 62.0 + h, h, dtype=np.float32)
     z = np.arange(59.5, 97.5 + h, h, dtype=np.float32)
     X, Y, Z = x[:, None, None], y[None, :, None], z[None, None, :]
     zc = (e["z0"] + e["z1"]) / 2
-    t = np.clip((Y - 50.0) / 10.6, 0, 1)
+    t = np.clip((Y - e["y0"]) / (e["y1"] - e["y0"]), 0, 1)
     hx, hz = 19.4 + 1.1 * t, (e["z1"] - e["z0"]) / 2 - 1.0 + 1.0 * t
     outer2d = sd_box2(X, Z, e["x"], zc, hx, hz, 6.5)
     xr = (X - e["x"]) / e["hx"]
     y_rear = e["y1"] - 2.2 * (1 - np.clip(xr * xr, 0, 1))
-    outer = i_round(outer2d, np.maximum(50.0 - Y, Y - y_rear), 2.2)
+    outer = i_round(outer2d, np.maximum(e["y0"] - Y, Y - y_rear), 2.2)
     wx, wz, wcx, wcz = 10.2, 7.35, -0.4, 79.4
     s = np.clip((Y - 53.8) / 6.0, 0, 1)
     hole = sd_box2(X, Z, wcx, wcz, wx + 3.2 * s, wz + 2.8 * s, 3.0 + 3.0 * s)
-    hole = np.maximum(hole, 50.8 - Y)
+    hole = np.maximum(hole, 51.2 - Y)
     cup = d_round(outer, hole, 1.1)
     sensor = np.maximum(sd_box2(X, Z, -0.4, 68.6, 2.6, 1.0, 0.9), 57.0 - Y)
     cup = d_round(cup, sensor, 0.25)

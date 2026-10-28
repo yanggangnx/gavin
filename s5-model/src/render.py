@@ -37,12 +37,50 @@ def press_lighting():
     sc.view_settings.look = "None"
 
 
+def photo_lighting():
+    """Product-photography setup: dark studio, big softboxes, raking strip; background keyed to white later."""
+    sc = bpy.context.scene
+    for ob in list(sc.objects):
+        if ob.type == "LIGHT" or ob.name in ("Floor", "Light_LensRing"):
+            ob.hide_render = True
+    bg = sc.world.node_tree.nodes["Background"]
+    bg.inputs["Color"].default_value = (1, 1, 1, 1)
+    bg.inputs["Strength"].default_value = 0.03
+    import math
+    for name, loc, size, rad in (("Photo_Top", (0.0, -0.15, 0.9), (1.4, 0.9), 5.0),
+                                 ("Photo_RakeLeft", (-0.9, -0.35, 0.35), (0.12, 1.2), 9.0),
+                                 ("Photo_RakeRight", (0.9, -0.2, 0.3), (0.12, 1.2), 5.0),
+                                 ("Photo_Front", (-0.1, -1.0, 0.15), (1.2, 0.5), 0.6),
+                                 ("Photo_Back", (0.1, 1.0, 0.3), (1.2, 0.5), 1.5)):
+        ld = bpy.data.lights.new(name, "AREA")
+        ld.shape = "RECTANGLE"
+        ld.size, ld.size_y = size
+        ld.energy = rad * math.pi * size[0] * size[1]
+        lo = bpy.data.objects.new(name, ld)
+        sc.collection.objects.link(lo)
+        lo.location = loc
+        lo.visible_camera = False
+        preview.look_at(lo, (0, 0, 0.045), (0, 0, 1))
+    sc.render.film_transparent = True
+    sc.view_settings.view_transform = "AgX"
+    sc.view_settings.look = "AgX - Base Contrast"
+
+
+def on_white(path):
+    from PIL import Image
+    im = Image.open(path).convert("RGBA")
+    bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    bg.alpha_composite(im)
+    bg.convert("RGB").save(path)
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
     ap.add_argument("--blend", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--check", default=None)
+    ap.add_argument("--photo", default=None, help="views lit like a product photo, composited on white")
     ap.add_argument("--frames", default=None)
     ap.add_argument("--res", default=None)
     ap.add_argument("--samples", type=int, default=None)
@@ -72,6 +110,13 @@ def main():
         sc.cycles.samples = a.samples or 24
         for v in a.check.split(","):
             preview.render_view(v, a.out)
+    if a.photo:
+        sc.timeline_markers.clear()
+        photo_lighting()
+        sc.cycles.samples = a.samples or 96
+        for v in a.photo.split(","):
+            preview.render_view(v, a.out)
+            on_white(os.path.join(a.out, f"{v}.png"))
     if a.cam:
         sc.timeline_markers.clear()
         sc.frame_set(a.frame)

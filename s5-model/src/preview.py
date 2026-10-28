@@ -27,6 +27,11 @@ VIEWS = {
     "front_u": dict(loc=(-18.47, -600, 66.7), up=(0, 0, 1), ortho=2000 / 12.51, res=(1000, 1000)),
     "top_u": dict(loc=(-18.3, -15.2, 600), up=(0, -1, 0), ortho=1200 / 5.837, res=(1200, 1200)),
     "back_u": dict(loc=(-18.8, 600, 46.6), up=(0, 0, 1), ortho=1200 / 5.882, res=(1200, 1200)),
+    # 3.webp: grip side, 2000 px, ~19.94 px/mm
+    "right_u": dict(loc=(-600, 19.3, 49.8), up=(0, 0, 1), ortho=2000 / 19.94, res=(1000, 1000)),
+    "grip_close": dict(loc=(-260, -90, 75), look=(-80, 0, 40), lens=135, res=(1000, 1000)),
+    "beauty": dict(loc=(-250, -360, 150), look=(-12, -20, 46), lens=75, res=(1600, 1200)),
+    "beauty_back": dict(loc=(170, 360, 190), look=(-16, 10, 48), lens=75, res=(1600, 1200)),
     "hero": dict(loc=(-260, -330, 190), look=(-15, 10, 42), lens=105, res=(1024, 820)),
     "heroback": dict(loc=(150, 330, 230), look=(-15, 15, 45), lens=105, res=(1024, 820)),
 }

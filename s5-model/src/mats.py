@@ -30,10 +30,15 @@ def _coords(nt):
     return tc.outputs["Object"]
 
 
-def _bump(nt, height, strength, dist, normal_in=None):
+def _bump(nt, height, strength, relief_mm, normal_in=None):
+    """Bump from a 0..1 height field whose full range is relief_mm deep.
+
+    The Bump node works in world units (metres) while the model lives under a
+    root scaled 0.001, so the relief is converted here.
+    """
     b = nt.nodes.new("ShaderNodeBump")
     b.inputs["Strength"].default_value = strength
-    b.inputs["Distance"].default_value = dist
+    b.inputs["Distance"].default_value = relief_mm * 0.001
     nt.links.new(height, b.inputs["Height"])
     if normal_in is not None:
         nt.links.new(normal_in, b.inputs["Normal"])
@@ -68,65 +73,97 @@ def get(name):
 # ------------------------------------------------------------------ body
 
 def _paint():
-    """Magnesium body: black paint with a fine sand-blasted grain."""
+    """Magnesium body: black paint with a sand-blasted grain that sparkles in highlights."""
     m, nt, b = _new("paint")
-    _set(b, base=(0.016, 0.016, 0.017), rough=0.42, coat=0.25, coat_rough=0.28, spec=0.5)
+    _set(b, base=(0.014, 0.014, 0.015), rough=0.4, coat=0.15, coat_rough=0.35, spec=0.5)
     co = _coords(nt)
-    g = _noise(nt, co, 9.0, 3.0, 0.65)
-    nt.links.new(_bump(nt, g, 0.18, 0.004), b.inputs["Normal"])
+    fine = _noise(nt, co, 16.0, 4.0, 0.7)
+    grit = nt.nodes.new("ShaderNodeTexVoronoi")
+    grit.inputs["Scale"].default_value = 9.0
+    nt.links.new(co, grit.inputs["Vector"])
+    h = nt.nodes.new("ShaderNodeMath")
+    h.operation = "MULTIPLY_ADD"
+    h.inputs[1].default_value = 0.6
+    nt.links.new(grit.outputs["Distance"], h.inputs[0])
+    nt.links.new(fine, h.inputs[2])
+    nt.links.new(_bump(nt, h.outputs[0], 1.0, 0.006), b.inputs["Normal"])
+    r = nt.nodes.new("ShaderNodeMapRange")
+    r.inputs["To Min"].default_value = 0.32
+    r.inputs["To Max"].default_value = 0.5
+    nt.links.new(fine, r.inputs["Value"])
+    nt.links.new(r.outputs["Result"], b.inputs["Roughness"])
     return m
 
 
-def _leather():
-    """Pebbled leatherette: rounded voronoi pebbles with soft crevices."""
+def _leather(scale=1.0, warp=0.5, sub=0.35, crink=0.32, relief=0.21, rough_top=0.32):
+    """Leatherette as on the S5 grip: ~1 mm pebbles split into smaller grains, crinkled tops.
+
+    scale: pebbles per mm. sub / crink: weight of the sub-grains and of the ridged
+    wrinkles. relief: depth of the full height range in mm.
+    """
     m, nt, b = _new("leather")
-    _set(b, base=(0.011, 0.011, 0.012), rough=0.58, spec=0.45, sheen=0.15, sheen_rough=0.4)
+    _set(b, base=(0.012, 0.012, 0.013), rough=0.5, spec=0.5, sheen=0.1, sheen_rough=0.4)
     co = _coords(nt)
-    warp = nt.nodes.new("ShaderNodeTexNoise")
-    warp.inputs["Scale"].default_value = 1.6
-    warp.inputs["Detail"].default_value = 2.0
-    nt.links.new(co, warp.inputs["Vector"])
-    mix = nt.nodes.new("ShaderNodeMix")
-    mix.data_type = "VECTOR"
-    mix.inputs["Factor"].default_value = 0.25
-    nt.links.new(co, mix.inputs["A"])
-    nt.links.new(warp.outputs["Color"], mix.inputs["B"])
-    edge = nt.nodes.new("ShaderNodeTexVoronoi")
-    edge.feature = "DISTANCE_TO_EDGE"
-    edge.inputs["Scale"].default_value = 2.3
-    edge.inputs["Randomness"].default_value = 1.0
-    nt.links.new(mix.outputs["Result"], edge.inputs["Vector"])
-    f1 = nt.nodes.new("ShaderNodeTexVoronoi")
-    f1.feature = "F1"
-    f1.inputs["Scale"].default_value = 2.3
-    f1.inputs["Randomness"].default_value = 1.0
-    nt.links.new(mix.outputs["Result"], f1.inputs["Vector"])
-    crev = nt.nodes.new("ShaderNodeMapRange")
-    crev.inputs["From Min"].default_value = 0.0
-    crev.inputs["From Max"].default_value = 0.22
-    crev.interpolation_type = "SMOOTHSTEP"
-    nt.links.new(edge.outputs["Distance"], crev.inputs["Value"])
-    dome = nt.nodes.new("ShaderNodeMapRange")
-    dome.inputs["From Min"].default_value = 0.0
-    dome.inputs["From Max"].default_value = 0.75
-    dome.inputs["To Min"].default_value = 1.0
-    dome.inputs["To Max"].default_value = 0.0
-    nt.links.new(f1.outputs["Distance"], dome.inputs["Value"])
-    h = nt.nodes.new("ShaderNodeMath")
-    h.operation = "MULTIPLY"
-    nt.links.new(crev.outputs["Result"], h.inputs[0])
-    nt.links.new(dome.outputs["Result"], h.inputs[1])
-    fine = _noise(nt, co, 18.0, 2.0)
-    add = nt.nodes.new("ShaderNodeMath")
-    add.operation = "MULTIPLY_ADD"
-    add.inputs[1].default_value = 0.12
-    nt.links.new(fine, add.inputs[0])
-    nt.links.new(h.outputs[0], add.inputs[2])
-    nt.links.new(_bump(nt, add.outputs[0], 0.45, 0.02), b.inputs["Normal"])
-    rr = nt.nodes.new("ShaderNodeMapRange")
-    rr.inputs["To Min"].default_value = 0.72
-    rr.inputs["To Max"].default_value = 0.5
-    nt.links.new(crev.outputs["Result"], rr.inputs["Value"])
+
+    def node(kind, feature=None, **inputs):
+        n = nt.nodes.new(kind)
+        if feature:
+            n.feature = feature
+        for k, v in inputs.items():
+            n.inputs[k].default_value = v
+        return n
+
+    def math(op, a, b_=None, v=None):
+        n = nt.nodes.new("ShaderNodeMath")
+        n.operation = op
+        nt.links.new(a, n.inputs[0])
+        if b_ is not None:
+            nt.links.new(b_, n.inputs[1])
+        elif v is not None:
+            n.inputs[1].default_value = v
+        return n.outputs[0]
+
+    def plateau(vec, sc, width):
+        e = node("ShaderNodeTexVoronoi", "DISTANCE_TO_EDGE", Scale=sc)
+        nt.links.new(vec, e.inputs["Vector"])
+        r = node("ShaderNodeMapRange", **{"From Max": width})
+        r.interpolation_type = "SMOOTHSTEP"
+        nt.links.new(e.outputs["Distance"], r.inputs["Value"])
+        return r.outputs["Result"]
+
+    wn = node("ShaderNodeTexNoise", Scale=0.6, Detail=3.0, Roughness=0.5)
+    nt.links.new(co, wn.inputs["Vector"])
+    mx = nt.nodes.new("ShaderNodeMix")
+    mx.data_type = "VECTOR"
+    mx.inputs["Factor"].default_value = warp
+    nt.links.new(co, mx.inputs["A"])
+    nt.links.new(wn.outputs["Color"], mx.inputs["B"])
+    p = mx.outputs["Result"]
+    big = plateau(p, scale, 0.14)
+    small = plateau(p, scale * 2.4, 0.12)
+    wr = node("ShaderNodeTexNoise", Scale=scale * 3.5, Detail=4.0, Roughness=0.55)
+    nt.links.new(p, wr.inputs["Vector"])
+    fold = nt.nodes.new("ShaderNodeMath")                  # 1 - 2|n - 0.5|: sharp ridges along the noise midline
+    fold.operation = "MULTIPLY_ADD"
+    nt.links.new(math("ABSOLUTE", math("SUBTRACT", wr.outputs["Fac"], v=0.5)), fold.inputs[0])
+    fold.inputs[1].default_value = -2.0
+    fold.inputs[2].default_value = 1.0
+    ridged = math("POWER", fold.outputs[0], v=3.0)
+    micro = node("ShaderNodeTexNoise", Scale=16.0, Detail=2.0, Roughness=0.5)
+    nt.links.new(co, micro.inputs["Vector"])
+    height = math("MULTIPLY", big, v=1.0 - sub - crink)
+    height = math("ADD", height, math("MULTIPLY", small, v=sub))
+    height = math("ADD", height, math("MULTIPLY", math("MULTIPLY", ridged, big), v=crink))
+    height = math("ADD", height, math("MULTIPLY", micro.outputs["Fac"], v=0.05))
+    nt.links.new(_bump(nt, height, 1.0, relief), b.inputs["Normal"])
+    col = nt.nodes.new("ShaderNodeMix")
+    col.data_type = "RGBA"
+    col.inputs["A"].default_value = (0.004, 0.004, 0.0045, 1)
+    col.inputs["B"].default_value = (0.015, 0.015, 0.016, 1)
+    nt.links.new(big, col.inputs["Factor"])
+    nt.links.new(col.outputs["Result"], b.inputs["Base Color"])
+    rr = node("ShaderNodeMapRange", **{"From Min": 0.1, "From Max": 0.9, "To Min": 0.75, "To Max": rough_top})
+    nt.links.new(height, rr.inputs["Value"])
     nt.links.new(rr.outputs["Result"], b.inputs["Roughness"])
     return m
 
@@ -141,7 +178,7 @@ def _rubber():
     m, nt, b = _new("rubber")
     _set(b, base=(0.012, 0.012, 0.012), rough=0.72, spec=0.35)
     co = _coords(nt)
-    nt.links.new(_bump(nt, _noise(nt, co, 6.0, 2.0), 0.12, 0.004), b.inputs["Normal"])
+    nt.links.new(_bump(nt, _noise(nt, co, 6.0, 2.0), 1.0, 0.006), b.inputs["Normal"])
     return m
 
 
@@ -150,7 +187,7 @@ def _plastic():
     m, nt, b = _new("plastic")
     _set(b, base=(0.014, 0.014, 0.015), rough=0.36, spec=0.5)
     co = _coords(nt)
-    nt.links.new(_bump(nt, _noise(nt, co, 11.0, 2.0), 0.08, 0.003), b.inputs["Normal"])
+    nt.links.new(_bump(nt, _noise(nt, co, 11.0, 2.0), 1.0, 0.002), b.inputs["Normal"])
     return m
 
 
@@ -187,7 +224,7 @@ def _spun_metal():
     comb = nt.nodes.new("ShaderNodeCombineXYZ")
     nt.links.new(sep.outputs["Value"], comb.inputs["X"])
     nt.links.new(comb.outputs[0], wave.inputs["Vector"])
-    nt.links.new(_bump(nt, wave.outputs["Fac"], 0.25, 0.002), b.inputs["Normal"])
+    nt.links.new(_bump(nt, wave.outputs["Fac"], 1.0, 0.0006), b.inputs["Normal"])
     return m
 
 
@@ -206,8 +243,9 @@ def _steel():
 
 
 def _silver_logo():
+    """Bright satin silver lettering: reads light even when it reflects a dark studio."""
     m, nt, b = _new("silver_logo")
-    _set(b, base=(0.72, 0.72, 0.74), metal=1.0, rough=0.2)
+    _set(b, base=(0.8, 0.8, 0.82), metal=0.35, rough=0.32, coat=0.5, coat_rough=0.1)
     return m
 
 
@@ -284,7 +322,7 @@ def _lens_plastic():
     m, nt, b = _new("lens_plastic")
     _set(b, base=(0.018, 0.018, 0.019), rough=0.4, spec=0.5)
     co = _coords(nt)
-    nt.links.new(_bump(nt, _noise(nt, co, 8.0, 3.0, 0.6), 0.2, 0.004), b.inputs["Normal"])
+    nt.links.new(_bump(nt, _noise(nt, co, 8.0, 3.0, 0.6), 1.0, 0.004), b.inputs["Normal"])
     return m
 
 
