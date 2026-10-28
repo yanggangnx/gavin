@@ -7,6 +7,7 @@
 | 1 | `index.html` | 10 s（240 帧） | 六年，足够让 4K 从旗舰卖点变成基础配置，也足够让一台 14000 元的机身，掉到现在只剩个零头。 | `evidence/ledger.csv`、`evidence/xianyu-sample.csv` |
 | 2 | `ep2.html` | 18 s（432 帧），一镜到底 | S5 用的是一块 2420 万像素全画幅 CMOS……它真正值钱的，是能无裁切录制 C4K 或 4K 30 帧的 4:2:2 10-bit。 | `evidence/ep2-ledger.csv`；相机照片 `evidence/ep2-camera-sources.csv` |
 | 3 | `ep3.html` | 10 s（240 帧），一镜到底 | 第一段 3 秒：S5 和索尼 A7 IV 的 4K 60p 都有约 1.5× 裁切。第二段 7 秒：S5 一代固件更新记录，高亮“外录 6K 12-bit RAW”。 | `evidence/ep3-ledger.csv` |
+| 4 | `ep4.html` | 8 s（192 帧），约 3 s 入场 + 定格图表 | S5 的 V-Log 有双原生 ISO：640 和 4000。 | `evidence/ep4-ledger.csv` |
 
 还没有配音，节拍是估算的：第 1 集按每秒约 5 个字，第 2 集按每秒约 6 个字。录配音时打开预览页的“朗读提示”，跟着屏幕底部的字念；录好后按真实波形改页面顶部的 `T`（第 1 集）或字级节拍 `B`（第 2 集）。
 
@@ -83,11 +84,28 @@
 
 官方标称是 5.9K（5888 × 3312），大字按口播写“6K”，准确值放在下面那行小字里。第 3 集没有提供口播，节拍点在 `ep3.html` 的 `B`。
 
+## 第 4 集 · V-Log 的双原生 ISO（8 秒，入场 + 定格图表）
+
+只有一段约 3 秒的入场动画，3 s 起整幅画面是一张不动的图表（只有颗粒在动）。数据全部来自松下官方材料，画面上不标来源，来源在 `evidence/ep4-ledger.csv`。
+
+**图表**：横轴是 ISO，对数刻度，每格 1 档（100 到 51200）。四种照片风格各一行，空心点是低 ISO 电路的基准感光度，实心点是高 ISO 电路的基准：常规 100 / 640、Cinelike D2 / V2 200 / 1250、HLG 400 / 2500、V-Log 640 / 4000。四行的两点间距都是 8 个 1/3 档，排成一道阶梯，V-Log 在最下面、最亮，背后一条浅色带标出 V-Log 可用的 640 – 51200。上方是大字“640 / 4000”（下面的空心 / 实心点同时是图例），右侧四行事实：动态范围 14 档以上（官方标称）、出厂预装、可用 ISO、电路由相机自动选择。
+
+| 时间 | 画面 | 证据 |
+| --- | --- | --- |
+| 0.1 s | 标题“松下 LUMIX S5 · V-Log 的双原生 ISO” | |
+| 0.35 – 1.15 s | ISO 横轴从左往右画出，刻度随线出现 | |
+| 0.75 – 1.9 s | 四种照片风格逐行落下：先出低感基准的空心点，线伸到高感基准，实心点落定；V-Log 最后 | D02 |
+| 1.85 – 2.6 s | 大字 640 / 4000 和图例；其他三行退暗，V-Log 的色带从 4000 延伸到 51200，两条虚线落到横轴 | D01、D04 |
+| 2.3 – 2.95 s | 右侧四行事实依次出现 | D03–D06 |
+| 3 – 8 s | 定格 | |
+
+官方没有公布 S5 在哪个 ISO 从低感电路切到高感电路（S5 也不能手动选 LOW / HIGH，S5II 起才有），所以画面只标两个基准点，不画切换点。动态范围只写官方标称的“14 档以上”；第三方实验室实测在 SNR = 2 下约 12 档，记在台账里，不上屏。没有提供口播；定格段多长都行，改 `ep4.html` 的 `DURATION`，或者直接用 `out/ep4-chart-3840.png`（4K 定格图）在剪辑里延长。
+
 ## 预览
 
 直接用 Chrome 或 Edge 打开页面（`s5/index.html`、`s5/ep2.html`）。字体打包成了 data URI，不联网也能看。空格播放/暂停，← → 逐帧，Shift + ← → 跳 1 秒；勾选项可以切换灰盒、朗读提示、遮幅、颗粒和运动模糊。
 
-单文件版：`python3 -I s5/tools/build_single.py [ep2.html | ep3.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html` 约 6 MB，`out/ep3-storyboard.html` 约 0.5 MB），拷到哪台电脑都能直接打开。第 1、2 集的单文件里有闲鱼截图和相机照片，只在本地传，不进 git。
+单文件版：`python3 -I s5/tools/build_single.py [ep2.html | ep3.html | ep4.html]` 把字体、截图、引擎和导出库全部内联进一个文件（`out/s5-storyboard.html` 约 6 MB，`out/ep2-storyboard.html` 约 6 MB，`out/ep3-storyboard.html`、`out/ep4-storyboard.html` 各约 0.5 MB），拷到哪台电脑都能直接打开。第 1、2 集的单文件里有闲鱼截图和相机照片，只在本地传，不进 git。
 
 改过画面上的字要重跑 `python3 -I s5/tools/build_fonts.py`：它扫描所有页面和 `lib/`，生成一份共用的字形子集 `fonts/fonts.js`。
 
@@ -101,6 +119,8 @@
 node s5/render.mjs                          # 第 1 集 H.264 MP4，24 fps，运动模糊开 → out/s5.mp4
 node s5/render.mjs --page ep2.html          # 第 2 集 → out/ep2.mp4
 node s5/render.mjs --page ep3.html          # 第 3 集 → out/ep3.mp4
+node s5/render.mjs --page ep4.html          # 第 4 集 → out/ep4.mp4
+node s5/render.mjs --page ep4.html --still 7.9 --size 3840x2160 --out out/ep4-chart-3840.png   # 第 4 集 4K 定格图
 node s5/render.mjs --format prores          # ProRes 422 HQ 10-bit，进剪辑用 → out/s5.mov
 node s5/render.mjs --format png             # PNG 序列 → out/s5-frames/
 node s5/render.mjs --size 3840x2160         # 4K（任意尺寸，页面按该分辨率重绘）
@@ -128,6 +148,10 @@ python3 -I s5/tools/qc.py s5/out/ep2.mp4 --nograin s5/out/ep2-qc-nograin.mp4 --c
 node s5/render.mjs --page ep3.html --from 4.5 --to 5.5 --grain 0 --out out/ep3-qc-nograin.mp4
 python3 -I s5/tools/qc.py s5/out/ep3.mp4 --nograin s5/out/ep3-qc-nograin.mp4 --clip-start 4.5 \
     --at 5.0 --strip 1200,1760 --rows 760,800,840,880 --out s5/out/qc/ep3
+# 第 4 集：取 5.0 s 图表右上方的空白暗部
+node s5/render.mjs --page ep4.html --from 4.5 --to 5.5 --grain 0 --out out/ep4-qc-nograin.mp4
+python3 -I s5/tools/qc.py s5/out/ep4.mp4 --nograin s5/out/ep4-qc-nograin.mp4 --clip-start 4.5 \
+    --at 5.0 --strip 1300,1760 --rows 560,600,640,680 --out s5/out/qc/ep4
 ```
 
 当前结果：压缩后有颗粒最长 17 / 18 / 18 像素（第 1 / 2 / 3 集），无颗粒 248 / 410 / 172 像素。
@@ -148,16 +172,23 @@ python3 -I s5/tools/qc.py s5/out/ep3.mp4 --nograin s5/out/ep3-qc-nograin.mp4 --c
 2. 那条横轴想说明什么？（2400 万像素在全画幅里处在中间档，像素大小和细节之间比较平衡）
 3. 最后那个框从小变大是什么意思？（录 C4K / 4K 30 帧 4:2:2 10-bit 时用的是整块全画幅，不裁切）
 
+第 4 集：
+
+1. S5 拍 V-Log 时的两个原生 ISO 是多少？（640 和 4000）
+2. 图上每一行的两个点分别是什么？（两套电路各自的基准感光度，空心是低感、实心是高感）
+3. V-Log 最高能用到多少 ISO？（51200）
+
 ## 改什么在哪
 
 - **节奏**：第 1 集是页面顶部的 `T`（镜头起止秒数），第 2 集是字级节拍 `B` 和镜头关键帧 `CAM`；朗读提示 `VO`，时间轴节拍 `BEATS`。
 - **第 1 集数据**：`CAMERAS`（对照表）、`LAUNCH`（官方定价）；二手价来自 `evidence/xianyu-sample.csv`，改完重跑 `build_assets.py`，中位数自动重算。
 - **第 2 集**：镜头关键帧 `CAM`，推进卡口的节奏 `dive`；数据 `SENSOR`、`ROW`（2400 万像素级机型；`glass`、`body` 是照片里传感器玻璃和机身的像素坐标，换照片要重新量）、`LINE`（像素档位横轴）、`FACTS`（三行）、`MODES`（录制规格，`hl` 标出高亮行，`aps` 是裁切框出现时亮起的 60p 行）。
+- **第 4 集**：入场节拍 `B`、定格时长 `DURATION`；数据 `STYLES`（四种照片风格的两档基准）、`VLOG_MAX`、`FACTS`（右侧四行）；横轴范围和位置 `AX`。
 - **配色、颗粒、字体**：`lib/stage.js` 里的 `C`、`GRAIN_K`、`F`。
 
 ## 文件
 
-- `index.html`、`ep2.html`、`ep3.html`：三集的镜头
+- `index.html`、`ep2.html`、`ep3.html`、`ep4.html`：四集的镜头
 - `lib/stage.js`：共用引擎（绘制、颗粒、运动模糊）、预览播放器、导出面板、`window.__motion` 渲染接口
 - `render.mjs`：逐帧导出脚本，`--page` 选集
 - `evidence/`：证据台账、抽样表、第 2 集相机照片来源；`raw/` 和 `xianyu/` 是截图，只在本地
