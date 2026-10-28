@@ -8,6 +8,9 @@
 // into the big number. A time axis runs along the bottom the whole way. Its playhead runs out to 现在
 // for 六年, goes back to the launch for the 4K and again for the price, then runs out to 现在 a second
 // time while the price falls, so 13,998 and 3,688 each sit on their own date.
+//
+// The sound (sfx() below, lib/sfx.js) is motion sound only: rendered from the same timeline, played
+// in the preview, muxed into MP4 / WebM exports and available as a WAV.
 
 const W = 1920, H = 1080, FPS = 24, DURATION = 10;
 const LB = Math.round((H - W / 2.39) / 2);       // 2.39:1 letterbox bar height, 138 px
@@ -78,6 +81,7 @@ const OPT = {
   letterbox: flag('letterbox', true),
   grain: flag('grain', true),
   mb: flag('mb', false),
+  sfx: flag('sfx', true),
 };
 
 // ---- helpers ---------------------------------------------------------------------------------
@@ -744,6 +748,95 @@ function s5(c, t) {
   (S5_IMG && !OPT.greybox ? drawS5Photo : drawS5)(c, x, y, k, rise * (1 - P(fly, 0.55, 1, E.lin)));
 }
 
+// ---- sound -----------------------------------------------------------------------------------
+// Motion sound only, no music (lib/sfx.js). Every cue hangs off T and the same motion functions the
+// picture uses: the playhead's speed drives its glide, the year and price digits tick as they roll,
+// moves sound along their own easing. Retime T and the sound moves with it.
+function sfx(s) {
+  const at = (t, x) => { const k = camAt(t); return s.pan(W / 2 + (x - k.x) * k.z); };
+  const h = 1 / 500;
+  // The playhead running along the axis: louder and brighter the faster it goes, panned with it.
+  const runs = (t0, t1, o) => s.air(t0, t1, (t) => {
+    const v = clamp(Math.abs(X(playhead(t + h)) - X(playhead(t - h))) / (2 * h) / 4200) ** 1.2;
+    return { v, f: (o.f0 || 700) * 3 ** v, pan: at(t, X(playhead(t))) };
+  }, { q: 2.2, air: 0.05, tail: 0.1, ...o });
+  // The year's last digit, ticking each time it rolls over (big on the year, small in the price label).
+  const years = (t0, t1, o) => s.ticks(s.crossings((t) => yearSteps(playhead(t)), t0, t1), (i, c) => ({ ...o, f: o.f * (c.dir > 0 ? 1.03 ** i : 0.97 ** i), label: i ? '' : o.label }));
+
+  // 0 · 六年: the shot opens on the year and pulls back while the playhead runs out to 现在.
+  s.bloom(0, 1.15, { db: -25, peak: 0.3, label: '开场' });
+  s.camera(0, 1.0, camAt, { db: -25, label: '拉开' });
+  runs(0.06, 0.84, { db: -27, label: '时间轴跑到现在' });
+  years(0, 0.9, { f: 2300, db: -25, body: -1, pan: at(0.4, 640), label: '年份 2020→2026' });
+  s.tick(0.8, { f: 2000, db: -27, double: 0.012, pan: at(0.8, AX.x1), label: '到“现在”' });
+
+  // 0.95 · back to the launch: the year rolls back and flies up into the launch caption; the S5 rises.
+  runs(T.s2 - 0.02, T.s2 + 0.5, { db: -28, f0: 600, label: '时间轴回到发布' });
+  years(T.s2, T.s2 + 0.5, { f: 2100, db: -27, body: -1, pan: at(1.1, 640), label: '年份倒回' });
+  s.move(T.s2 + 0.2, T.s2 + 0.7, E.inout3, { f: [480, 2400], shift: 1.5, pan: [at(1.15, 640), at(1.65, 380)], db: -26, label: '年份飞进标题' });
+  s.bloom(T.s2 + 0.35, T.s2 + 1.25, { db: -27, peak: 0.35, pan: at(1.6, 1540), label: 'S5 机身浮现' });
+
+  // 1.43 · 4K 60p 10bit comes up: the first hit.
+  s.hit(T.s2 + 0.5, { db: -12, f: 50, tail: 1.25, pan: at(1.45, 600), label: '4K 60p 10bit' });
+
+  // 2.65 · the headline shrinks into its cell; the table builds, one wipe per row, with a dot on the axis each.
+  s.move(T.s2b, T.s2b + 0.8, E.inout3, { f: [380, 2300], shift: 1.6, pan: [at(2.65, 650), at(3.45, 880)], db: -22, label: '标题缩进表格' });
+  s.tick(T.s2b + 0.36, { f: 2600, db: -31, double: 0.06, pan: at(3, 500), label: '表头' });
+  CAMERAS.forEach((cam, i) => {
+    const t0 = T.s2b + 0.7 + i * 0.09;
+    s.tick(t0, { f: 2900 * 1.06 ** i, db: -28, pan: at(t0, ML + 80), label: i ? '' : '四台新机' });
+    s.move(t0, t0 + 0.2, E.out3, { f: [1500, 4600], q: 1.2, tail: 0.08, air: 0.2, pan: [at(t0, ML), at(t0, COL.price)], db: -31 });
+  });
+  runs(T.s2b + 0.52, T.s2b + 1.3, { db: -31, f0: 800 });
+
+  // 4.45 · the table drops away, the playhead goes back, the S5's price cell grows into 13,998.
+  s.move(T.s3, T.s3 + 0.35, E.inout3, { f: [240, 800], pan: [0, 0], db: -29, wide: true });
+  runs(T.s3, T.s3 + 0.55, { db: -31, f0: 600 });
+  s.move(T.s3 + 0.05, T.s3 + 0.85, E.inout3, { f: [260, 1500], shift: 0.6, body: 0.6, pan: [at(4.5, 1150), at(5.3, 520)], db: -19, label: '价格放大' });
+  s.thud(T.s3 + 0.76, { db: -15, pan: at(5.2, 520), label: '13,998 落定' });
+  s.tick(T.s3 + 0.52, { f: 3600, db: -32, pan: at(4.97, X(D_LAUNCH)), label: '价格竖线' });
+
+  // 7.5 · 掉到现在: the price slides down its stem as the playhead runs to 现在, the year rolls on,
+  // the body flies into its listing and the listings come in.
+  s.swell(T.s4 - 0.45, T.s4, { db: -31, f: [350, 2000], label: '下落前' });
+  s.drop(T.s4, T.kill, { f: [130, 44], ease: E.inout3, db: -18, tail: 0.3, label: '价格下落' });
+  runs(T.s4, T.kill + 0.02, { db: -21, f0: 520, body: 0.3, label: '时间轴跑到现在' });
+  years(T.s4, T.kill + 0.1, { f: 3500, db: -31, pan: at(7.8, ML + 60), label: '年份 2020→2026' });
+  const card = wallLayout().find((c) => c.id === MID.id);
+  const cardX = card ? card.x + WALL.w / 2 : 1400;
+  s.move(T.s4, T.s4 + 0.6, E.inout3, { f: [700, 3600], shift: 1.8, air: 0.25, pan: [at(7.5, 1540), at(8.1, cardX)], db: -27, label: '机身飞进挂牌' });
+  wallLayout().forEach((c, i) => {
+    const t0 = c.id === MID.id ? T.s4 + 0.33 : T.s4 + 0.46 + ((i * 0.618) % 1) * 0.22;
+    s.tick(t0, { f: 3800 + ((i * 0.382) % 1) * 1800, db: c.id === MID.id ? -31 : -37, q: 4, pan: at(t0, c.x + WALL.w / 2), rv: 0.18, label: i ? '' : '闲鱼挂牌' });
+  });
+
+  // 8.25 · the 1 heats up and goes out as the playhead lands: the big hit, dark, then the 1 dissolves.
+  s.swell(T.kill - 0.32, T.kill, { db: -26, f: [700, 3000], pan: at(8.2, ML + 40), label: '“1”变红' });
+  s.hit(T.kill, { db: -9, f: 44, tail: 1.4, dark: 1, pan: at(T.kill, ML + 200), label: '“1”熄灭' });
+  s.puff(T.kill + 0.02, { db: -24, dur: 0.38, f: [2400, 300], pan: at(8.3, ML + 50), label: '“1”消散' });
+
+  // 8.5 · the gap closes and 3,998 locks in place.
+  s.move(T.close, T.close + 0.32, E.inout3, { f: [700, 2600], tail: 0.05, pan: [at(8.5, 420), at(8.8, 330)], db: -31 });
+  s.tick(T.close + 0.3, { f: 2400, db: -25, body: -1, double: 0.012, pan: at(8.8, 330), label: '缺口合上' });
+
+  // 9.25 · the last digits roll down to the median, a tick per digit step.
+  const from = String(ODD), to = String(Math.round(MEDIAN)).padStart(4, '0');
+  const roll = (t) => P(t, T.roll, T.land, E.inout3);
+  const steps = [];
+  for (let d = 0; d < 4; d++) {
+    if (from[d] === to[d]) continue;
+    const g = (t) => +from[d] + roll(t) * (to[d] - from[d]);
+    s.crossings(g, T.roll, T.land).forEach((c) => steps.push({ t: c.t, x: ML + 110 + d * 115 }));
+  }
+  steps.sort((a, b) => a.t - b.t)
+    .filter((c, i, all) => !i || c.t - all[i - 1].t > 0.008)
+    .forEach((c, i) => s.tick(c.t, { f: 2700 - i * 120, db: -26, body: -2, pan: at(c.t, c.x), label: i ? '' : '数字滚到中位数' }));
+
+  // 9.6 · the median lights up: a soft landing and a glint on the listing it came from.
+  s.thud(T.land - 0.03, { db: -19, f: 64, pan: at(9.6, 500), label: '中位数落定' });
+  s.ping(T.land - 0.02, { f: 1760, db: -27, decay: 0.9, pan: at(9.6, cardX), label: '中位数挂牌亮起' });
+}
+
 // ---- frame composition -----------------------------------------------------------------------
 function drawScene(c, t) {
   c.save();
@@ -844,6 +937,7 @@ function renderInto(target, t, { fps = FPS, mb = OPT.mb } = {}) {
 
 const stage = document.getElementById('stage');
 const render = (t) => renderInto(stage, t);
+const sound = window.S5SFX ? window.S5SFX.track(sfx, DURATION) : null;
 
 // ---- render hook (render.mjs) ------------------------------------------------------------------
 const captureCanvases = {};
@@ -857,6 +951,13 @@ window.__motion = {
     return cv.toDataURL('image/png').split(',')[1];
   },
   beats: BEATS, timeline: T,
+  sfx: sound,                                     // the soundtrack: .ready → { buffer, cues, peak }
+  // The soundtrack as a base64 WAV (render.mjs can mux it: ffmpeg -i video -i sfx.wav), or null.
+  audio: async (bits = 24) => {
+    if (!sound) return null;
+    await ready;                                  // the score reads the listings' layout
+    return sound.base64(bits);
+  },
 };
 
 // ---- in-page export --------------------------------------------------------------------------
@@ -939,6 +1040,7 @@ async function runExport() {
   const fps = +document.getElementById('ex-fps').value;
   const bitrate = +document.getElementById('ex-bitrate').value * 1e6;
   const mb = document.getElementById('ex-mb').checked;
+  const withAudio = !!sound && document.getElementById('ex-audio').checked;
   const frames = Math.round(DURATION * fps);
   const canvas = makeCanvas(w, h);
   const job = { cancelled: false };
@@ -970,19 +1072,32 @@ async function runExport() {
       await tick();
     }
     if (job.cancelled) return status('已取消。');
+    if (withAudio) {
+      const name = 's5-sfx.wav', data = await sound.wav(24);
+      if (dir) {
+        const ws = await (await dir.getFileHandle(name, { create: true })).createWritable();
+        await ws.write(data); await ws.close();
+      } else {
+        zip.add(name, data);
+      }
+    }
     if (zip) download(zip.finish(), `s5-png-${w}x${h}-${fps}p.zip`);
-    return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${dir ? '已写入所选文件夹' : '已打包下载'}。`);
+    return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${withAudio ? '和音效 WAV ' : ''}${dir ? '已写入所选文件夹' : '已打包下载'}。`);
   }
 
   if (!('VideoEncoder' in window)) return status('这个浏览器不支持 WebCodecs，请用最新版 Chrome 或 Edge；也可以导出 PNG 序列。');
   const cfg = await pickConfig(format, w, h, fps, bitrate);
   if (!cfg) return status(`这个浏览器不支持 ${w}×${h} ${fps} 帧的${format === 'mp4' ? ' H.264' : ' VP9'} 编码，换个分辨率或格式试试。`);
+  // The sound is encoded first, whole; both muxers interleave it with the video as frames arrive.
+  const audio = withAudio ? await sound.encoded(format) : null;
   const M = format === 'mp4' ? window.Mp4Muxer : window.WebMMuxer;
   const muxer = new M.Muxer({
     target: new M.ArrayBufferTarget(),
     video: { codec: format === 'mp4' ? 'avc' : 'V_VP9', width: w, height: h, frameRate: fps },
+    ...(audio ? { audio: { codec: audio.mux, numberOfChannels: audio.numberOfChannels, sampleRate: audio.sampleRate } } : {}),
     ...(format === 'mp4' ? { fastStart: 'in-memory' } : {}),
   });
+  if (audio) for (const [chunk, meta] of audio.chunks) muxer.addAudioChunk(chunk, meta);
   let failed = null;
   const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
   enc.configure(cfg);
@@ -1004,16 +1119,19 @@ async function runExport() {
   muxer.finalize();
   const blob = new Blob([muxer.target.buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' });
   download(blob, `s5-${w}x${h}-${fps}p.${format}`);
-  status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps）。`);
+  const said = audio ? `，音效 ${audio.codec === 'opus' ? 'Opus' : 'AAC'}` : withAudio ? '；这个浏览器不能编码音频，视频里没有声音，请另外导出音效 WAV' : '';
+  status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps${said}）。`);
 }
 
 // ---- preview player ----------------------------------------------------------------------------
+// While the sound plays, the picture runs off the sound's clock, so the two stay together.
 if (OPT.render) {
   document.body.classList.add('render');
 } else {
   const play = document.getElementById('play'), scrub = document.getElementById('scrub'), tc = document.getElementById('tc');
   let now = 0, playing = false, last = 0;
   const show = () => { render(now); scrub.value = now; tc.textContent = timecode(Math.round(now * FPS)); };
+  const listen = () => { if (sound) { if (playing && OPT.sfx) sound.player.play(now); else sound.player.stop(); } };
   const wrap = document.getElementById('scrub-wrap');
   for (const [b, name] of BEATS) {
     const m = document.createElement('div');
@@ -1024,8 +1142,9 @@ if (OPT.render) {
   }
   const loop = (ms) => {
     if (!playing) return;
-    now += (ms - last) / 1000; last = ms;
-    if (now >= DURATION) now = 0;
+    const heard = sound && OPT.sfx ? sound.player.time() : null;
+    now = heard ?? now + (ms - last) / 1000; last = ms;
+    if (now >= DURATION) { now = 0; listen(); }
     show();
     requestAnimationFrame(loop);
   };
@@ -1033,24 +1152,39 @@ if (OPT.render) {
     playing = !playing;
     play.textContent = playing ? '暂停' : '播放';
     if (playing) { last = performance.now(); requestAnimationFrame(loop); }
+    listen();
   };
+  const seek = (t) => { now = t; show(); if (playing) listen(); };
   play.onclick = toggle;
-  scrub.oninput = () => { now = +scrub.value; show(); };
+  scrub.oninput = () => seek(+scrub.value);
   document.querySelectorAll('[data-opt]').forEach((el) => {
     el.checked = OPT[el.dataset.opt];
-    el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); };
+    el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); if (el.dataset.opt === 'sfx') listen(); };
+    if (el.dataset.opt === 'sfx' && !sound) el.parentElement.hidden = true;
   });
   addEventListener('keydown', (e) => {
     if (e.target.closest('select, input[type=number]')) return;
     if (e.code === 'Space') { e.preventDefault(); toggle(); }
     const step = e.shiftKey ? 1 : 1 / FPS;
-    if (e.code === 'ArrowRight') { now = clamp(now + step, 0, DURATION - 1 / FPS); show(); }
-    if (e.code === 'ArrowLeft') { now = clamp(now - step, 0, DURATION); show(); }
+    if (e.code === 'ArrowRight') seek(clamp(now + step, 0, DURATION - 1 / FPS));
+    if (e.code === 'ArrowLeft') seek(clamp(now - step, 0, DURATION));
   });
 
   const size = document.getElementById('ex-size'), rate = document.getElementById('ex-bitrate');
   size.onchange = () => { rate.value = { '1920x1080': 40, '3840x2160': 120, '1280x720': 20 }[size.value]; };
-  const go = document.getElementById('ex-go'), cancel = document.getElementById('ex-cancel');
+  const go = document.getElementById('ex-go'), cancel = document.getElementById('ex-cancel'), wavBtn = document.getElementById('ex-wav');
+  if (!sound) { wavBtn.hidden = true; document.getElementById('ex-audio').parentElement.hidden = true; }
+  wavBtn.onclick = async () => {
+    wavBtn.disabled = true;
+    try {
+      download(new Blob([await sound.wav(24)], { type: 'audio/wav' }), 's5-sfx.wav');
+      document.getElementById('ex-status').textContent = `完成：音效 WAV（48 kHz，24-bit，${DURATION} 秒）。`;
+    } catch (err) {
+      document.getElementById('ex-status').textContent = `导出失败：${err.message}`;
+    } finally {
+      wavBtn.disabled = false;
+    }
+  };
   go.onclick = async () => {
     if (playing) toggle();
     go.disabled = true; cancel.hidden = false;
@@ -1065,4 +1199,7 @@ if (OPT.render) {
   };
   cancel.onclick = () => { if (exporting) exporting.cancelled = true; };
   ready.then(show);
+  if (sound) {                                    // render the sound once the page is up, before the first play
+    ready.then(() => sound.ready).catch((err) => { document.getElementById('ex-status').textContent = `音效生成失败：${err.message}`; });
+  }
 }

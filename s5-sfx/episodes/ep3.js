@@ -163,6 +163,44 @@ function frame(c, u, t) {
   firmware(c, t);
 }
 
+// ---- sound -----------------------------------------------------------------------------------
+// Motion sound only, no music (lib/sfx.js). Cues hang off B and the same camera, crop and scroll the
+// picture uses: the list ticks like a scroll wheel, one detent every 22 px of its own scroll curve.
+function sfx(s) {
+  const at = (t, wx) => s.pan(scr(cam(t), wx, Y0).x);
+  const list = s.pan(LIST.x + 300);
+
+  // A · two sensors drawn, two recording areas, both close in to the 1.5× crop for 4K 60p.
+  s.bloom(0, 0.9, { db: -26, peak: 0.4, label: '开场' });
+  BODIES.forEach((b, i) => s.scribe(0.02, 0.4, { db: -34, f: 6200 + 600 * i, ease: E.inout3, pan: [at(0, b.x) - 0.1, at(0.4, b.x) + 0.1], label: i ? '' : '画出传感器' }));
+  BODIES.forEach((b, i) => s.tick(0.26 + i * 0.015, { f: 3000, db: -29, pan: at(0.26, b.x), label: i ? '' : '录制区域' }));
+  s.move(B.crop, B.crop + 0.75, E.inout3, { f: [380, 1800], shift: 0.7, wide: true, db: -22, label: '裁切框收缩' });
+  s.hit(B.crop + 0.67, { db: -12, f: 54, tail: 1.0, label: '约 1.5× 裁切' });
+  BODIES.forEach((b, i) => s.tick(B.crop + 0.71 + i * 0.015, { f: 2500, db: -26, double: 0.03, pan: at(B.crop + 0.75, b.x), label: i ? '' : '裁切到位' }));
+
+  // B · the camera drifts onto the S5 while the A7 IV leaves; the firmware list comes up and scrolls.
+  s.camera(B.move, B.move + 1.0, cam, { db: -18, label: '镜头移向 S5' });
+  s.move(B.list, B.list + 0.6, E.out3, { f: [500, 2200], pan: [list, list], db: -27, label: '固件列表' });
+  s.tick(B.list + 0.01, { f: 2800, db: -30, pan: list });
+  const scroll = (t) => (LIST_H - LIST.h + 44) * P(t, B.scroll, B.scrolled, E.inout3);
+  s.ticks(s.crossings((t) => scroll(t) / 22, B.scroll, B.scrolled), (i) => ({ f: 3400 - i * 25, db: -33, q: 6, rv: 0.08, pan: list, label: i ? '' : '列表滚动' }));
+  const h = 1 / 500;
+  s.air(B.scroll, B.scrolled, (t) => {
+    const v = Math.abs(scroll(t + h) - scroll(t - h)) / (2 * h) / 200;
+    return { v: Math.min(1, v) ** 1.3, f: 500 + 900 * Math.min(1, v), pan: list };
+  }, { db: -33, q: 1.2, tail: 0.12 });
+
+  // 6.6 · 外录 6K 12-bit RAW is singled out, then the S5's crop box opens to the RAW area and the
+  // callout lands: the big hit.
+  s.ping(B.raw - 0.03, { f: 1760, db: -26, decay: 1.0, pan: list, label: '外录 6K RAW' });
+  s.scribe(B.raw, B.raw + 0.28, { db: -34, pan: [s.pan(330), s.pan(800)], label: '下划线' });
+  const box = at(B.raw + 0.6, BODIES[0].x);
+  s.move(B.raw + 0.35, B.raw + 1.0, E.inout3, { f: [450, 3400], shift: 1.25, wide: true, pan: [box, box], db: -20, label: 'RAW 区域打开' });
+  s.swell(B.raw + 0.22, B.raw + 0.58, { db: -28, f: [700, 4200], pan: box });
+  s.hit(B.raw + 0.58, { db: -7.5, f: 46, tail: 1.6, pan: box * 0.5, label: '外录 6K 12-bit RAW' });
+  s.ping(B.raw + 0.6, { f: 2637, db: -31, decay: 1.2, pan: box });
+}
+
 // ---- run ------------------------------------------------------------------------------------
 S5.run({
   name: 's5-ep3',
@@ -170,5 +208,6 @@ S5.run({
   shots: [[0, DURATION, frame]],
   vo: [],
   beats: BEATS,
+  sfx,
   label: (t) => (t < B.move ? 'A 4K 60p 裁切' : 'B 固件更新'),
 });

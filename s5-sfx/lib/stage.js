@@ -3,7 +3,8 @@
 // window.S5, defines its shots and calls S5.run(). Every frame is a pure function of t:
 // renderInto() redraws the canvas from scratch and the grain is seeded, so any frame can be
 // redrawn exactly, at any resolution. This file also builds the preview player, the export
-// panel and the window.__motion hook that render.mjs drives.
+// panel and the window.__motion hook that render.mjs drives. An episode that passes sfx gets its
+// motion sound (lib/sfx.js) in the preview, in MP4 / WebM exports and as a WAV.
 (() => {
   const W = 1920, H = 1080, FPS = 24;
   const LB = Math.round((H - W / 2.39) / 2);     // 2.39:1 letterbox bar height, 138 px
@@ -30,6 +31,7 @@
     letterbox: flag('letterbox', true),
     grain: flag('grain', true),
     mb: flag('mb', false),
+    sfx: flag('sfx', true),
   };
 
   // ---- helpers -------------------------------------------------------------------------------
@@ -260,6 +262,7 @@
       <label><input type="checkbox" data-opt="letterbox"> 2.39:1 遮幅</label>
       <label><input type="checkbox" data-opt="grain"> 颗粒</label>
       <label><input type="checkbox" data-opt="mb"> 运动模糊</label>
+      <label><input type="checkbox" data-opt="sfx"> 音效</label>
     </div>
     <h2>导出视频</h2>
     <div class="bar">
@@ -282,16 +285,20 @@
       </label>
       <label>码率 <input id="ex-bitrate" type="number" min="2" max="200" step="1" value="40"> Mbps</label>
       <label><input type="checkbox" id="ex-mb" checked> 运动模糊</label>
+      <label><input type="checkbox" id="ex-audio" checked> 带音效</label>
       <button id="ex-go">开始导出</button>
       <button id="ex-cancel" hidden>取消</button>
+      <button id="ex-wav">只导出音效 WAV</button>
     </div>
     <p id="ex-status"></p>
-    <p class="note">遮幅和颗粒跟随上面的预览设置。MP4 / WebM 需要最新版 Chrome 或 Edge；PNG 序列会让你选一个文件夹逐帧写入（不支持选文件夹的浏览器会打包成 ZIP 下载）。进剪辑软件建议用 PNG 序列，或用 render.mjs 导出 ProRes。</p>`;
+    <p class="note">遮幅和颗粒跟随上面的预览设置。MP4 / WebM 需要最新版 Chrome 或 Edge；PNG 序列会让你选一个文件夹逐帧写入（不支持选文件夹的浏览器会打包成 ZIP 下载）。进剪辑软件建议用 PNG 序列，或用 render.mjs 导出 ProRes。</p>
+    <p class="note">音效只有运动声，没有配乐，48 kHz 立体声。MP4 里是 AAC（浏览器不支持 AAC 编码时改用 Opus），WebM 里是 Opus；PNG 序列会在同一个文件夹（或 ZIP）里附一个 24-bit WAV。进剪辑软件建议用单独的 WAV，从第 0 帧对齐即可。</p>`;
 
   // ---- run an episode -----------------------------------------------------------------------------
-  // ep = { name, duration, shots: [[start, end, draw(c, local, t)]], vo, beats, label(t)?, images? }
+  // ep = { name, duration, shots: [[start, end, draw(c, local, t)]], vo, beats, label(t)?, images?, sfx(s)? }
   function run(ep) {
     const DURATION = ep.duration;
+    const sound = ep.sfx && window.S5SFX ? window.S5SFX.track(ep.sfx, DURATION) : null;
     const shotAt = (t) => ep.shots.find(([s, e]) => t >= s && t < e) || ep.shots[ep.shots.length - 1];
 
     function drawScene(c, t) {
@@ -401,6 +408,13 @@
         return cv.toDataURL('image/png').split(',')[1];
       },
       beats: ep.beats,
+      sfx: sound,                                   // the soundtrack: .ready → { buffer, cues, peak }
+      // The soundtrack as a base64 WAV (render.mjs can mux it: ffmpeg -i video -i sfx.wav), or null.
+      audio: async (bits = 24) => {
+        if (!sound) return null;
+        await ready;                                // a score may read loaded images
+        return sound.base64(bits);
+      },
     };
 
     if (OPT.render) {
@@ -417,6 +431,7 @@
       const fps = +document.getElementById('ex-fps').value;
       const bitrate = +document.getElementById('ex-bitrate').value * 1e6;
       const mb = document.getElementById('ex-mb').checked;
+      const withAudio = !!sound && document.getElementById('ex-audio').checked;
       const frames = Math.round(DURATION * fps);
       const canvas = makeCanvas(w, h);
       const job = { cancelled: false };
@@ -448,19 +463,32 @@
           await tick();
         }
         if (job.cancelled) return status('已取消。');
+        if (withAudio) {
+          const name = `${ep.name}-sfx.wav`, data = await sound.wav(24);
+          if (dir) {
+            const ws = await (await dir.getFileHandle(name, { create: true })).createWritable();
+            await ws.write(data); await ws.close();
+          } else {
+            zip.add(name, data);
+          }
+        }
         if (zip) download(zip.finish(), `${ep.name}-png-${w}x${h}-${fps}p.zip`);
-        return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${dir ? '已写入所选文件夹' : '已打包下载'}。`);
+        return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${withAudio ? '和音效 WAV ' : ''}${dir ? '已写入所选文件夹' : '已打包下载'}。`);
       }
 
       if (!('VideoEncoder' in window)) return status('这个浏览器不支持 WebCodecs，请用最新版 Chrome 或 Edge；也可以导出 PNG 序列。');
       const cfg = await pickConfig(format, w, h, fps, bitrate);
       if (!cfg) return status(`这个浏览器不支持 ${w}×${h} ${fps} 帧的${format === 'mp4' ? ' H.264' : ' VP9'} 编码，换个分辨率或格式试试。`);
+      // The sound is encoded first, whole; both muxers interleave it with the video as frames arrive.
+      const audio = withAudio ? await sound.encoded(format) : null;
       const M = format === 'mp4' ? window.Mp4Muxer : window.WebMMuxer;
       const muxer = new M.Muxer({
         target: new M.ArrayBufferTarget(),
         video: { codec: format === 'mp4' ? 'avc' : 'V_VP9', width: w, height: h, frameRate: fps },
+        ...(audio ? { audio: { codec: audio.mux, numberOfChannels: audio.numberOfChannels, sampleRate: audio.sampleRate } } : {}),
         ...(format === 'mp4' ? { fastStart: 'in-memory' } : {}),
       });
+      if (audio) for (const [chunk, meta] of audio.chunks) muxer.addAudioChunk(chunk, meta);
       let failed = null;
       const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
       enc.configure(cfg);
@@ -482,14 +510,16 @@
       muxer.finalize();
       const blob = new Blob([muxer.target.buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' });
       download(blob, `${ep.name}-${w}x${h}-${fps}p.${format}`);
-      status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps）。`);
+      const said = audio ? `，音效 ${audio.codec === 'opus' ? 'Opus' : 'AAC'}` : withAudio ? '；这个浏览器不能编码音频，视频里没有声音，请另外导出音效 WAV' : '';
+      status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps${said}）。`);
     }
 
-    // Preview player.
+    // Preview player. While the sound plays, the picture runs off the sound's clock, so they stay together.
     const play = document.getElementById('play'), scrub = document.getElementById('scrub'), tc = document.getElementById('tc');
     scrub.max = DURATION; scrub.step = 1 / FPS;
     let now = 0, playing = false, last = 0;
     const show = () => { render(now); scrub.value = now; tc.textContent = timecode(Math.round(now * FPS)); };
+    const listen = () => { if (sound) { if (playing && OPT.sfx) sound.player.play(now); else sound.player.stop(); } };
     const wrap = document.getElementById('scrub-wrap');
     for (const [b, name] of ep.beats) {
       const m = document.createElement('div');
@@ -500,8 +530,9 @@
     }
     const loop = (ms) => {
       if (!playing) return;
-      now += (ms - last) / 1000; last = ms;
-      if (now >= DURATION) now = 0;
+      const heard = sound && OPT.sfx ? sound.player.time() : null;
+      now = heard ?? now + (ms - last) / 1000; last = ms;
+      if (now >= DURATION) { now = 0; listen(); }
       show();
       requestAnimationFrame(loop);
     };
@@ -509,24 +540,39 @@
       playing = !playing;
       play.textContent = playing ? '暂停' : '播放';
       if (playing) { last = performance.now(); requestAnimationFrame(loop); }
+      listen();
     };
+    const seek = (t) => { now = t; show(); if (playing) listen(); };
     play.onclick = toggle;
-    scrub.oninput = () => { now = +scrub.value; show(); };
+    scrub.oninput = () => seek(+scrub.value);
     document.querySelectorAll('[data-opt]').forEach((el) => {
       el.checked = OPT[el.dataset.opt];
-      el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); };
+      el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); if (el.dataset.opt === 'sfx') listen(); };
+      if (el.dataset.opt === 'sfx' && !sound) el.parentElement.hidden = true;
     });
     addEventListener('keydown', (e) => {
       if (e.target.closest('select, input[type=number]')) return;
       if (e.code === 'Space') { e.preventDefault(); toggle(); }
       const step = e.shiftKey ? 1 : 1 / FPS;
-      if (e.code === 'ArrowRight') { now = clamp(now + step, 0, DURATION - 1 / FPS); show(); }
-      if (e.code === 'ArrowLeft') { now = clamp(now - step, 0, DURATION); show(); }
+      if (e.code === 'ArrowRight') seek(clamp(now + step, 0, DURATION - 1 / FPS));
+      if (e.code === 'ArrowLeft') seek(clamp(now - step, 0, DURATION));
     });
 
     const size = document.getElementById('ex-size'), rate = document.getElementById('ex-bitrate');
     size.onchange = () => { rate.value = { '1920x1080': 40, '3840x2160': 120, '1280x720': 20 }[size.value]; };
-    const go = document.getElementById('ex-go'), cancel = document.getElementById('ex-cancel');
+    const go = document.getElementById('ex-go'), cancel = document.getElementById('ex-cancel'), wavBtn = document.getElementById('ex-wav');
+    if (!sound) { wavBtn.hidden = true; document.getElementById('ex-audio').parentElement.hidden = true; }
+    wavBtn.onclick = async () => {
+      wavBtn.disabled = true;
+      try {
+        download(new Blob([await sound.wav(24)], { type: 'audio/wav' }), `${ep.name}-sfx.wav`);
+        document.getElementById('ex-status').textContent = `完成：音效 WAV（48 kHz，24-bit，${DURATION} 秒）。`;
+      } catch (err) {
+        document.getElementById('ex-status').textContent = `导出失败：${err.message}`;
+      } finally {
+        wavBtn.disabled = false;
+      }
+    };
     go.onclick = async () => {
       if (playing) toggle();
       go.disabled = true; cancel.hidden = false;
@@ -541,6 +587,9 @@
     };
     cancel.onclick = () => { if (exporting) exporting.cancelled = true; };
     ready.then(show);
+    if (sound) {                                    // render the sound once the page is up, before the first play
+      ready.then(() => sound.ready).catch((err) => { document.getElementById('ex-status').textContent = `音效生成失败：${err.message}`; });
+    }
   }
 
   window.S5 = {

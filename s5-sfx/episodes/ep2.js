@@ -379,6 +379,77 @@ function modes(c, t) {
   });
 }
 
+// ---- sound -----------------------------------------------------------------------------------
+// Motion sound only, no music (lib/sfx.js). Cues hang off B and the same camera and layout the
+// picture uses, so they follow when the beats are retimed to the recorded voice-over. The two pushes
+// into the mount share one sound, as they share one move; every glint is from the same A-major set.
+function sfx(s) {
+  const at = (t, wx) => s.pan(scr(cam(t), wx, HOME.y).x);
+  const left = s.pan(ML + 220);                        // the left column
+  const box = at(14, HOME.x);                          // the S5's sensor and its recording area
+  const rows = s.pan((ML + MC.right) / 2);             // the list of recording modes
+
+  // A · the S5 comes up out of the dark, then its two numbers.
+  s.bloom(0.05, 1.35, { db: -24, peak: 0.55, pan: at(1, HOME.x), label: 'S5 浮现' });
+  s.hit(B.mp - 0.04, { db: -14, f: 52, tail: 1.1, pan: left, label: '2420 万像素' });
+  s.thud(B.ff - 0.04, { db: -20, pan: left, label: '全画幅 CMOS' });
+  s.tick(B.ff - 0.04, { f: 3200, db: -31, pan: left });
+
+  // B · the camera pulls right back: the S5 is one of eight ~24 MP bodies. Each of the other seven
+  // ticks as it comes into frame, panned where it lands.
+  s.camera(B.known - 0.05, B.known + 1.0, cam, { db: -16, body: 0.4, label: '拉远：八台机身' });
+  ROW.forEach((m, k) => {
+    if (m.self) return;
+    let t = B.known + 0.1;
+    for (; t < B.known + 0.9; t += 1 / 200) {
+      const p = place(cam(t), m, m.x);
+      if (P(t, B.known + 0.1, B.known + 0.6, E.lin) > 0.2 && p.x + p.w > 80 && p.x < W - 80) break;
+    }
+    const p = place(cam(B.known + 0.9), m, m.x);
+    s.tick(t, { f: 4300 - Math.abs(k - 3) * 260, db: -33, q: 4, rv: 0.2, pan: s.pan(p.x + p.w / 2), label: k ? '' : '其余七台' });
+  });
+
+  // C · into the mount: the photo's sensor glass becomes the drawn sensor; the line of sensors
+  // comes in around it, then the S5 is singled out on it.
+  const dive = (t0, t1, label) => s.move(t0, t1, E.inout3, { f: [300, 2400], shift: 1.5, body: 0.3, pan: [at(t0, HOME.x), at(t1, HOME.x)], db: -18, label });
+  dive(B.line, B.line + 0.85, '推进卡口');
+  LINE.filter((m) => !m.self).forEach((m, i) => {
+    const t = B.line + 0.28 + Math.abs(LINE.indexOf(m) - 1) * 0.06;
+    s.tick(t, { f: 3900 + i * 180, db: -33, q: 4, rv: 0.2, pan: at(B.line + 0.85, m.x), label: i ? '' : '像素档位' });
+  });
+  s.ping(B.line + 0.62, { f: 3520, db: -34, decay: 0.5, pan: at(B.line + 0.85, HOME.x) });
+  s.ping(B.balance - 0.08, { f: 880, db: -24, decay: 1.4, pan: at(B.balance, HOME.x), label: '平衡线' });
+  s.thud(B.balance - 0.08, { db: -23, f: 60, pan: at(B.balance, HOME.x) });
+
+  // D · back out of the mount to the photo; the three facts tick in.
+  s.move(B.photo - 0.15, B.photo + 0.6, E.inout3, { f: [280, 2000], shift: 0.62, body: 0.45, pan: [at(B.photo - 0.15, HOME.x), at(B.photo + 0.6, HOME.x)], db: -17, label: '退回照片' });
+  FACTS.forEach((f, i) => s.tick(f.at - 0.04, { f: 2800 * 1.12 ** i, db: -27, double: 0.03, pan: left, label: f.label }));
+
+  // E · not the selling point: the left column dims one step at a time and goes quiet.
+  s.tick(B.px - 0.04, { f: 1500, db: -29, q: 3, body: -30, pan: left, label: '像素变暗' });
+  s.tick(B.frame - 0.04, { f: 1250, db: -30, q: 3, body: -30, pan: left, label: '全画幅变暗' });
+  s.drop(B.not, B.not + 0.45, { f: [110, 55], ease: E.inout3, db: -22, tail: 0.4, pan: left, label: '不是卖点' });
+  s.puff(B.not, { db: -28, dur: 0.6, f: [1200, 200], pan: left });
+
+  // F · back into the mount; every recording mode drops into the list; the crop box opens to the
+  // full width; the two uncropped 4:2:2 10-bit rows light; 4:2:2 10-bit lands.
+  s.swell(B.value - 0.5, B.value, { db: -29, f: [300, 1800], label: '蓄力' });
+  dive(B.value, B.value + 0.7, '再次推进卡口');
+  MODES.forEach((m, i) => s.tick(B.value + 0.15 + i * 0.025, { f: 4200 - i * 60, db: m.group ? -31 : -35, q: 4, rv: 0.08, pan: rows, label: i ? '' : '录制规格列表' }));
+  s.tick(B.crop - 0.04, { f: 2600, db: -24, double: 0.045, pan: box, label: 'APS-C 裁切框' });
+  s.thud(B.crop - 0.04, { db: -22, f: 80, pan: box });
+  s.move(B.nocrop, B.nocrop + 0.4, E.inout3, { f: [500, 3600], shift: 1.3, wide: true, pan: [box, box], db: -20, label: '裁切框打开到全宽' });
+  s.thud(B.nocrop + 0.36, { db: -13, f: 60, pan: box, label: '不裁切' });
+  s.ping(B.c4k - 0.03, { f: 1318.5, db: -26, decay: 0.8, pan: rows, label: 'C4K' });
+  s.tick(B.c4k, { f: 3000, db: -32, pan: box });
+  s.ping(B.uhd - 0.03, { f: 1760, db: -26, decay: 0.8, pan: rows, label: '4K 30 帧' });
+  s.tick(B.uhd, { f: 3200, db: -32, pan: box });
+  s.swell(B.depth - 0.42, B.depth - 0.04, { db: -27, f: [700, 4200], pan: box });
+  s.hit(B.depth - 0.04, { db: -7, f: 46, tail: 1.6, pan: box * 0.5, label: '4:2:2 10-bit' });
+  s.ping(B.depth - 0.02, { f: 2637, db: -31, decay: 1.2, pan: box });
+  s.scribe(B.depth - 0.03, B.depth + 0.25, { db: -34, pan: [s.pan(MC.depth), s.pan(MC.depth + 130)], label: '下划线' });
+}
+
 // ---- run ------------------------------------------------------------------------------------
 S5.run({
   name: 's5-ep2',
@@ -387,5 +458,6 @@ S5.run({
   vo: VO,
   beats: BEATS,
   images: window.S5_CAMERAS,
+  sfx,
   label: (t) => (t < B.known ? 'A 传感器' : t < B.line ? 'B 不陌生' : t < B.photo ? 'C 平衡线' : t < B.px ? 'D 够用' : t < B.value ? 'E 不是卖点' : 'F 录制规格'),
 });
