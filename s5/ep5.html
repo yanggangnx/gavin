@@ -36,9 +36,9 @@ const SETTINGS = [                   // E01–E05
 ];
 // E01, E02, E06: the two columns of shot 2. img: a key of build/cameras.js (assets/cameras/).
 const COMPARE = [
-  { title: '只有机身防抖', lens: '镜头没有防抖（S-R2060）', img: 'Panasonic_LUMIX_S5_with_S-R2060', stops: 5, num: '5',
+  { title: '只有机身防抖', lens: '机身内 5 轴传感器位移', img: 'Panasonic_LUMIX_S5', box: { w: 320, h: 232 }, stops: 5, num: '5',
     times: '快门可以慢 32 倍', example: '例：60 mm 手持，1/60 秒 → 约 1/2 秒', test: 'CIPA 标准，用无防抖的 S-R2060 镜头测得' },
-  { title: '机身 + 镜头一起防抖（Dual I.S. 2）', lens: '镜头带 O.I.S. 防抖（如 S-E70200）', img: 'Panasonic_LUMIX_S5_with_OIS_lens', stops: 6.5, num: '6.5',
+  { title: '机身 + 镜头一起防抖（Dual I.S. 2）', lens: '镜头也带 O.I.S. 防抖（图为 S-R24105）', img: 'Panasonic_LUMIX_S5_with_S-R24105', box: { w: 300, h: 262 }, stops: 6.5, num: '6.5',
     times: '快门可以慢约 90 倍', example: '例：200 mm 手持，1/200 秒 → 约 1/2 秒', test: 'CIPA 标准，用 S-E70200 镜头测得', self: true },
 ];
 const MODES = [                      // E04, E05
@@ -91,7 +91,9 @@ function shot1(c, t, A) {
 
 // ---- shot 2 · body alone against body + lens -------------------------------------------------------
 const COLS = [ML, 1010];
-const PHOTO = { w: 330, h: 250, bottom: 652 };   // each photo fits this box, bottom-left aligned
+// Each photo fits its column's box, bottom-left aligned. The boxes differ so the two bodies come
+// out about the same size: the angled photo's box also has to hold the lens.
+const PHOTO = { bottom: 656, numX: 400 };
 const PER_STOP = 85;                             // the same scale for both bars
 const BAR_Y = 702;
 
@@ -113,13 +115,13 @@ function still(id) {
   return STILL[id];
 }
 
-function photo(c, id, x, alpha) {
+function photo(c, id, box, x, alpha) {
   if (alpha <= 0) return;
   const p = still(id);
   c.save();
   c.globalAlpha *= alpha;
   if (p) {
-    const s = Math.min(PHOTO.w / (p.x1 - p.x0), PHOTO.h / (p.y1 - p.y0));
+    const s = Math.min(box.w / (p.x1 - p.x0), box.h / (p.y1 - p.y0));
     const w = (p.x1 - p.x0) * s, h = (p.y1 - p.y0) * s, y = PHOTO.bottom - h;
     // A faint pool of light, so the black body separates from the black background.
     c.save();
@@ -133,9 +135,9 @@ function photo(c, id, x, alpha) {
   } else {
     // The photo is not in assets/cameras/ yet: mark its place.
     c.strokeStyle = C.ink3; c.lineWidth = 1; c.setLineDash([4, 6]);
-    c.strokeRect(x, PHOTO.bottom - PHOTO.h, PHOTO.w, PHOTO.h);
+    c.strokeRect(x, PHOTO.bottom - box.h, box.w, box.h);
     c.setLineDash([]);
-    txt(c, '待放入：S5 装带防抖镜头的照片', x + PHOTO.w / 2, PHOTO.bottom - PHOTO.h / 2 + 7, { size: 18, color: C.ink3, align: 'center' });
+    txt(c, '待放入照片', x + box.w / 2, PHOTO.bottom - box.h / 2 + 7, { size: 18, color: C.ink3, align: 'center' });
   }
   c.restore();
 }
@@ -149,10 +151,10 @@ function shot2(c, t, A) {
     const at = (a, b) => A * P(l, t0 + a, t0 + b);
     txt(c, m.title, x, 338, { size: 30, weight: 500, alpha: at(0, 0.45) });
     txt(c, m.lens, x, 378, { size: 20, color: C.ink2, alpha: at(0.1, 0.55) });
-    photo(c, m.img, x, A * P(l, t0 + 0.15, t0 + 0.65, E.lin));
+    photo(c, m.img, m.box, x, A * P(l, t0 + 0.15, t0 + 0.65, E.lin));
 
     // The number and what it means for the shutter.
-    const nx = x + PHOTO.w + 50, na = at(0.4, 0.85);
+    const nx = x + PHOTO.numX, na = at(0.4, 0.85);
     font(c, 120, 700, F.serif);
     const w = c.measureText(m.num).width;
     txt(c, m.num, nx, 560, { family: F.serif, size: 120, weight: 700, alpha: na });
