@@ -37,8 +37,8 @@ const BEATS = [[B.photo, '机身侧面'], [B.push, '推近卡槽'], [B.slots, '�
 const PHOTO_ID = 'Panasonic_LUMIX_S5_side_slots';   // 2000 × 2000, card door open
 // Each slot in photo pixels, its interface's limit (F05) and whether V90 cards get their speed (F01).
 const SLOTS = [
-  { rect: [530, 640, 800, 1190], name: '卡槽 1', bus: 'UHS-II', mbs: 312, v90: '可用 V90 卡' },
-  { rect: [530, 1245, 800, 1795], name: '卡槽 2', bus: 'UHS-I', mbs: 104, v90: '用不了 V90 的速度' },
+  { rect: [530, 640, 800, 1190], name: '卡槽 1', spec: '兼容 UHS-I / UHS-II', bus: 'UHS-II', mbs: 312, v90: '可用 V90 卡' },
+  { rect: [530, 1245, 800, 1795], name: '卡槽 2', spec: '兼容 UHS-I', bus: 'UHS-I', mbs: 104, v90: '用不了 V90 的速度' },
 ];
 const NOTES = [                      // F02–F04
   ['拍视频', '最高约 25 MB/s，官方只要求 V30：两个卡槽都够'],
@@ -100,7 +100,7 @@ function frame(c, u, t) {
 
   drawPhoto(c, t);
 
-  // The two slots on the photo: an outline, a leader and the name.
+  // The two slots on the photo: an outline, a leader, the name and the manual's wording for its spec.
   const v = view(t);
   SLOTS.forEach((sl, i) => {
     const t0 = B.slots + i * 0.25;
@@ -111,7 +111,9 @@ function frame(c, u, t) {
     c.strokeRect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y); c.restore();
     const ly = (p0.y + p1.y) / 2, lx = 1470;
     rule(c, p1.x, lerp(p1.x, lx - 14, P(t, t0 + 0.1, t0 + 0.45)), Math.round(ly), a, C.ink3);
-    txt(c, sl.name, lx, ly + 9, { size: 26, weight: 500, color: i === 0 ? C.ink : C.ink2, alpha: P(t, t0 + 0.25, t0 + 0.6) });
+    const la = P(t, t0 + 0.25, t0 + 0.6);
+    txt(c, sl.name, lx, ly - 4, { size: 26, weight: 500, color: i === 0 ? C.ink : C.ink2, alpha: la });
+    txt(c, sl.spec, lx, ly + 32, { size: 20, color: C.ink2, alpha: la });
   });
 
   // The point: each slot's interface speed, and whether a V90 card gets its speed there.
