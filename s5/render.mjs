@@ -11,6 +11,8 @@
 //   node s5/render.mjs --page ep2.html          → episode 2 → s5/out/ep2.mp4
 //   node s5/render.mjs --greybox --guide        → grey-box animatic with timecode and read-along
 //   node s5/render.mjs --letterbox 0 --grain 0 --mb 0
+//   node s5/render.mjs --page ep5.html --sound 0 → no sound (pages with sound effects get them by default:
+//                                                  out/<stem>-sfx.wav, and AAC 320k / PCM 24-bit in the video)
 //
 // Needs ffmpeg on PATH (or FFMPEG=/path/to/ffmpeg) and Playwright.
 
@@ -25,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const opts = { page: 'index.html', fps: 24, size: '1920x1080', out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1' };
+const opts = { page: 'index.html', fps: 24, size: '1920x1080', out: null, still: null, from: 0, to: null, format: 'h264', crf: 14, greybox: '0', guide: '0', letterbox: '1', grain: '1', mb: '1', sound: '1' };
 const PAGE_FLAGS = ['greybox', 'guide', 'letterbox', 'grain', 'mb'];
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
@@ -37,7 +39,7 @@ for (let i = 0; i < argv.length; i++) {
     process.exit(1);
   }
   let val = m[2];
-  if (val == null) val = PAGE_FLAGS.includes(key) && !/^[01]$/.test(argv[i + 1] ?? '') ? '1' : argv[++i];
+  if (val == null) val = [...PAGE_FLAGS, 'sound'].includes(key) && !/^[01]$/.test(argv[i + 1] ?? '') ? '1' : argv[++i];
   opts[key] = ['fps', 'still', 'from', 'to', 'crf'].includes(key) ? Number(val) : val;
 }
 if (opts.greybox === '1') opts.mb = '0';
@@ -73,16 +75,21 @@ async function launch() {
   }
 }
 
-function encoder(out) {
+// The video encoder; with a WAV, its [from, to] slice goes in as the audio track.
+function encoder(out, wav, from, dur) {
   const color = ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv'];
   const scale = (pix) => ['-vf', `scale=out_color_matrix=bt709:out_range=tv,format=${pix}`];
   const codec = opts.format === 'prores'
     ? ['-c:v', 'prores_ks', '-profile:v', '3', '-vendor', 'apl0', ...scale('yuv422p10le')]
     : ['-c:v', 'libx264', '-preset', 'slow', '-crf', String(opts.crf), '-tune', 'grain', ...scale('yuv420p'), '-movflags', '+faststart'];
+  const audio = wav
+    ? ['-ss', String(from), '-t', String(dur), '-i', wav, '-map', '0:v', '-map', '1:a',
+      ...(opts.format === 'prores' ? ['-c:a', 'pcm_s24le'] : ['-c:a', 'aac', '-b:a', '320k'])]
+    : [];
   const ff = spawn(process.env.FFMPEG || 'ffmpeg', [
     '-y', '-loglevel', 'error',
     '-f', 'image2pipe', '-c:v', 'png', '-framerate', String(opts.fps), '-i', '-',
-    ...codec, ...color, '-r', String(opts.fps), out,
+    ...audio, ...codec, ...color, '-r', String(opts.fps), out,
   ], { stdio: ['pipe', 'inherit', 'inherit'] });
   ff.on('error', (err) => {
     console.error(`\n无法启动 ffmpeg：${err.message}`);
@@ -117,7 +124,18 @@ try {
     const ext = { h264: 'mp4', prores: 'mov' }[opts.format];
     const out = resolve(here, opts.out ?? (opts.format === 'png' ? `out/${stem}-frames` : `out/${stem}.${ext}`));
     mkdirSync(opts.format === 'png' ? out : dirname(out), { recursive: true });
-    const ff = opts.format === 'png' ? null : encoder(out);
+
+    // Sound effects, when the page has them: saved next to the output, and muxed into the video.
+    let wav = null;
+    if (opts.sound !== '0') {
+      const b64 = await page.evaluate(() => (window.__motion.audio ? window.__motion.audio() : null));
+      if (b64) {
+        wav = opts.out ? out.replace(/(\.[a-z0-9]+)?$/i, '-sfx.wav') : resolve(here, `out/${stem}-sfx.wav`);
+        writeFileSync(wav, Buffer.from(b64, 'base64'));
+        console.log(`音效：${wav}`);
+      }
+    }
+    const ff = opts.format === 'png' ? null : encoder(out, wav, from, to - from);
 
     const started = Date.now();
     for (let i = 0; i < frames; i++) {

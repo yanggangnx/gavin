@@ -30,6 +30,7 @@
     letterbox: flag('letterbox', true),
     grain: flag('grain', true),
     mb: flag('mb', false),
+    sound: flag('sound', true),
   };
 
   // ---- helpers -------------------------------------------------------------------------------
@@ -217,6 +218,42 @@
 
   const tick = () => new Promise((r) => setTimeout(r, 0));
 
+  // Audio for the export: AAC in MP4 where the browser can encode it, otherwise Opus.
+  async function pickAudio(format) {
+    if (!('AudioEncoder' in window)) return null;
+    const tries = format === 'mp4' ? [['mp4a.40.2', 'aac'], ['opus', 'opus']] : [['opus', 'A_OPUS']];
+    for (const [codec, mux] of tries) {
+      const cfg = { codec, sampleRate: 48000, numberOfChannels: 2, bitrate: codec === 'opus' ? 192000 : 256000 };
+      try {
+        if ((await AudioEncoder.isConfigSupported(cfg)).supported) return { cfg, mux };
+      } catch { /* try the next one */ }
+    }
+    return null;
+  }
+
+  async function encodeAudio(buf, { cfg }, muxer) {
+    let failed = null;
+    const enc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: (e) => { failed = e; } });
+    enc.configure(cfg);
+    const L = buf.getChannelData(0), R = buf.getChannelData(1), step = 4800;
+    for (let i = 0; i < buf.length; i += step) {
+      const n = Math.min(step, buf.length - i), data = new Float32Array(n * 2);
+      data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);
+      const ad = new AudioData({ format: 'f32-planar', sampleRate: buf.sampleRate, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i * 1e6 / buf.sampleRate), data });
+      enc.encode(ad);
+      ad.close();
+    }
+    await enc.flush();
+    enc.close();
+    if (failed) throw failed;
+  }
+
+  function base64(bytes) {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+
   function timecode(f) {
     const ff = f % FPS, s = Math.floor(f / FPS);
     return `00:00:${String(s).padStart(2, '0')}:${String(ff).padStart(2, '0')}`;
@@ -260,6 +297,7 @@
       <label><input type="checkbox" data-opt="letterbox"> 2.39:1 遮幅</label>
       <label><input type="checkbox" data-opt="grain"> 颗粒</label>
       <label><input type="checkbox" data-opt="mb"> 运动模糊</label>
+      <label class="needs-sound"><input type="checkbox" data-opt="sound"> 音效</label>
     </div>
     <h2>导出视频</h2>
     <div class="bar">
@@ -282,14 +320,17 @@
       </label>
       <label>码率 <input id="ex-bitrate" type="number" min="2" max="200" step="1" value="40"> Mbps</label>
       <label><input type="checkbox" id="ex-mb" checked> 运动模糊</label>
+      <label class="needs-sound"><input type="checkbox" id="ex-sound" checked> 音效</label>
       <button id="ex-go">开始导出</button>
       <button id="ex-cancel" hidden>取消</button>
+      <button id="ex-wav" class="needs-sound">下载音效 WAV</button>
     </div>
     <p id="ex-status"></p>
-    <p class="note">遮幅和颗粒跟随上面的预览设置。MP4 / WebM 需要最新版 Chrome 或 Edge；PNG 序列会让你选一个文件夹逐帧写入（不支持选文件夹的浏览器会打包成 ZIP 下载）。进剪辑软件建议用 PNG 序列，或用 render.mjs 导出 ProRes。</p>`;
+    <p class="note">遮幅和颗粒跟随上面的预览设置。MP4 / WebM 需要最新版 Chrome 或 Edge；PNG 序列会让你选一个文件夹逐帧写入（不支持选文件夹的浏览器会打包成 ZIP 下载）。进剪辑软件建议用 PNG 序列，或用 render.mjs 导出 ProRes。有音效的集，MP4 / WebM 会带上音效（MP4 优先 AAC，浏览器不支持时用 Opus 并另附 WAV），PNG 序列附一个 WAV。</p>`;
 
   // ---- run an episode -----------------------------------------------------------------------------
-  // ep = { name, duration, shots: [[start, end, draw(c, local, t)]], vo, beats, label(t)?, images? }
+  // ep = { name, duration, shots: [[start, end, draw(c, local, t)]], vo, beats, label(t)?, images?, sfx? }
+  // sfx: sound-effect cues for lib/sound.js, [kind, time, options]; without it the page is silent.
   function run(ep) {
     const DURATION = ep.duration;
     const shotAt = (t) => ep.shots.find(([s, e]) => t >= s && t < e) || ep.shots[ep.shots.length - 1];
@@ -390,6 +431,14 @@
     const render = (t) => renderInto(stage, t);
     const ready = loadAssets(ep.images);
 
+    // Sound: rendered once from the episode's cues (lib/sound.js), after the fonts and images.
+    let AUDIO = null;
+    const hasSound = !!(ep.sfx && window.S5_SOUND && window.OfflineAudioContext);
+    const sound = hasSound
+      ? ready.then(() => window.S5_SOUND.render(ep.sfx, DURATION)).then((b) => { AUDIO = b; }, (e) => console.error('音效生成失败', e))
+      : Promise.resolve();
+    const wavBlob = () => new Blob([window.S5_SOUND.wav(AUDIO)], { type: 'audio/wav' });
+
     const captureCanvases = {};
     window.__motion = {
       duration: DURATION, fps: FPS, width: W, height: H,
@@ -401,6 +450,11 @@
         return cv.toDataURL('image/png').split(',')[1];
       },
       beats: ep.beats,
+      // The sound effects as a 24-bit WAV in base64, or null when the episode has none.
+      async audio() {
+        await sound;
+        return AUDIO ? base64(window.S5_SOUND.wav(AUDIO)) : null;
+      },
     };
 
     if (OPT.render) {
@@ -417,6 +471,7 @@
       const fps = +document.getElementById('ex-fps').value;
       const bitrate = +document.getElementById('ex-bitrate').value * 1e6;
       const mb = document.getElementById('ex-mb').checked;
+      const withSound = !!AUDIO && document.getElementById('ex-sound').checked;
       const frames = Math.round(DURATION * fps);
       const canvas = makeCanvas(w, h);
       const job = { cancelled: false };
@@ -448,17 +503,26 @@
           await tick();
         }
         if (job.cancelled) return status('已取消。');
+        if (withSound) {
+          const name = `${ep.name}-sfx.wav`, bytes = window.S5_SOUND.wav(AUDIO);
+          if (dir) {
+            const ws = await (await dir.getFileHandle(name, { create: true })).createWritable();
+            await ws.write(bytes); await ws.close();
+          } else zip.add(name, bytes);
+        }
         if (zip) download(zip.finish(), `${ep.name}-png-${w}x${h}-${fps}p.zip`);
-        return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${dir ? '已写入所选文件夹' : '已打包下载'}。`);
+        return status(`完成：${frames} 张 PNG（${w}×${h}，${fps} 帧）${withSound ? '和音效 WAV' : ''}${dir ? '已写入所选文件夹' : '已打包下载'}。`);
       }
 
       if (!('VideoEncoder' in window)) return status('这个浏览器不支持 WebCodecs，请用最新版 Chrome 或 Edge；也可以导出 PNG 序列。');
       const cfg = await pickConfig(format, w, h, fps, bitrate);
       if (!cfg) return status(`这个浏览器不支持 ${w}×${h} ${fps} 帧的${format === 'mp4' ? ' H.264' : ' VP9'} 编码，换个分辨率或格式试试。`);
+      const acfg = withSound ? await pickAudio(format) : null;
       const M = format === 'mp4' ? window.Mp4Muxer : window.WebMMuxer;
       const muxer = new M.Muxer({
         target: new M.ArrayBufferTarget(),
         video: { codec: format === 'mp4' ? 'avc' : 'V_VP9', width: w, height: h, frameRate: fps },
+        ...(acfg ? { audio: { codec: acfg.mux, sampleRate: 48000, numberOfChannels: 2 } } : {}),
         ...(format === 'mp4' ? { fastStart: 'in-memory' } : {}),
       });
       let failed = null;
@@ -479,10 +543,18 @@
       }
       await enc.flush();
       enc.close();
+      if (acfg) {
+        status('正在编码音效…');
+        await encodeAudio(AUDIO, acfg, muxer);
+      }
       muxer.finalize();
       const blob = new Blob([muxer.target.buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' });
       download(blob, `${ep.name}-${w}x${h}-${fps}p.${format}`);
-      status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps）。`);
+      // Opus in MP4 plays in browsers but not every editor takes it, so hand over the WAV as well.
+      const wavToo = withSound && (!acfg || acfg.mux === 'opus');
+      if (wavToo) download(wavBlob(), `${ep.name}-sfx.wav`);
+      const audioNote = !withSound ? '' : acfg ? `，音效 ${acfg.mux === 'aac' ? 'AAC' : 'Opus'}${wavToo ? '，另附 WAV' : ''}` : '，这个浏览器不能编码音频，音效单独下载为 WAV';
+      status(`完成：${frames} 帧，${(blob.size / 1048576).toFixed(1)} MB（${cfg.codec}，${cfg.bitrate / 1e6} Mbps${audioNote}）。`);
     }
 
     // Preview player.
@@ -490,6 +562,28 @@
     scrub.max = DURATION; scrub.step = 1 / FPS;
     let now = 0, playing = false, last = 0;
     const show = () => { render(now); scrub.value = now; tc.textContent = timecode(Math.round(now * FPS)); };
+    // Sound in the preview: the rendered buffer, restarted from the playhead whenever it moves.
+    // While it plays, the picture follows the audio clock.
+    let actx = null, voice = null, voiceAt = 0, voiceFrom = 0;
+    const hush = () => {
+      if (!voice) return;
+      try { voice.stop(); } catch { /* already stopped */ }
+      voice.disconnect();
+      voice = null;
+    };
+    const sync = () => {
+      hush();
+      if (!playing || !AUDIO || !OPT.sound) return;
+      actx ||= new AudioContext();
+      actx.resume();
+      voice = actx.createBufferSource();
+      voice.buffer = AUDIO;
+      voice.connect(actx.destination);
+      voiceFrom = now; voiceAt = actx.currentTime + 0.05;
+      voice.start(voiceAt, now);
+    };
+    sound.then(() => { if (playing) sync(); });
+    document.querySelectorAll('.needs-sound').forEach((el) => { el.hidden = !hasSound; });
     const wrap = document.getElementById('scrub-wrap');
     for (const [b, name] of ep.beats) {
       const m = document.createElement('div');
@@ -500,8 +594,9 @@
     }
     const loop = (ms) => {
       if (!playing) return;
-      now += (ms - last) / 1000; last = ms;
-      if (now >= DURATION) now = 0;
+      now = voice ? voiceFrom + Math.max(0, actx.currentTime - voiceAt) : now + (ms - last) / 1000;
+      last = ms;
+      if (now >= DURATION) { now = 0; sync(); }
       show();
       requestAnimationFrame(loop);
     };
@@ -509,19 +604,20 @@
       playing = !playing;
       play.textContent = playing ? '暂停' : '播放';
       if (playing) { last = performance.now(); requestAnimationFrame(loop); }
+      sync();
     };
     play.onclick = toggle;
-    scrub.oninput = () => { now = +scrub.value; show(); };
+    scrub.oninput = () => { now = +scrub.value; show(); if (playing) sync(); };
     document.querySelectorAll('[data-opt]').forEach((el) => {
       el.checked = OPT[el.dataset.opt];
-      el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); };
+      el.onchange = () => { OPT[el.dataset.opt] = el.checked; show(); if (el.dataset.opt === 'sound') sync(); };
     });
     addEventListener('keydown', (e) => {
       if (e.target.closest('select, input[type=number]')) return;
       if (e.code === 'Space') { e.preventDefault(); toggle(); }
       const step = e.shiftKey ? 1 : 1 / FPS;
-      if (e.code === 'ArrowRight') { now = clamp(now + step, 0, DURATION - 1 / FPS); show(); }
-      if (e.code === 'ArrowLeft') { now = clamp(now - step, 0, DURATION); show(); }
+      if (e.code === 'ArrowRight') { now = clamp(now + step, 0, DURATION - 1 / FPS); show(); if (playing) sync(); }
+      if (e.code === 'ArrowLeft') { now = clamp(now - step, 0, DURATION); show(); if (playing) sync(); }
     });
 
     const size = document.getElementById('ex-size'), rate = document.getElementById('ex-bitrate');
@@ -540,6 +636,7 @@
       }
     };
     cancel.onclick = () => { if (exporting) exporting.cancelled = true; };
+    document.getElementById('ex-wav').onclick = () => sound.then(() => { if (AUDIO) download(wavBlob(), `${ep.name}-sfx.wav`); });
     ready.then(show);
   }
 

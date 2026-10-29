@@ -10,6 +10,7 @@
 <script src="vendor/mp4-muxer-5.2.2.js"></script>
 <script src="vendor/webm-muxer-5.1.4.js"></script>
 <script src="build/cameras.js"></script>
+<script src="lib/sound.js"></script>
 <script src="lib/stage.js"></script>
 <script>
 'use strict';
@@ -139,6 +140,23 @@ function frame(c, u, t) {
   txt(c, '接口速度是 SD 协会标准里的上限，实际读写看卡本身', ML, 892, { size: 16, color: C.ink3, alpha: P(t, B.notes + 0.4, B.notes + 0.8) });
 }
 
+// ---- sound -----------------------------------------------------------------------------------
+// Effects only, no music (lib/sound.js); every cue sits on a beat of the picture above.
+const SFX = [
+  ['air', 0, { gain: 0.018 }],
+  // The camera is set down; the push-in moves air towards the slots and settles on them.
+  ['thump', 0.25, { gain: 0.26, pan: 0.35 }],
+  ['whoosh', B.push - 0.05, { dur: 1.2, from: 90, to: 650, gain: 0.3, q: 0.8, pan: [0.15, 0.35, 1.2] }],
+  ['thump', B.push + 1.1, { gain: 0.18, pan: 0.35 }],
+  // Each slot is outlined with the click of a card going home.
+  ...SLOTS.map((_, i) => ['latch', B.slots + i * 0.25 + 0.02, { gain: i ? 0.12 : 0.15, pan: 0.4 }]),
+  // The two speeds land: 312 the big hit, 104 a smaller, higher one.
+  ['hit', B.speed + 0.02, { gain: 0.9, low: 40, pan: -0.35, tail: 1.6 }],
+  ['hit', B.speed + 0.32, { gain: 0.45, low: 54, pan: -0.35, tail: 0.9 }],
+  // The small notes tick in underneath.
+  ...NOTES.map((_, i) => ['tick', B.notes + i * 0.12 + 0.02, { gain: 0.03, tone: 2800 + i * 150, pan: -0.5 }]),
+];
+
 // ---- run ------------------------------------------------------------------------------------
 S5.run({
   name: 's5-ep6',
@@ -147,6 +165,7 @@ S5.run({
   vo: [],
   beats: BEATS,
   images: window.S5_CAMERAS,
+  sfx: SFX,
   label: (t) => (t < B.still ? 'A 入场' : 'B 定格图表'),
 });
 </script>
