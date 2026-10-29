@@ -15,8 +15,9 @@
 'use strict';
 // Episode 6 · 8 seconds. The S5's two SD slots are not the same: slot 1 takes UHS-II, slot 2 only
 // UHS-I. A three-second entrance: Panasonic's side photo of the S5 with the card door open pushes
-// in on the two slots and labels each with what it takes and its interface's speed limit; on the
-// left, what the difference does and does not affect. Then the frame holds.
+// in on the two slots and names them; on the left, the point in large type: each slot's interface
+// speed and whether V90 cards get their speed there, then, small, what the difference affects.
+// Then the frame holds.
 // Sources: evidence/ep6-ledger.csv (none are cited on screen).
 const { ML, C, F, E, P, IMG, lerp, font, txt, rule, makeCanvas } = S5;
 const DURATION = 8;                  // nothing moves after B.still: change the hold freely
@@ -26,22 +27,23 @@ const B = {
   photo: 0.2,                        // the whole side of the camera
   push: 0.7,                         // pushes in on the card slots
   slots: 1.7,                        // the two slots are outlined and named
-  notes: 2.2,
-  still: 3.0,
+  speed: 1.9,                        // 312 / 104 MB/s and V90, one slot every 0.3 s
+  notes: 2.6,
+  still: 3.2,
 };
-const BEATS = [[B.photo, '机身侧面'], [B.push, '推近卡槽'], [B.slots, '卡槽 1 / 2'], [B.notes, '影响'], [B.still, '定格']];
+const BEATS = [[B.photo, '机身侧面'], [B.push, '推近卡槽'], [B.slots, '卡槽 1 / 2'], [B.speed, '接口速度'], [B.notes, '影响'], [B.still, '定格']];
 
 // ---- data ------------------------------------------------------------------------------------
 const PHOTO_ID = 'Panasonic_LUMIX_S5_side_slots';   // 2000 × 2000, card door open
-// Each slot in photo pixels, what the manual says it takes (F01) and its interface's limit (F05).
+// Each slot in photo pixels, its interface's limit (F05) and whether V90 cards get their speed (F01).
 const SLOTS = [
-  { rect: [530, 640, 800, 1190], name: '卡槽 1', spec: 'UHS-I / UHS-II', lines: ['接口最高 312 MB/s', '可用 V90 卡'] },
-  { rect: [530, 1245, 800, 1795], name: '卡槽 2', spec: '只支持 UHS-I', lines: ['接口最高 104 MB/s'] },
+  { rect: [530, 640, 800, 1190], name: '卡槽 1', bus: 'UHS-II', mbs: 312, v90: '可用 V90 卡' },
+  { rect: [530, 1245, 800, 1795], name: '卡槽 2', bus: 'UHS-I', mbs: 104, v90: '用不了 V90 的速度' },
 ];
 const NOTES = [                      // F02–F04
-  ['拍视频', '最高 200 Mbps（约 25 MB/s），官方只要求 V30：两个卡槽都够', false],
-  ['连拍', '官方连拍张数用卡槽 1 的 UHS-II 卡测得：放卡槽 2，写卡更慢', true],
-  ['双卡备份', '两张卡同时写，官方建议同速度、同容量：一张不够快，两张一起停', true],
+  ['拍视频', '最高约 25 MB/s，官方只要求 V30：两个卡槽都够'],
+  ['连拍', '官方连拍数据用卡槽 1 测得：放卡槽 2，写卡更慢'],
+  ['双卡备份', '一张卡不够快，两张一起停'],
 ];
 
 // ---- the photo: from the whole camera to the slots ------------------------------------------------
@@ -98,7 +100,7 @@ function frame(c, u, t) {
 
   drawPhoto(c, t);
 
-  // The two slots on the photo: an outline, a leader, the name and what it takes.
+  // The two slots on the photo: an outline, a leader and the name.
   const v = view(t);
   SLOTS.forEach((sl, i) => {
     const t0 = B.slots + i * 0.25;
@@ -109,20 +111,30 @@ function frame(c, u, t) {
     c.strokeRect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y); c.restore();
     const ly = (p0.y + p1.y) / 2, lx = 1470;
     rule(c, p1.x, lerp(p1.x, lx - 14, P(t, t0 + 0.1, t0 + 0.45)), Math.round(ly), a, C.ink3);
-    const la = P(t, t0 + 0.25, t0 + 0.6);
-    txt(c, sl.name, lx, ly - 4, { size: 30, weight: 500, alpha: la });
-    txt(c, sl.spec, lx, ly + 34, { size: 22, color: i === 0 ? C.ink : C.ink2, alpha: la });
-    sl.lines.forEach((s, j) => txt(c, s, lx, ly + 68 + j * 30, { size: 19, color: j ? C.ink3 : C.ink2, alpha: la }));
+    txt(c, sl.name, lx, ly + 9, { size: 26, weight: 500, color: i === 0 ? C.ink : C.ink2, alpha: P(t, t0 + 0.25, t0 + 0.6) });
   });
 
-  // What the difference does and does not affect.
-  NOTES.forEach(([label, value, hit], i) => {
-    const a = P(t, B.notes + i * 0.15, B.notes + i * 0.15 + 0.4);
-    const y = 470 + i * 70;
-    txt(c, label, ML, y, { size: 24, color: C.ink3, alpha: a });
-    txt(c, value, ML + 120, y, { size: 24, color: hit ? C.ink : C.ink2, alpha: a });
+  // The point: each slot's interface speed, and whether a V90 card gets its speed there.
+  SLOTS.forEach((sl, i) => {
+    const y = 455 + i * 215, t0 = B.speed + i * 0.3;
+    const a = P(t, t0, t0 + 0.45), rise = (1 - a) * 10;
+    const ink = i === 0 ? C.ink : C.ink2;
+    txt(c, `${sl.name} · ${sl.bus} 接口`, ML, y - 125 + rise, { size: 22, color: C.ink2, alpha: a });
+    font(c, 130, 700, F.serif);
+    const w = c.measureText(String(sl.mbs)).width;
+    txt(c, String(sl.mbs), ML - 4, y + rise, { family: F.serif, size: 130, weight: 700, color: ink, alpha: a });
+    txt(c, 'MB/s', ML + w + 14, y + rise, { size: 30, color: C.ink2, alpha: a });
+    txt(c, sl.v90, 560, y + rise, { size: 34, weight: 500, color: ink, alpha: P(t, t0 + 0.15, t0 + 0.6) });
   });
-  txt(c, '接口速度上限按 SD 协会标准，实际读写看卡本身', ML, 850, { size: 18, color: C.ink3, alpha: P(t, B.notes + 0.6, B.notes + 1.0) });
+
+  // What the difference does and does not affect, small.
+  NOTES.forEach(([label, value], i) => {
+    const a = P(t, B.notes + i * 0.12, B.notes + i * 0.12 + 0.4);
+    const y = 772 + i * 36;
+    txt(c, label, ML, y, { size: 20, color: C.ink3, alpha: a });
+    txt(c, value, ML + 100, y, { size: 20, color: C.ink2, alpha: a });
+  });
+  txt(c, '接口速度是 SD 协会标准里的上限，实际读写看卡本身', ML, 892, { size: 16, color: C.ink3, alpha: P(t, B.notes + 0.4, B.notes + 0.8) });
 }
 
 // ---- run ------------------------------------------------------------------------------------
