@@ -129,9 +129,8 @@
 | --- | --- | --- |
 | 0.2 – 0.8 s | 右半边淡入松下官方的 S5 侧面照，卡门打开 | F06 |
 | 0.7 – 1.8 s | 镜头推近卡槽，照片收成一个竖窗，只留两个卡槽（机身上印着 SDXC II / SDXC I） | |
-| 1.7 – 2.4 s | 两个卡槽描框、引线、名称：卡槽 1“UHS-I / UHS-II，可用 V90 卡”，卡槽 2“只支持 UHS-I” | F01 |
-| 1.6 – 2.5 s | 左边图表：两个卡槽接口的速度上限，312 和 104 MB/s；一条虚线标出 S5 视频最高约 25 MB/s | F02、F05 |
-| 2.3 – 2.9 s | 三行影响：拍视频（两个卡槽都够）、连拍（卡槽 2 写卡更慢）、双卡备份（一张不够快两张一起停），后两行更亮 | F02–F04 |
+| 1.7 – 2.4 s | 两个卡槽描框、引线、直接标注：卡槽 1“UHS-I / UHS-II · 接口最高 312 MB/s · 可用 V90 卡”，卡槽 2“只支持 UHS-I · 接口最高 104 MB/s” | F01、F05 |
+| 2.2 – 2.9 s | 左边三行影响：拍视频（最高 200 Mbps 约 25 MB/s，两个卡槽都够）、连拍（卡槽 2 写卡更慢）、双卡备份（一张不够快两张一起停），后两行更亮 | F02–F04 |
 | 3 – 8 s | 定格 | |
 
 照片和第 2、5 集一样只放本地：`assets/cameras/12_Panasonic_LUMIX_S5_side_slots.png`（松下美国官方商城的 DC-S5KK_LEFT，白底已抠透明），然后运行 `build_assets.py`。没有提供口播；定格段多长都行，改 `ep6.html` 的 `DURATION`。
@@ -193,13 +192,13 @@ python3 -I s5/tools/qc.py s5/out/ep4.mp4 --nograin s5/out/ep4-qc-nograin.mp4 --c
 node s5/render.mjs --page ep5.html --from 13.5 --to 14.5 --grain 0 --out out/ep5-qc-nograin.mp4
 python3 -I s5/tools/qc.py s5/out/ep5.mp4 --nograin s5/out/ep5-qc-nograin.mp4 --clip-start 13.5 \
     --at 14.0 --strip 1610,1760 --rows 420,500,580,660 --out s5/out/qc/ep5
-# 第 6 集：取 5.0 s 图表下方的空白暗部
+# 第 6 集：取 5.0 s 左侧文字下方的空白暗部
 node s5/render.mjs --page ep6.html --from 4.5 --to 5.5 --grain 0 --out out/ep6-qc-nograin.mp4
 python3 -I s5/tools/qc.py s5/out/ep6.mp4 --nograin s5/out/ep6-qc-nograin.mp4 --clip-start 4.5 \
     --at 5.0 --strip 600,1050 --rows 770,800,880,900 --out s5/out/qc/ep6
 ```
 
-当前结果：压缩后有颗粒最长 17 / 18 / 18 / 13 / 11 / 18 像素（第 1 – 6 集），无颗粒 248 / 410 / 172 / 100 / 96 / 450 像素。
+当前结果：压缩后有颗粒最长 17 / 18 / 18 / 13 / 11 / 19 像素（第 1 – 6 集），无颗粒 248 / 410 / 172 / 100 / 96 / 450 像素。
 
 ## 冷启动观众测试
 
@@ -242,7 +241,7 @@ python3 -I s5/tools/qc.py s5/out/ep6.mp4 --nograin s5/out/ep6-qc-nograin.mp4 --c
 - **第 2 集**：镜头关键帧 `CAM`，推进卡口的节奏 `dive`；数据 `SENSOR`、`ROW`（2400 万像素级机型；`glass`、`body` 是照片里传感器玻璃和机身的像素坐标，换照片要重新量）、`LINE`（像素档位横轴）、`FACTS`（三行）、`MODES`（录制规格，`hl` 标出高亮行，`aps` 是裁切框出现时亮起的 60p 行）。
 - **第 4 集**：入场节拍 `B`、定格时长 `DURATION`；数据 `VLOG`（两个原生 ISO 和说明）、`OTHERS`（其他照片风格）、`ISO_MAX`；横轴范围和位置 `AX`。
 - **第 5 集**：分镜起止 `T`、交叉淡化 `XF`；数据 `SETTINGS`（第一个分镜的五行）、`COMPARE`（第二个分镜左右两栏：照片、档数、倍数、例子、测试条件）、`MODES`（两种视频防抖的标题和说明）；示意图位置 `MOUNT`、`PHOTO`、`PER_STOP`、`FRAME`，抖动幅度在 `shake()` 的调用处。
-- **第 6 集**：入场节拍 `B`、定格时长 `DURATION`；数据 `SLOTS`（照片里两个卡槽的像素范围、名称、规格、接口上限）、`VIDEO_MBS`、`NOTES`（三行影响）；推近的终点 `WIN`、`FOCUS`、`S0` / `S1`。
+- **第 6 集**：入场节拍 `B`、定格时长 `DURATION`；数据 `SLOTS`（照片里两个卡槽的像素范围、名称、规格和标注）、`NOTES`（三行影响）；推近的终点 `WIN`、`FOCUS`、`S0` / `S1`。
 - **配色、颗粒、字体**：`lib/stage.js` 里的 `C`、`GRAIN_K`、`F`。
 
 ## 文件

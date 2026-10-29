@@ -15,8 +15,8 @@
 'use strict';
 // Episode 6 · 8 seconds. The S5's two SD slots are not the same: slot 1 takes UHS-II, slot 2 only
 // UHS-I. A three-second entrance: Panasonic's side photo of the S5 with the card door open pushes
-// in on the two slots and names them; on the left, a chart of the two interfaces' speed limits
-// against what the S5's video needs, and what the difference does affect. Then the frame holds.
+// in on the two slots and labels each with what it takes and its interface's speed limit; on the
+// left, what the difference does and does not affect. Then the frame holds.
 // Sources: evidence/ep6-ledger.csv (none are cited on screen).
 const { ML, C, F, E, P, IMG, lerp, font, txt, rule, makeCanvas } = S5;
 const DURATION = 8;                  // nothing moves after B.still: change the hold freely
@@ -26,22 +26,20 @@ const B = {
   photo: 0.2,                        // the whole side of the camera
   push: 0.7,                         // pushes in on the card slots
   slots: 1.7,                        // the two slots are outlined and named
-  chart: 1.6,                        // bars and the video marker
-  notes: 2.3,
+  notes: 2.2,
   still: 3.0,
 };
-const BEATS = [[B.photo, '机身侧面'], [B.push, '推近卡槽'], [B.slots, '卡槽 1 / 2'], [B.chart, '速度上限'], [B.still, '定格']];
+const BEATS = [[B.photo, '机身侧面'], [B.push, '推近卡槽'], [B.slots, '卡槽 1 / 2'], [B.notes, '影响'], [B.still, '定格']];
 
 // ---- data ------------------------------------------------------------------------------------
 const PHOTO_ID = 'Panasonic_LUMIX_S5_side_slots';   // 2000 × 2000, card door open
-// Each slot in photo pixels, and what the manual says it takes (F01).
+// Each slot in photo pixels, what the manual says it takes (F01) and its interface's limit (F05).
 const SLOTS = [
-  { rect: [530, 640, 800, 1190], name: '卡槽 1', spec: 'UHS-I / UHS-II', note: '可用 V90 卡', mbs: 312, bus: 'UHS-II' },
-  { rect: [530, 1245, 800, 1795], name: '卡槽 2', spec: '只支持 UHS-I', note: '', mbs: 104, bus: 'UHS-I' },
+  { rect: [530, 640, 800, 1190], name: '卡槽 1', spec: 'UHS-I / UHS-II', lines: ['接口最高 312 MB/s', '可用 V90 卡'] },
+  { rect: [530, 1245, 800, 1795], name: '卡槽 2', spec: '只支持 UHS-I', lines: ['接口最高 104 MB/s'] },
 ];
-const VIDEO_MBS = 25;                // F02: the highest bit rate, 200 Mbps, is 25 MB/s
 const NOTES = [                      // F02–F04
-  ['拍视频', '最高 200 Mbps，官方只要求 V30：两个卡槽都够', false],
+  ['拍视频', '最高 200 Mbps（约 25 MB/s），官方只要求 V30：两个卡槽都够', false],
   ['连拍', '官方连拍张数用卡槽 1 的 UHS-II 卡测得：放卡槽 2，写卡更慢', true],
   ['双卡备份', '两张卡同时写，官方建议同速度、同容量：一张不够快，两张一起停', true],
 ];
@@ -114,35 +112,17 @@ function frame(c, u, t) {
     const la = P(t, t0 + 0.25, t0 + 0.6);
     txt(c, sl.name, lx, ly - 4, { size: 30, weight: 500, alpha: la });
     txt(c, sl.spec, lx, ly + 34, { size: 22, color: i === 0 ? C.ink : C.ink2, alpha: la });
-    if (sl.note) txt(c, sl.note, lx, ly + 66, { size: 18, color: C.ink3, alpha: la });
+    sl.lines.forEach((s, j) => txt(c, s, lx, ly + 68 + j * 30, { size: 19, color: j ? C.ink3 : C.ink2, alpha: la }));
   });
-
-  // The chart: each slot's interface limit, and the most the S5's video asks for.
-  const X0 = 300, K = 2.05;          // px per MB/s
-  txt(c, '卡槽接口的速度上限（MB/s）', ML, 342, { size: 20, color: C.ink3, alpha: P(t, B.chart - 0.2, B.chart + 0.2) });
-  SLOTS.forEach((sl, i) => {
-    const y = 398 + i * 64, t0 = B.chart + i * 0.2;
-    const grow = P(t, t0, t0 + 0.7), a = P(t, t0, t0 + 0.3, E.lin);
-    txt(c, sl.name, ML, y + 8, { size: 22, weight: 500, alpha: a });
-    txt(c, sl.bus, ML + 76, y + 8, { size: 18, color: C.ink3, alpha: a });
-    const len = sl.mbs * K * grow;
-    c.save(); c.globalAlpha *= a; c.fillStyle = i === 0 ? C.ink : C.ink2; c.fillRect(X0, y - 2, len, 4); c.restore();
-    txt(c, String(sl.mbs), X0 + len + 14, y + 10, { family: F.serif, size: 28, weight: 700, color: i === 0 ? C.ink : C.ink2, alpha: P(t, t0 + 0.5, t0 + 0.8) });
-  });
-  const mx = Math.round(X0 + VIDEO_MBS * K), ma = P(t, B.chart + 0.6, B.chart + 0.9, E.lin);
-  c.save(); c.globalAlpha *= ma; c.fillStyle = C.ink2;
-  for (let y = 372; y < 486; y += 8) c.fillRect(mx, y, 1, 4);    // a dotted line across both bars
-  c.restore();
-  txt(c, `S5 视频最高 200 Mbps ≈ ${VIDEO_MBS} MB/s`, mx - 6, 518, { size: 18, color: C.ink2, alpha: ma });
 
   // What the difference does and does not affect.
   NOTES.forEach(([label, value, hit], i) => {
     const a = P(t, B.notes + i * 0.15, B.notes + i * 0.15 + 0.4);
-    const y = 620 + i * 50;
-    txt(c, label, ML, y, { size: 22, color: C.ink3, alpha: a });
-    txt(c, value, ML + 110, y, { size: 22, color: hit ? C.ink : C.ink2, alpha: a });
+    const y = 470 + i * 70;
+    txt(c, label, ML, y, { size: 24, color: C.ink3, alpha: a });
+    txt(c, value, ML + 120, y, { size: 24, color: hit ? C.ink : C.ink2, alpha: a });
   });
-  txt(c, '速度上限按 SD 协会标准，实际读写看卡本身', ML, 850, { size: 18, color: C.ink3, alpha: P(t, B.notes + 0.6, B.notes + 1.0) });
+  txt(c, '接口速度上限按 SD 协会标准，实际读写看卡本身', ML, 850, { size: 18, color: C.ink3, alpha: P(t, B.notes + 0.6, B.notes + 1.0) });
 }
 
 // ---- run ------------------------------------------------------------------------------------
