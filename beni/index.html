@@ -198,7 +198,7 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
         <select id="optFps">
           <option value="24">24 fps · 电影</option>
           <option value="25">25 fps · PAL</option>
-          <option value="30">30 fps</option>
+          <option value="30">30 fps · 与素材一致</option>
           <option value="50">50 fps</option>
           <option value="60" selected>60 fps · 丝滑</option>
         </select>
@@ -255,13 +255,14 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
         <h2>画面</h2>
         <ul>
           <li><b>0–1.5 秒</b>：黑场亮起，镜头从右向左横移入画（运动模糊），参数行依次落位，最高时速从 0 计到 28.8。</li>
-          <li><b>1.5–4.5 秒</b>：版面完全静止，只有 Beni 在原地朝表格方向轻轻摆动；4.5 秒正好一个来回，循环播放无缝。</li>
-          <li><b>版式</b>：上下两条通栏线把整页框住，左边 8 行参数，右边 Beni 站在底线上；最高时速单独加高、加大、用强调色。</li>
+          <li><b>1.5–4.5 秒</b>：版面完全静止，只有 Beni 在动。</li>
+          <li><b>Beni</b>：全程按官方动画原速（30 fps）播放，没有慢放、没有帧间融合，60 fps 下每帧正好显示两次。入场时摆动、侧头一瞥，版面落定时转头看向镜头，静止段再转开、转回，最后一帧正对镜头。</li>
+          <li><b>版式</b>：上下两条通栏线把整页框住，标题在左、产品名在右；左边 8 行参数，右边 Beni 站在底线上；最高时速单独加高、加大、用强调色。</li>
         </ul>
       </section>
       <section>
         <h2>数据</h2>
-        <p>全部来自合作 Brief 的卖点和参数对照表。Beni 与 Beni Lite 运动性能一致，只有重量不同（1.8 kg / 1.75 kg）。产品画面是官网同款渲染序列帧（移动端版本，机身约 780 px 高），PDF 内的产品图分辨率不够全屏使用。</p>
+        <p>全部来自合作 Brief 的卖点和参数对照表。产品画面是官网同款渲染序列帧（移动端版本，机身约 780 px 高），PDF 内的产品图分辨率不够全屏使用。</p>
       </section>
     </div>
   </section>
@@ -337,35 +338,21 @@ setCurves('cinema');
 
 /* ---------- product frames (official render, see tools/pack_frames.py) ---------- */
 let AV = [], IMG = {}, RECT = {};
-function framePair(f) {
-  let lo = AV[0], hi = AV[AV.length - 1];
-  if (f <= lo) return [lo, lo, 0];
-  if (f >= hi) return [hi, hi, 0];
-  let a = 0, b = AV.length - 1;
-  while (b - a > 1) { const m = (a + b) >> 1; if (AV[m] <= f) a = m; else b = m; }
-  lo = AV[a]; hi = AV[b];
-  return [lo, hi, hi === lo ? 0 : (f - lo) / (hi - lo)];
-}
-// Beni sways once per 4.5 s: frame 130 → 108 → 130, looking towards the table. The source frames are
-// unevenly paced, so playback follows the measured visual change between frames (ARC from pack_frames.py):
-// equal time → equal visible movement, eased in and out at both ends; neighbouring frames are close
-// enough there to cross-fade without ghosting.
-let ARC = [], ARC0 = 0;
-const SWAY_REST = 130, SWAY_OUT = 108;
-const SWAY = bezier(0.45, 0, 0.55, 1);
-function arcAt(f) {
-  const i = clamp(Math.floor(f) - ARC0, 0, ARC.length - 2);
-  return lerp(ARC[i], ARC[i + 1], clamp(f - ARC0 - i));
-}
-function frameAtArc(a) {
-  let lo = 0, hi = ARC.length - 1;
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ARC[m] <= a) lo = m; else hi = m; }
-  return ARC0 + lo + clamp((a - ARC[lo]) / Math.max(1e-6, ARC[hi] - ARC[lo]));
-}
+// Beni plays the official animation at its native 30 fps: no slow motion, no blending between frames.
+// At 60 fps each source frame is shown for exactly two output frames. Over the 4.5 s (135 source frames)
+// the path is 93 → 146, back to 105, forward to 146: a sway and a glance while the page slides in, the
+// head turning to the camera as it lands, then away and back once more. Both turnarounds sit where Beni
+// is nearly still (146 settled, 105 slow), and the piece ends with Beni looking at the camera.
+const SRC_FPS = 30;
+const PATH = [[93, 146], [146, 105], [105, 146]];
 function robotFrame(t) {
-  const u = ((t % DURATION) + DURATION) % DURATION / DURATION;      // 0..1 over the piece, loops seamlessly
-  const s = u < 0.5 ? SWAY(u * 2) : 1 - SWAY((u - 0.5) * 2);
-  return frameAtArc(lerp(arcAt(SWAY_REST), arcAt(SWAY_OUT), s));
+  let n = Math.floor(clamp(t, 0, DURATION) * SRC_FPS + 1e-6);
+  for (const [a, b] of PATH) {
+    const len = Math.abs(b - a);
+    if (n <= len) return a + Math.sign(b - a) * n;
+    n -= len;
+  }
+  return PATH[PATH.length - 1][1];
 }
 
 /* =========================================================================
@@ -378,7 +365,7 @@ const TOP = 228, BOT = 942;          // header rule, floor rule
 const TR = 1000;                     // right edge of the table column
 const VX = 400;                      // value column
 const HOT_H = 134, ROW_H = (BOT - TOP - HOT_H) / 7;
-const ROBOT = { ax: 572, ay: 1446, x: 1414, y: BOT, k: 0.84 };   // source floor point (ax, ay) stands on (x, y)
+const ROBOT = { ax: 572, ay: 1446, x: 1398, y: BOT, k: 0.82 };   // source floor point (ax, ay) stands on (x, y); in the hold Beni stays between TR and R
 
 const ROWS = [
   { k: '最高时速', v: '28.8', unit: 'km/h', v2: '17.9 mph', hot: true },
@@ -387,7 +374,7 @@ const ROWS = [
   { k: '智能避障', v: '前置双广角视觉传感器' },
   { k: '跟随运镜', v: '后向 · 侧向平行 · 360° 环绕' },
   { k: '电池续航', v: '1.5 h / 块', v2: '可插拔' },
-  { k: '机身重量', v: '1.8 kg', v2: 'Beni Lite 1.75 kg' },
+  { k: '机身重量', v: '1.8 kg' },
   { k: '机身尺寸', v: '21.5 × 18 × 18 cm' },
 ];
 const rowTop = (j) => (j === 0 ? TOP : TOP + HOT_H + (j - 1) * ROW_H);
@@ -458,28 +445,7 @@ function drawBackground(ctx, dx) {
   ctx.fillRect(0, 0, DW, DH);
 }
 
-let layerCanvas = null;
-function layerAtLeast(w, h) {
-  if (!layerCanvas) layerCanvas = document.createElement('canvas');
-  if (layerCanvas.width < w || layerCanvas.height < h) {
-    layerCanvas.width = Math.max(w, layerCanvas.width);
-    layerCanvas.height = Math.max(h, layerCanvas.height);
-  }
-  return layerCanvas;
-}
-function frameRect(n, cam) {
-  const rc = RECT[n];
-  return [cam.x + (rc[0] - cam.ax) * cam.k, cam.y + (rc[1] - cam.ay) * cam.k, rc[2] * cam.k, rc[3] * cam.k];
-}
-function drawFrame(ctx, n, cam, a) {
-  const img = IMG[n];
-  if (!img) return;
-  const [x, y, w, h] = frameRect(n, cam);
-  ctx.globalAlpha = a;
-  ctx.drawImage(img, x, y, w, h);
-  ctx.globalAlpha = 1;
-}
-function drawRobot(ctx, t, dx, alpha) {
+function drawRobot(ctx, dx, alpha) {
   const cam = { ...ROBOT, x: ROBOT.x + dx };
   // soft pool of light on the floor under Beni
   ctx.save();
@@ -494,30 +460,15 @@ function drawRobot(ctx, t, dx, alpha) {
   ctx.fillRect(-gr, -gr, 2 * gr, 2 * gr);
   ctx.restore();
 
-  const [lo, hi, w] = framePair(robotFrame(t));
+  // the pose comes from the output frame's own time, so motion-blur samples never mix two poses;
+  // they only smear the camera move
+  const n = robotFrame(FRAME_T), img = IMG[n], rc = RECT[n];
+  if (!img) return;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  if (w < 0.01 || w > 0.99) { drawFrame(ctx, w > 0.99 ? hi : lo, cam, alpha); return; }
-  // exact crossfade of neighbouring frames: (1-w)·lo + w·hi added on a clear layer that only covers the robot
-  const a = frameRect(lo, cam), b = frameRect(hi, cam);
-  const x0 = Math.floor(Math.min(a[0], b[0]) * SCALE) - 1, y0 = Math.floor(Math.min(a[1], b[1]) * SCALE) - 1;
-  const x1 = Math.ceil(Math.max(a[0] + a[2], b[0] + b[2]) * SCALE) + 1, y1 = Math.ceil(Math.max(a[1] + a[3], b[1] + b[3]) * SCALE) + 1;
-  const lw = x1 - x0, lh = y1 - y0;
-  const layer = layerAtLeast(lw, lh), lc = layer.getContext('2d');
-  lc.setTransform(1, 0, 0, 1, 0, 0);
-  lc.clearRect(0, 0, lw, lh);
-  lc.setTransform(SCALE, 0, 0, SCALE, -x0, -y0);
-  lc.imageSmoothingEnabled = true;
-  lc.imageSmoothingQuality = 'high';
-  lc.globalCompositeOperation = 'lighter';
-  drawFrame(lc, lo, cam, 1 - w);
-  drawFrame(lc, hi, cam, w);
-  lc.globalCompositeOperation = 'source-over';
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = alpha;
-  ctx.drawImage(layer, 0, 0, lw, lh, x0, y0, lw, lh);
-  ctx.restore();
+  ctx.drawImage(img, cam.x + (rc[0] - cam.ax) * cam.k, cam.y + (rc[1] - cam.ay) * cam.k, rc[2] * cam.k, rc[3] * cam.k);
+  ctx.globalAlpha = 1;
 }
 
 function rule(ctx, x0, x1, y, p, alpha) {
@@ -561,11 +512,11 @@ function blit(ctx, sp, dx, alpha) {
 }
 
 function drawPage(ctx, t) {
-  // header: title left, model note right on the same baseline, one full-width rule under both
+  // header: title left, product name right on the same baseline, one full-width rule under both
   const hp = E.in(seg(t, 0.05, 0.85));
   const hx = truck(t) * 1.06;
   blit(ctx, sprite(ctx, 'title', '运动性能一览', L, TITLE_Y, ST.title), hx, hp);
-  blit(ctx, sprite(ctx, 'note', 'Beni 与 Beni Lite 运动性能一致，仅重量不同', R, TITLE_Y, ST.note, 'right'), hx, hp);
+  blit(ctx, sprite(ctx, 'note', 'Beni 智能跟拍机器人', R, TITLE_Y, ST.note, 'right'), hx, hp);
   rule(ctx, L + hx, R + hx, TOP, E.in(seg(t, 0.12, 1.2)), 0.2);
 
   // rows: each lands a little later and from a little further, so the column settles top to bottom.
@@ -611,7 +562,7 @@ function renderScene(ctx, t) {
   const dx = truck(t);
   drawBackground(ctx, dx);
   drawPage(ctx, t);
-  drawRobot(ctx, t, dx, E.fade(seg(t, 0, 0.9)));
+  drawRobot(ctx, dx, E.fade(seg(t, 0, 0.9)));
   const exposure = E.fade(seg(t, 0, 0.9));
   if (exposure < 1) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -712,7 +663,7 @@ function loadScript(src) {
 }
 async function loadFonts() {
   if (!document.fonts || !document.fonts.load) return;
-  const text = '运动性能一览 Beni 与 Beni Lite 运动性能一致，仅重量不同 0123456789.×·/° km/h mph cm kg' + ROWS.map((r) => Object.values(r).join('')).join('');
+  const text = '运动性能一览 Beni 智能跟拍机器人 0123456789.×·/° km/h mph cm kg' + ROWS.map((r) => Object.values(r).join('')).join('');
   const jobs = [];
   for (const w of [400, 500, 600]) {
     jobs.push(document.fonts.load(`${w} 40px Inter`, text));
@@ -726,8 +677,6 @@ async function loadAssets(onProgress) {
   if (!window.BENI_FRAMES) await loadScript('frames.js');
   const F = window.BENI_FRAMES;
   RECT = F.rects;
-  ARC = F.arc;
-  ARC0 = F.first;
   AV = Object.keys(F.data).map(Number).sort((a, b) => a - b);
   let done = 0;
   await Promise.all(AV.map(async (n) => {
@@ -829,7 +778,8 @@ function applySettings() {
   $('outVig').textContent = ui.vig.value;
   const frames = Math.round(DURATION * S.fps);
   $('statusOut').textContent = `预览 ${S.w}×${S.h} · ${S.fps} fps${S.blur > 1 ? ` · 运动模糊 ${S.blur}× / ${S.shutter}°` : ''}`;
-  $('outInfo').textContent = `输出 ${S.w}×${S.h} · ${S.fps} fps · ${frames} 帧 · ${DURATION.toFixed(1)} 秒 · H.264 约 ${(bitrateOf(S) / 1e6).toFixed(0)} Mbps`;
+  $('outInfo').textContent = `输出 ${S.w}×${S.h} · ${S.fps} fps · ${frames} 帧 · ${DURATION.toFixed(1)} 秒 · H.264 约 ${(bitrateOf(S) / 1e6).toFixed(0)} Mbps`
+    + (S.fps % 30 ? ' · Beni 素材为 30 fps，选 30 或 60 fps 才能逐帧对齐，其他帧率会有轻微跳帧' : '');
   $('meta').textContent = `16:9 · 一镜到底 · 1.5 s 运动 + 3 s 静止 · ${DURATION.toFixed(1)} 秒`;
   drawCurve();
   try { localStorage.setItem(SKEY, JSON.stringify(Object.fromEntries(Object.entries(ui).map(([k, el]) => [k, el.value])))); } catch { /* ignore */ }
