@@ -1,6 +1,6 @@
 # 要求越多
 
-> 本仓库另有 [`beni/`](beni/)：Beni 跟拍机器人“运动性能一览”的 16:9 一镜到底动态页面，可选分辨率、帧率并直接导出 MP4，说明见 [beni/README.md](beni/README.md)。
+> 本仓库另有 [`beni/`](beni/)：Beni 跟拍机器人的两支 16:9 一镜到底动态页面——“运动性能一览”（`index.html`）和取景器样式的“影像参数”（`imaging.html`），可选分辨率、帧率并直接导出 MP4，说明见 [beni/README.md](beni/README.md)。
 
 用网页做的 16:9 横屏 3D 动效短片（1920×1080，30 fps，23 秒），可以逐帧导出成 MP4。
 

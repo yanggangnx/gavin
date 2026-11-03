@@ -10,7 +10,9 @@
     "preview": "npx serve .",
     "beni:render": "node render.mjs --page beni/index.html --fps 60 --blur 8",
     "beni:still": "node render.mjs --page beni/index.html --still 3",
-    "beni:single": "python3 beni/tools/build_single.py"
+    "beni:single": "python3 beni/tools/build_single.py",
+    "beni:imaging:render": "node render.mjs --page beni/imaging.html --out out/beni-imaging.mp4 --fps 60 --blur 8",
+    "beni:imaging:single": "python3 beni/tools/build_single.py imaging"
   },
   "devDependencies": {
     "playwright": "1.56.1"

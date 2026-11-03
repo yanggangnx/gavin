@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Beni 影像参数</title>
+<meta name="description" content="Beni 跟拍机器人影像参数，取景器样式的 16:9 一镜到底动态页面，可调分辨率与帧率并导出 MP4。">
+<script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --fg: #1D1D1F;
+  --muted: #6E6E73;
+  --faint: #86868B;
+  --line: #D9D9DE;
+  --soft: rgba(0, 0, 0, .04);
+  --accent: #E5482A;
+  --btn: #1D1D1F;
+  --btn-fg: #FFFFFF;
+  --seg-motion: #E5482A;
+  --seg-hold: #C7C7CC;
+  --shadow: rgba(0, 0, 0, .18);
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --num: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000; --surface: #111113; --fg: #F5F5F7; --muted: #A1A1A6; --faint: #6E6E73; --line: #2A2A2D;
+    --soft: rgba(255, 255, 255, .05); --accent: #FF5F3A; --btn: #F5F5F7; --btn-fg: #000000;
+    --seg-motion: #FF5F3A; --seg-hold: #3A3A3D; --shadow: rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000; --surface: #111113; --fg: #F5F5F7; --muted: #A1A1A6; --faint: #6E6E73; --line: #2A2A2D;
+  --soft: rgba(255, 255, 255, .05); --accent: #FF5F3A; --btn: #F5F5F7; --btn-fg: #000000;
+  --seg-motion: #FF5F3A; --seg-hold: #3A3A3D; --shadow: rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.6 var(--ui); }
+button, select, input { font: inherit; color: inherit; }
+
+.app {
+  max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+.kicker { margin: 0 0 4px; font-size: 13px; letter-spacing: .04em; color: var(--muted); }
+.top h1 { margin: 0; font: 600 30px/1.15 var(--ui); letter-spacing: -.01em; }
+.meta { margin: 0; font: 400 13px/1.4 var(--num); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- player ---------- */
+.player { display: flex; flex-direction: column; gap: 12px; }
+.stage-box {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 14px; background: #000;
+  box-shadow: 0 30px 70px -40px var(--shadow), 0 0 0 1px var(--line);
+}
+.stage-box:fullscreen { border-radius: 0; box-shadow: none; display: grid; place-items: center; }
+#out { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage-box:fullscreen #out { position: static; width: min(100vw, calc(100vh * 16 / 9)); height: auto; aspect-ratio: 16 / 9; }
+.loading {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; background: #000; color: #F5F5F7;
+  font: 400 14px/1.4 var(--ui); letter-spacing: .04em; transition: opacity .4s;
+}
+.loading.done { opacity: 0; pointer-events: none; }
+.loading .bar { width: 160px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.loading .bar i { display: block; height: 100%; width: 0; background: #F5F5F7; transition: width .2s; }
+.loading.error .bar { display: none; }
+
+.controls { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.icon-btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; min-width: 36px; padding: 0 12px;
+  border: 0; border-radius: 999px; background: var(--soft); cursor: pointer; font-size: 13px;
+}
+.icon-btn.play { background: var(--btn); color: var(--btn-fg); min-width: 84px; font-weight: 600; }
+.icon-btn svg { width: 12px; height: 12px; flex: none; }
+.icon-btn[aria-pressed="false"] { color: var(--faint); }
+.icon-btn:hover { filter: brightness(1.06); }
+.timeline { position: relative; flex: 1; min-width: 0; height: 36px; cursor: pointer; touch-action: none; outline: none; }
+.timeline .segs { position: absolute; left: 0; right: 0; top: 15px; height: 6px; display: flex; gap: 2px; }
+.timeline .seg { height: 100%; border-radius: 3px; background: var(--seg-hold); }
+.timeline .seg.m { background: var(--seg-motion); opacity: .55; }
+.timeline .seg.on { opacity: 1; }
+.timeline .head { position: absolute; top: 8px; width: 2px; height: 20px; margin-left: -1px; border-radius: 1px; background: var(--fg); pointer-events: none; }
+.timeline:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+.clock { flex: none; font: 400 13px/1 var(--num); font-variant-numeric: tabular-nums; color: var(--muted); }
+@media (max-width: 640px) {
+  .controls { flex-wrap: wrap; row-gap: 4px; }
+  .timeline { order: -1; flex-basis: 100%; }
+  .clock { margin-right: auto; }
+}
+.status { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font: 400 12px/1.5 var(--num); color: var(--faint); font-variant-numeric: tabular-nums; }
+.legend { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; background: var(--seg-hold); }
+.legend i.m { background: var(--seg-motion); }
+.icon-btn:focus-visible, select:focus-visible, input:focus-visible, .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ---------- lower ---------- */
+.lower { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 32px; align-items: start; padding-top: 8px; }
+@media (max-width: 900px) { .lower { grid-template-columns: minmax(0, 1fr); } }
+h2 { margin: 0 0 14px; font: 600 17px/1.3 var(--ui); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.field { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 10px; }
+.field > span { font-size: 13px; color: var(--muted); }
+.field select, .field input[type="range"] { width: 100%; min-width: 0; }
+.field select { height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.field input[type="range"] { accent-color: var(--accent); }
+.range { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; gap: 8px; }
+.range output { font: 400 12px/1 var(--num); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.curve { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; align-items: center; }
+.curve svg { width: 76px; height: 76px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.curve code { font: 400 12px/1.6 var(--num); color: var(--muted); word-break: break-all; }
+.sep { height: 1px; background: var(--line); margin: 2px 0; }
+.btn {
+  height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font-size: 14px; font-weight: 500;
+}
+.btn.primary { background: var(--btn); color: var(--btn-fg); border-color: transparent; font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: default; }
+.out-info { margin: 0; font: 400 12px/1.6 var(--num); color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress { height: 4px; border-radius: 2px; background: var(--soft); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+.hint { margin: 0; font-size: 12px; line-height: 1.6; color: var(--faint); }
+
+.notes { min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.notes p { margin: 0 0 12px; color: var(--muted); max-width: 68ch; }
+.notes ul { margin: 0; padding-left: 18px; color: var(--muted); max-width: 68ch; }
+.notes li { margin-bottom: 6px; }
+.notes b { color: var(--fg); font-weight: 600; }
+.notes code { font: 400 13px var(--num); }
+
+/* ---------- render mode: just the canvas, 1:1 ---------- */
+html.render, html.render body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+html.render .app { display: block; max-width: none; padding: 0; }
+html.render .top, html.render .controls, html.render .status, html.render .lower, html.render .loading { display: none; }
+html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <p class="kicker">Beni 系列跟拍机器人 · MONDO ROBOTICS</p>
+      <h1>影像参数</h1>
+    </div>
+    <p class="meta" id="meta">16:9 · 一镜到底 · 1.5 s 运动 + 3 s 静止</p>
+  </header>
+
+  <section class="player" aria-label="动态演示">
+    <div class="stage-box" id="stageBox">
+      <canvas id="out" width="1920" height="1080" aria-label="Beni 影像参数动态画面"></canvas>
+      <div class="loading" id="loading" role="status">
+        <span id="loadingText">载入产品画面…</span>
+        <span class="bar"><i id="loadingBar"></i></span>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="icon-btn play" id="btnPlay" type="button">
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path id="playIcon" d="M2.5 1 L11 6 L2.5 11Z" fill="currentColor"/></svg><span id="playLabel">播放</span>
+      </button>
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="时间轴" aria-valuemin="0" aria-valuemax="4.5" aria-valuenow="0">
+        <div class="segs" id="segs"></div>
+        <div class="head" id="head"></div>
+      </div>
+      <output class="clock" id="clock">00:00.00 / 00:04.50</output>
+      <button class="icon-btn" id="btnLoop" type="button" aria-pressed="true" title="循环播放">循环</button>
+      <button class="icon-btn" id="btnFull" type="button" title="全屏（F）">全屏</button>
+    </div>
+    <p class="status">
+      <span id="statusOut">预览 1920×1080 · 60 fps</span>
+      <span id="statusFps"></span>
+      <span id="statusBlur"></span>
+      <span class="legend"><i class="m"></i>运动 1.5 s</span>
+      <span class="legend"><i></i>静止 3 s</span>
+      <span>空格 播放/暂停 · ← → 逐帧 · F 全屏</span>
+    </p>
+  </section>
+
+  <section class="lower">
+    <aside class="panel" aria-label="渲染设置">
+      <h2>渲染设置</h2>
+      <label class="field"><span>分辨率</span>
+        <select id="optRes">
+          <option value="1280x720">1280 × 720 · HD</option>
+          <option value="1920x1080" selected>1920 × 1080 · Full HD</option>
+          <option value="2560x1440">2560 × 1440 · 2K</option>
+          <option value="3840x2160">3840 × 2160 · 4K</option>
+        </select>
+      </label>
+      <label class="field"><span>帧率</span>
+        <select id="optFps">
+          <option value="24">24 fps · 电影</option>
+          <option value="25">25 fps · PAL</option>
+          <option value="30">30 fps · 与素材一致</option>
+          <option value="50">50 fps</option>
+          <option value="60" selected>60 fps · 丝滑</option>
+        </select>
+      </label>
+      <label class="field"><span>运动模糊</span>
+        <select id="optBlur">
+          <option value="1">关</option>
+          <option value="4">4 次采样</option>
+          <option value="8" selected>8 次采样</option>
+          <option value="16">16 次采样 · 导出用</option>
+        </select>
+      </label>
+      <label class="field"><span>快门角度</span>
+        <select id="optShutter">
+          <option value="90">90°</option>
+          <option value="180">180° · 标准电影</option>
+          <option value="270">270°</option>
+          <option value="360" selected>360° · 拖影更明显</option>
+        </select>
+      </label>
+      <label class="field"><span>胶片颗粒</span>
+        <span class="range"><input id="optGrain" type="range" min="0" max="100" value="30"><output id="outGrain">30</output></span>
+      </label>
+      <label class="field"><span>暗角</span>
+        <span class="range"><input id="optVig" type="range" min="0" max="100" value="50"><output id="outVig">50</output></span>
+      </label>
+      <label class="field"><span>缓动曲线</span>
+        <select id="optCurve"></select>
+      </label>
+      <div class="curve">
+        <svg viewBox="-8 -8 116 116" aria-hidden="true"><path d="M0 100 L100 0" stroke="currentColor" stroke-opacity=".15" fill="none"/><path id="curvePath" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/><circle id="cp1" r="3.5" fill="var(--muted)"/><circle id="cp2" r="3.5" fill="var(--muted)"/></svg>
+        <code id="curveCode"></code>
+      </div>
+      <div class="sep"></div>
+      <label class="field"><span>码率</span>
+        <select id="optBitrate">
+          <option value="auto" selected>自动</option>
+          <option value="8">8 Mbps</option>
+          <option value="16">16 Mbps</option>
+          <option value="24">24 Mbps</option>
+          <option value="40">40 Mbps</option>
+          <option value="80">80 Mbps</option>
+        </select>
+      </label>
+      <p class="out-info" id="outInfo"></p>
+      <button class="btn primary" id="btnExport" type="button">导出 MP4</button>
+      <button class="btn" id="btnStill" type="button">导出当前帧 PNG</button>
+      <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
+      <p class="hint" id="exportHint">按上面的分辨率和帧率逐帧渲染，再编码为 H.264 MP4，不受电脑实时性能影响。</p>
+    </aside>
+
+    <div class="notes">
+      <section>
+        <h2>画面</h2>
+        <ul>
+          <li><b>0–1.5 秒</b>：黑场亮起，停在 Beni 头部特写；0.2 秒起按官方动画原速（30 fps）一路推进镜头，1.5 秒正好落在镜头玻璃上。取景器界面同时亮起：四角取景框、REC、时间码、参数依次落位，变焦读数跟着推进从 1× 走到 2×。</li>
+          <li><b>1.5–4.5 秒</b>：版面完全静止。镜头画面极慢地平滑推近（整张缩放，不换帧），REC 点呼吸、时间码走字、麦克风电平跳动。</li>
+          <li><b>版式</b>：左上 REC 与时间码，右上标题；主信息 HDR · 4K 60fps 放在镜头右侧的暗部；其余 5 项排成底部一条参数栏，与上一支共用边距和字号体系。</li>
+        </ul>
+      </section>
+      <section>
+        <h2>数据</h2>
+        <p>全部来自合作 Brief 的卖点和参数对照表：4K@60fps / 3K@60fps / 1080P@120fps、HDR、10-Bit（超过 10 亿种色彩）、1/1.3 英寸 CMOS、2 倍电子变焦、支持第三方麦克风。画面是官网产品序列帧里推进镜头的一段，不是 Beni 拍摄的样片。</p>
+      </section>
+    </div>
+  </section>
+</div>
+
+<script src="vendor/mp4-muxer.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* =========================================================================
+   One shot through a viewfinder: 1.5 s of motion (the camera pushes into
+   Beni's lens at native speed while the read-outs come up), then a 3 s still
+   hold on the lens glass. Every frame is a pure function of t, so it renders
+   identically at any resolution and frame rate.
+   ========================================================================= */
+const DW = 1920, DH = 1080;               // design space; every resolution is a uniform scale of it
+const MOTION = 1.5, HOLD = 3.0, DURATION = MOTION + HOLD;
+const ACCENT = '#FF5F3A';
+const FONT = 'Inter, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+const TAU = Math.PI * 2;
+const RENDER = document.documentElement.classList.contains('render');
+const QS = new URLSearchParams(location.search);
+
+const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, p) => a + (b - a) * p;
+const seg = (x, a, b) => clamp((x - a) / (b - a));
+
+/* ---------- cubic-bezier, same definition as CSS ---------- */
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = (s) => ((ax * s + bx) * s + cx) * s;
+  const Y = (s) => ((ay * s + by) * s + cy) * s;
+  const dX = (s) => (3 * ax * s + 2 * bx) * s + cx;
+  return (x) => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let s = x;
+    for (let n = 0; n < 8; n++) {
+      const e = X(s) - x;
+      if (Math.abs(e) < 1e-7) return Y(s);
+      const d = dX(s);
+      if (Math.abs(d) < 1e-6) break;
+      s -= e / d;
+      if (s < 0 || s > 1) break;
+    }
+    let lo = 0, hi = 1;
+    s = x;
+    for (let n = 0; n < 40; n++) {
+      const v = X(s);
+      if (Math.abs(v - x) < 1e-7) break;
+      if (v < x) lo = s; else hi = s;
+      s = (lo + hi) / 2;
+    }
+    return Y(s);
+  };
+}
+
+// cam: the zoom read-out. in: read-outs coming up / lines drawing.
+const CURVES = {
+  cinema: { label: '电影 · 默认', cam: [0.76, 0, 0.24, 1], in: [0.16, 1, 0.3, 1] },
+  apple:  { label: '标准',        cam: [0.65, 0, 0.35, 1], in: [0.22, 1, 0.36, 1] },
+  soft:   { label: '柔和',        cam: [0.45, 0, 0.55, 1], in: [0.33, 1, 0.68, 1] },
+  snappy: { label: '利落',        cam: [0.87, 0, 0.13, 1], in: [0.19, 1, 0.22, 1] },
+};
+let E = null;
+function setCurves(key) {
+  const c = CURVES[key] || CURVES.cinema;
+  E = { key, def: c, cam: bezier(...c.cam), in: bezier(...c.in), num: bezier(0.2, 0.9, 0.3, 1), fade: bezier(0.33, 0, 0.2, 1) };
+}
+setCurves('cinema');
+
+/* ---------- lens frames (official render, see tools/pack_lens_frames.py) ---------- */
+// The dive into Beni's lens plays at its native 30 fps: no slow motion, no blending. It starts after a
+// short beat on the head close-up and lands on the lens glass (frame 259) exactly when the motion ends.
+let IMG = {}, RECT = {};
+const LENS0 = 220, LENS1 = 259, SRC_FPS = 30;
+const DIVE_AT = MOTION - (LENS1 - LENS0) / SRC_FPS;      // 0.2 s
+const lensFrame = (t) => Math.min(LENS1, LENS0 + Math.max(0, Math.floor((t - DIVE_AT) * SRC_FPS + 1e-6)));
+// the source frame is 2880×1600; cover the 1920×1080 stage, then drift in very slowly during the hold
+const LENS_CAM = { ax: 1440, ay: 800, x: 960, y: 540, k: DH / 1600 };
+const DRIFT = bezier(0.33, 0, 0.67, 1);
+
+/* =========================================================================
+   Layout (design px): a viewfinder. Corner marks frame the shot; REC and
+   time code top left, title top right, the hero format (HDR · 4K 60fps)
+   right of the lens, the rest of the specs in one bar along the bottom.
+   ========================================================================= */
+const L = 160, R = 1760;                         // same outer margins as the overview
+const VF = { x0: 112, y0: 92, x1: 1808, y1: 988, arm: 46 };
+const TOP_Y = 174;                               // REC / title baseline
+const HX = 1252, HERO_Y = 556;                   // hero block left edge, "4K" baseline
+const BAR_Y = 836, VAL_Y = 902, LAB_Y = 940;     // bottom rule, value baseline, label baseline
+const CELL_W = (R - L) / 5;
+const CELLS = [
+  { v: '10-bit', k: '10 亿+ 色彩' },
+  { v: '1/1.3″ CMOS', k: '传感器' },
+  { v: '1080P 120fps', k: '慢动作' },
+  { v: '2×', k: '电子变焦', zoom: true },
+  { v: '外接麦克风', k: '支持第三方麦克风', mic: true },
+];
+
+const ST = {
+  rec:     { w: 600, size: 18,  tr: 0.22,  color: '#FFFFFF' },
+  tc:      { w: 500, size: 20,  tr: 0.06,  color: 'rgba(255,255,255,.86)', tab: true },
+  title:   { w: 500, size: 26,  tr: 0.12,  color: '#FFFFFF' },
+  note:    { w: 400, size: 18,  tr: 0.08,  color: 'rgba(255,255,255,.5)' },
+  tag:     { w: 600, size: 17,  tr: 0.18,  color: '#FFFFFF' },
+  hero:    { w: 500, size: 132, tr: -0.03, color: '#FFFFFF' },
+  heroU:   { w: 500, size: 44,  tr: 0,     color: '#FFFFFF' },
+  heroSub: { w: 400, size: 19,  tr: 0.08,  color: 'rgba(255,255,255,.62)' },
+  value:   { w: 500, size: 30,  tr: 0.02,  color: 'rgba(255,255,255,.95)' },
+  label:   { w: 400, size: 18,  tr: 0.12,  color: 'rgba(255,255,255,.55)' },
+};
+
+/* ---------- text with manual tracking (consistent in every browser) ---------- */
+const WC = new Map();
+let fontKey = '';
+function setFont(ctx, st) { fontKey = `${st.w} ${st.size}px ${FONT}`; ctx.font = fontKey; }
+function cw(ctx, ch) {
+  const key = fontKey + '|' + ch;
+  let w = WC.get(key);
+  if (w === undefined) { w = ctx.measureText(ch).width; WC.set(key, w); }
+  return w;
+}
+const isDigit = (ch) => ch >= '0' && ch <= '9';
+function measure(ctx, str, st) {
+  setFont(ctx, st);
+  const chars = Array.from(str);
+  let w = 0;
+  for (const ch of chars) w += st.tab && isDigit(ch) ? cw(ctx, '0') : cw(ctx, ch);
+  return w + (st.tr || 0) * st.size * (chars.length - 1);
+}
+function drawStr(ctx, str, x, y, st, align = 'left') {
+  const total = measure(ctx, str, st);
+  const tr = (st.tr || 0) * st.size;
+  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+  ctx.fillStyle = st.color;
+  for (const ch of Array.from(str)) {
+    const adv = st.tab && isDigit(ch) ? cw(ctx, '0') : cw(ctx, ch);
+    if (ch !== ' ') ctx.fillText(ch, st.tab && isDigit(ch) ? cx + (adv - cw(ctx, ch)) / 2 : cx, y);
+    cx += adv + tr;
+  }
+  return total;
+}
+
+/* =========================================================================
+   Drawing
+   ========================================================================= */
+let SCALE = 1;   // device px per design px for the canvas being drawn
+let FRAME_T = 0; // centre time of the output frame (motion-blur samples spread around it)
+
+/* Static text is rasterised once per output resolution into small sprites, laid out on the same
+   device-pixel grid as direct drawing, then moved with drawImage: identical pixels when at rest,
+   and cheap enough for 8–16 motion-blur samples per frame. Like a real viewfinder OSD every read-out
+   carries a soft dark shadow: invisible on the dark lens, legible while the push crosses Beni's white face. */
+function osdShadow(g, on) {
+  g.shadowColor = on ? 'rgba(0,0,0,.5)' : 'transparent';
+  g.shadowBlur = on ? 14 * SCALE : 0;
+  g.shadowOffsetX = 0;
+  g.shadowOffsetY = 0;
+}
+const SPR = new Map();
+let sprScale = 0;
+function sprite(ctx, key, str, x, y, st, align = 'left') {
+  if (sprScale !== SCALE) { SPR.clear(); sprScale = SCALE; }
+  let sp = SPR.get(key);
+  if (!sp) {
+    const w = measure(ctx, str, st);
+    const left = align === 'right' ? x - w : x;
+    const pad = 20, asc = st.size * 1.15, desc = st.size * 0.45;
+    const ix = Math.floor((left - pad) * SCALE), iy = Math.floor((y - asc - pad) * SCALE);
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((w + 2 * pad) * SCALE) + 2;
+    c.height = Math.ceil((asc + desc + 2 * pad) * SCALE) + 2;
+    const g = c.getContext('2d');
+    g.setTransform(SCALE, 0, 0, SCALE, -ix, -iy);
+    g.textBaseline = 'alphabetic';
+    osdShadow(g, true);
+    drawStr(g, str, left, y, st);
+    sp = { c, ix, iy, w };
+    SPR.set(key, sp);
+  }
+  return sp;
+}
+function blit(ctx, sp, alpha, dx = 0, dy = 0) {
+  if (alpha <= 0.002) return;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(sp.c, sp.ix + dx * SCALE, sp.iy + dy * SCALE);
+  ctx.restore();
+}
+function hline(ctx, x0, x1, y, alpha, w = 1) {
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  ctx.fillRect(x0, y - w / 2, x1 - x0, w);
+}
+
+function drawBackground(ctx) {
+  ctx.fillStyle = '#060708';
+  ctx.fillRect(0, 0, DW, DH);
+  const g = ctx.createRadialGradient(960, 430, 0, 960, 430, 1400);
+  g.addColorStop(0, '#2C2E33');
+  g.addColorStop(0.42, '#17181C');
+  g.addColorStop(1, '#060708');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, DW, DH);
+}
+
+function drawLens(ctx, t) {
+  const n = lensFrame(FRAME_T), img = IMG[n], rc = RECT[n];
+  if (!img) return;
+  const k = LENS_CAM.k * (1 + 0.04 * DRIFT(seg(t, MOTION, DURATION)));
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, LENS_CAM.x + (rc[0] - LENS_CAM.ax) * k, LENS_CAM.y + (rc[1] - LENS_CAM.ay) * k, rc[2] * k, rc[3] * k);
+}
+
+// gentle shade at the top and bottom so the read-outs sit on dark glass
+function drawScrims(ctx) {
+  let g = ctx.createLinearGradient(0, 0, 0, 340);
+  g.addColorStop(0, 'rgba(0,0,0,.55)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, DW, 340);
+  g = ctx.createLinearGradient(0, 660, 0, DH);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,.65)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 660, DW, DH - 660);
+}
+
+function drawCorners(ctx, p) {
+  if (p <= 0) return;
+  const a = VF.arm * p, w = 2;
+  ctx.fillStyle = `rgba(255,255,255,${0.8 * p})`;
+  for (const [x, y, sx, sy] of [[VF.x0, VF.y0, 1, 1], [VF.x1, VF.y0, -1, 1], [VF.x0, VF.y1, 1, -1], [VF.x1, VF.y1, -1, -1]]) {
+    ctx.fillRect(sx > 0 ? x : x - a, sy > 0 ? y : y - w, a, w);
+    ctx.fillRect(sx > 0 ? x : x - w, sy > 0 ? y : y - a, w, a);
+  }
+}
+function drawCrosshair(ctx, p) {
+  if (p <= 0) return;
+  ctx.fillStyle = `rgba(255,255,255,${0.6 * p})`;
+  const cx = 960, cy = 540, g = 7, l = 20, w = 1.5;
+  ctx.fillRect(cx - l, cy - w / 2, l - g, w);
+  ctx.fillRect(cx + g, cy - w / 2, l - g, w);
+  ctx.fillRect(cx - w / 2, cy - l, w, l - g);
+  ctx.fillRect(cx - w / 2, cy + g, w, l - g);
+}
+
+// smooth pseudo audio level: a few slow sines, never a random jump
+function level(t, ph) {
+  const v = 0.5 + 0.22 * Math.sin(TAU * (1.3 * t + ph)) + 0.14 * Math.sin(TAU * (2.9 * t + ph * 1.7)) + 0.08 * Math.sin(TAU * (6.1 * t + ph * 2.3));
+  return clamp(v, 0.08, 1);
+}
+
+function drawHUD(ctx, t) {
+  drawCorners(ctx, E.in(seg(t, 0.1, 0.8)));
+  drawCrosshair(ctx, E.in(seg(t, 0.6, 1.2)));
+
+  // top left: REC (breathing dot) + time code
+  const pr = E.in(seg(t, 0.25, 0.95)), sx = -18 * (1 - pr);
+  if (pr > 0.002) {
+    ctx.globalAlpha = pr * (0.55 + 0.45 * (0.5 + 0.5 * Math.cos(TAU * t / 1.1)));
+    ctx.fillStyle = ACCENT;
+    ctx.beginPath(); ctx.arc(L + 7 + sx, TOP_Y - 7, 7, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    const rec = sprite(ctx, 'rec', 'REC', L + 26, TOP_Y, ST.rec);
+    blit(ctx, rec, pr, sx);
+    const f = Math.floor(FRAME_T * SRC_FPS + 1e-6), ss = Math.floor(f / SRC_FPS), ff = f % SRC_FPS;
+    ctx.globalAlpha = pr;
+    osdShadow(ctx, true);
+    drawStr(ctx, `00:00:${String(ss).padStart(2, '0')}:${String(ff).padStart(2, '0')}`, L + 26 + rec.w + 22 + sx, TOP_Y, ST.tc);
+    osdShadow(ctx, false);
+    ctx.globalAlpha = 1;
+  }
+
+  // top right: title + product name
+  const pt = E.in(seg(t, 0.3, 1.0)), tx = 18 * (1 - pt);
+  blit(ctx, sprite(ctx, 'title', '影像参数', R, TOP_Y, ST.title, 'right'), pt, tx);
+  blit(ctx, sprite(ctx, 'note', 'Beni 智能跟拍机器人', R, TOP_Y + 34, ST.note, 'right'), pt, tx);
+
+  // hero: HDR tag, 4K 60fps, 3K option
+  const ph = E.in(seg(t, 0.5, 1.15));
+  if (ph > 0.002) {
+    const tag = sprite(ctx, 'tag', 'HDR', HX + 12, HERO_Y - 150, ST.tag);
+    const dy = 22 * (1 - ph);
+    ctx.strokeStyle = `rgba(255,255,255,${0.85 * ph})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const bx = HX, by = HERO_Y - 150 - 21 + dy, bw = tag.w + 24, bh = 30;
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 5); else ctx.rect(bx, by, bw, bh);
+    osdShadow(ctx, true);
+    ctx.stroke();
+    osdShadow(ctx, false);
+    blit(ctx, tag, ph, 0, dy);
+  }
+  const p4 = E.in(seg(t, 0.55, 1.25)), d4 = 30 * (1 - p4);
+  const k4 = sprite(ctx, 'k4', '4K', HX - 6, HERO_Y, ST.hero);
+  blit(ctx, k4, p4, 0, d4);
+  blit(ctx, sprite(ctx, 'fps', '60fps', HX - 6 + k4.w + 18, HERO_Y, ST.heroU), p4, 0, d4);
+  const ps = E.in(seg(t, 0.65, 1.35));
+  blit(ctx, sprite(ctx, 'sub', '超高清录制 · 3K 60fps 可选', HX, HERO_Y + 52, ST.heroSub), ps, 0, 16 * (1 - ps));
+
+  // bottom bar: one rule, five cells, hairline dividers
+  const pb = E.in(seg(t, 0.5, 1.3));
+  if (pb > 0) hline(ctx, L, L + (R - L) * pb, BAR_Y, 0.24);
+  const zoom = E.cam(seg(t, DIVE_AT, MOTION));          // the little zoom read-out travels 1× → 2× with the dive
+  CELLS.forEach((c, j) => {
+    const p = E.in(seg(t, 0.7 + j * 0.06, 1.25 + j * 0.06));
+    if (p <= 0.002) return;
+    const x0 = L + j * CELL_W, x = x0 + (j ? 32 : 0), dy = 18 * (1 - p);
+    if (j) { ctx.fillStyle = `rgba(255,255,255,${0.16 * p})`; ctx.fillRect(x0, BAR_Y + 30 + dy, 1, 76); }
+    const v = sprite(ctx, 'v' + j, c.v, x, VAL_Y, ST.value);
+    blit(ctx, v, p, 0, dy);
+    blit(ctx, sprite(ctx, 'k' + j, c.k, x, LAB_Y, ST.label), p, 0, dy);
+    const gx = x + v.w + 18, gy = VAL_Y - 10 + dy;
+    ctx.globalAlpha = p;
+    if (c.zoom) {
+      // 1× ——● 2×
+      ctx.fillStyle = 'rgba(255,255,255,.3)';
+      ctx.fillRect(gx, gy - 0.75, 64, 1.5);
+      ctx.fillRect(gx, gy - 5, 1.5, 10);
+      ctx.fillRect(gx + 62.5, gy - 5, 1.5, 10);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(gx, gy - 1, 64 * zoom, 2);
+      ctx.beginPath(); ctx.arc(gx + 64 * zoom, gy, 4.5, 0, TAU); ctx.fill();
+    } else if (c.mic) {
+      // live input meters, left and right
+      for (let ch = 0; ch < 2; ch++) {
+        const h = 26 * level(FRAME_T, ch * 0.37);
+        ctx.fillStyle = 'rgba(255,255,255,.18)';
+        ctx.fillRect(gx + ch * 9, VAL_Y - 26 + dy, 4, 26);
+        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.fillRect(gx + ch * 9, VAL_Y - h + dy, 4, h);
+      }
+    }
+    ctx.globalAlpha = 1;
+  });
+}
+
+function renderScene(ctx, t) {
+  const W = ctx.canvas.width;
+  SCALE = W / DW;
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  drawBackground(ctx);
+  drawLens(ctx, t);
+  drawScrims(ctx);
+  drawHUD(ctx, t);
+  const exposure = E.fade(seg(t, 0, 0.6));
+  if (exposure < 1) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = `rgba(0,0,0,${1 - exposure})`;
+    ctx.fillRect(0, 0, W, ctx.canvas.height);
+  }
+}
+
+/* ---------- post: vignette + light film grain ---------- */
+const GRAIN = [];
+function grainTiles() {
+  if (GRAIN.length) return GRAIN;
+  let s = 12345;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let n = 0; n < 8; n++) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const g = c.getContext('2d');
+    const im = g.createImageData(256, 256);
+    for (let k = 0; k < im.data.length; k += 4) {
+      // approx. gaussian around mid grey; overlay mode leaves 128 untouched
+      const v = 128 + ((rnd() + rnd() + rnd() - 1.5) * 2) * 52;
+      im.data[k] = im.data[k + 1] = im.data[k + 2] = v;
+      im.data[k + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    GRAIN.push(c);
+  }
+  return GRAIN;
+}
+function post(ctx, t, fps, S) {
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  if (S.vignette > 0) {
+    const g = ctx.createRadialGradient(W / 2, H * 0.48, W * 0.3, W / 2, H * 0.48, W * 0.74);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${0.75 * S.vignette})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+  if (S.grain > 0) {
+    const tiles = grainTiles();
+    const fi = Math.round(t * fps);
+    const tile = tiles[((fi % 8) + 8) % 8];
+    const pat = ctx.createPattern(tile, 'repeat');
+    const gs = Math.max(1, W / 1920);
+    const ox = ((fi * 97) % 256) * gs, oy = ((fi * 57) % 256) * gs;
+    if (pat.setTransform) pat.setTransform(new DOMMatrix().translate(ox, oy).scale(gs));
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = 0.22 * S.grain;
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------- a full output frame: motion-blur samples, then post ---------- */
+let workCanvas = null;
+function renderFrame(ctx, t, S) {
+  FRAME_T = t;
+  const fps = S.fps;
+  const n = S.blur | 0;
+  const open = (S.shutter / 360) / fps;
+  // in the hold only Beni moves, and slowly: one sample is enough there
+  if (n <= 1 || t - open / 2 >= MOTION) {
+    renderScene(ctx, t);
+  } else {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if (!workCanvas) workCanvas = document.createElement('canvas');
+    if (workCanvas.width !== W || workCanvas.height !== H) { workCanvas.width = W; workCanvas.height = H; }
+    const wc = workCanvas.getContext('2d');
+    for (let j = 0; j < n; j++) {
+      const ts = clamp(t + open * ((j + 0.5) / n - 0.5), 0, DURATION);
+      renderScene(wc, ts);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1 / (j + 1);   // running average of the samples
+      ctx.drawImage(workCanvas, 0, 0);
+    }
+    ctx.globalAlpha = 1;
+  }
+  post(ctx, t, fps, S);
+}
+
+/* =========================================================================
+   Loading: frames (base64 WebP in imaging-frames.js) + fonts
+   ========================================================================= */
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = res;
+    s.onerror = () => rej(new Error('无法载入 ' + src));
+    document.head.appendChild(s);
+  });
+}
+async function loadFonts() {
+  if (!document.fonts || !document.fonts.load) return;
+  const text = '影像参数 Beni 智能跟拍机器人 REC HDR 4K 60fps 超高清录制 · 3K 可选 0123456789:″' + CELLS.map((c) => c.v + c.k).join('');
+  const jobs = [];
+  for (const w of [400, 500, 600]) {
+    jobs.push(document.fonts.load(`${w} 40px Inter`, text));
+    jobs.push(document.fonts.load(`${w} 40px "Noto Sans SC"`, text));
+  }
+  await Promise.race([Promise.allSettled(jobs), new Promise((r) => setTimeout(r, 8000))]);
+  WC.clear();
+  SPR.clear();
+}
+async function loadAssets(onProgress) {
+  if (!window.BENI_LENS) await loadScript('imaging-frames.js');
+  const F = window.BENI_LENS;
+  RECT = F.rects;
+  const AV = Object.keys(F.data).map(Number).sort((a, b) => a - b);
+  let done = 0;
+  await Promise.all(AV.map(async (n) => {
+    const img = new Image();
+    img.src = F.data[n];
+    try { await img.decode(); } catch { await new Promise((r) => { img.onload = r; img.onerror = r; }); }
+    IMG[n] = img;
+    onProgress(++done / AV.length);
+  }));
+  await loadFonts();
+}
+
+/* =========================================================================
+   Render mode (?render): for render.mjs / headless capture
+   ========================================================================= */
+const out = document.getElementById('out');
+const octx = out.getContext('2d', { alpha: false });
+
+if (RENDER) {
+  const [w, h] = (QS.get('size') || '1920x1080').split('x').map(Number);
+  const S = {
+    fps: Number(QS.get('fps')) || 30,
+    blur: Number(QS.get('blur') ?? 8),
+    shutter: Number(QS.get('shutter')) || 360,
+    grain: (Number(QS.get('grain') ?? 30)) / 100,
+    vignette: (Number(QS.get('vignette') ?? 50)) / 100,
+  };
+  if (QS.get('curve')) setCurves(QS.get('curve'));
+  out.width = w; out.height = h;
+  out.style.width = w + 'px'; out.style.height = h + 'px';
+  const box = document.getElementById('stageBox');
+  box.style.width = w + 'px'; box.style.height = h + 'px';
+  window.__motion = {
+    duration: DURATION, width: w, height: h,
+    ready: loadAssets(() => {}).then(() => renderFrame(octx, 0, S)),
+    seek(t) { renderFrame(octx, t, S); },
+  };
+  return;
+}
+
+/* =========================================================================
+   Player UI
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const ui = {
+  res: $('optRes'), fps: $('optFps'), blur: $('optBlur'), shutter: $('optShutter'), grain: $('optGrain'), vig: $('optVig'),
+  curve: $('optCurve'), bitrate: $('optBitrate'),
+};
+for (const [k, c] of Object.entries(CURVES)) {
+  const o = document.createElement('option');
+  o.value = k;
+  o.textContent = c.label;
+  ui.curve.appendChild(o);
+}
+const SKEY = 'beni-imaging-settings-v1';
+try {
+  const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
+  if (saved) {
+    for (const [k, el] of Object.entries(ui)) {
+      const v = saved[k];
+      if (v == null) continue;
+      if (el.type === 'range' || [...el.options].some((o) => o.value === String(v))) el.value = v;
+    }
+  }
+} catch { /* storage unavailable */ }
+
+function settings() {
+  const [w, h] = ui.res.value.split('x').map(Number);
+  return {
+    w, h, fps: Number(ui.fps.value), blur: Number(ui.blur.value), shutter: Number(ui.shutter.value),
+    grain: Number(ui.grain.value) / 100, vignette: Number(ui.vig.value) / 100, curve: ui.curve.value, bitrate: ui.bitrate.value,
+  };
+}
+let S = settings();
+
+// film grain needs bits: ~0.2 bit per pixel per frame, 8–100 Mbps
+function autoBitrate(s) { return Math.round(clamp(s.w * s.h * s.fps * 0.2, 8e6, 100e6) / 1e6) * 1e6; }
+function bitrateOf(s) { return s.bitrate === 'auto' ? autoBitrate(s) : Number(s.bitrate) * 1e6; }
+
+function drawCurve() {
+  const c = E.def.cam;
+  const P = (x, y) => `${(x * 100).toFixed(1)} ${(100 - y * 100).toFixed(1)}`;
+  $('curvePath').setAttribute('d', `M${P(0, 0)} C${P(c[0], c[1])} ${P(c[2], c[3])} ${P(1, 1)}`);
+  $('cp1').setAttribute('cx', c[0] * 100); $('cp1').setAttribute('cy', 100 - c[1] * 100);
+  $('cp2').setAttribute('cx', c[2] * 100); $('cp2').setAttribute('cy', 100 - c[3] * 100);
+  const f = (a) => `cubic-bezier(${a.join(', ')})`;
+  $('curveCode').innerHTML = `镜头 ${f(E.def.cam)}<br>落位 ${f(E.def.in)}`;
+}
+
+let ready = false, playing = false, loop = true, curT = 3.0, lastKey = '', t0 = 0, base = 0;
+let perfN = 0, perfT = performance.now();
+
+function applySettings() {
+  S = settings();
+  previewBlur = S.blur;
+  setCurves(S.curve);
+  if (out.width !== S.w || out.height !== S.h) { out.width = S.w; out.height = S.h; }
+  $('outGrain').textContent = ui.grain.value;
+  $('outVig').textContent = ui.vig.value;
+  const frames = Math.round(DURATION * S.fps);
+  $('statusOut').textContent = `预览 ${S.w}×${S.h} · ${S.fps} fps${S.blur > 1 ? ` · 运动模糊 ${S.blur}× / ${S.shutter}°` : ''}`;
+  $('outInfo').textContent = `输出 ${S.w}×${S.h} · ${S.fps} fps · ${frames} 帧 · ${DURATION.toFixed(1)} 秒 · H.264 约 ${(bitrateOf(S) / 1e6).toFixed(0)} Mbps`
+    + (S.fps % 30 ? ' · 镜头素材为 30 fps，选 30 或 60 fps 才能逐帧对齐，其他帧率会有轻微跳帧' : '');
+  $('meta').textContent = `16:9 · 一镜到底 · 1.5 s 运动 + 3 s 静止 · ${DURATION.toFixed(1)} 秒`;
+  drawCurve();
+  try { localStorage.setItem(SKEY, JSON.stringify(Object.fromEntries(Object.entries(ui).map(([k, el]) => [k, el.value])))); } catch { /* ignore */ }
+  if (ready) draw(curT, true);
+}
+Object.values(ui).forEach((el) => el.addEventListener('input', applySettings));
+
+/* ---------- timeline ---------- */
+const tl = $('timeline'), segs = $('segs'), headEl = $('head');
+const segM = document.createElement('div'); segM.className = 'seg m'; segM.style.flex = String(MOTION);
+const segH = document.createElement('div'); segH.className = 'seg'; segH.style.flex = String(HOLD);
+segs.append(segM, segH);
+tl.setAttribute('aria-valuemax', DURATION.toFixed(2));
+
+function fmt(t) {
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return `${String(m).padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
+}
+function updateUI(t) {
+  headEl.style.left = ((t / DURATION) * 100).toFixed(3) + '%';
+  const fi = Math.round(t * S.fps), total = Math.round(DURATION * S.fps);
+  $('clock').textContent = `${fmt(t)} / ${fmt(DURATION)}`;
+  tl.setAttribute('aria-valuenow', t.toFixed(2));
+  tl.setAttribute('aria-valuetext', `${fmt(t)}，第 ${fi} / ${total} 帧`);
+  segM.classList.toggle('on', t < MOTION);
+}
+// While playing, keep the preview on time: if frames take longer than the frame interval, halve the
+// motion-blur samples for the preview only (export always uses the full setting).
+let previewBlur = 0, avgMs = 0;
+function draw(t, force = false) {
+  const fi = Math.round(t * S.fps);
+  const key = fi + '|' + S.w + '|' + S.fps;
+  if (!force && key === lastKey) return;
+  lastKey = key;
+  if (!previewBlur) previewBlur = S.blur;
+  const t0r = performance.now();
+  renderFrame(octx, fi / S.fps, playing ? { ...S, blur: previewBlur } : S);
+  const ms = performance.now() - t0r;
+  if (playing && fi / S.fps < MOTION) {
+    avgMs = avgMs ? avgMs * 0.7 + ms * 0.3 : ms;
+    if (avgMs > 900 / S.fps && previewBlur > 1) { previewBlur = Math.max(1, previewBlur >> 1); avgMs = 0; }
+  }
+  $('statusBlur').textContent = previewBlur < S.blur ? `预览运动模糊暂降为 ${previewBlur}× 以保证流畅，导出不受影响` : '';
+  updateUI(t);
+  perfN++;
+}
+function seek(t) {
+  curT = clamp(t, 0, DURATION);
+  if (playing) { base = curT; t0 = performance.now(); }
+  if (ready) draw(curT, true);
+}
+function setPlayIcon() {
+  $('playIcon').setAttribute('d', playing ? 'M2 1h3v10H2zM7 1h3v10H7z' : 'M2.5 1 L11 6 L2.5 11Z');
+  $('playLabel').textContent = playing ? '暂停' : '播放';
+}
+function play() {
+  if (!ready || exporting) return;
+  if (curT >= DURATION - 1e-3) curT = 0;
+  playing = true; base = curT; t0 = performance.now();
+  setPlayIcon();
+}
+function pause() { playing = false; setPlayIcon(); }
+
+function tick(now) {
+  if (playing && ready) {
+    let t = base + (now - t0) / 1000;
+    if (t >= DURATION) {
+      if (loop) { base = 0; t0 = now; t = 0; } else { t = DURATION; pause(); }
+    }
+    curT = t;
+    // quantise to the chosen frame rate: the preview steps exactly like the exported video
+    draw(Math.floor(t * S.fps + 1e-6) / S.fps);
+  }
+  if (now - perfT > 1000) {
+    $('statusFps').textContent = playing ? `实时 ${(perfN * 1000 / (now - perfT)).toFixed(1)} fps` : '';
+    perfN = 0; perfT = now;
+  }
+  requestAnimationFrame(tick);
+}
+
+$('btnPlay').addEventListener('click', () => (playing ? pause() : play()));
+$('btnLoop').addEventListener('click', (e) => { loop = !loop; e.currentTarget.setAttribute('aria-pressed', String(loop)); });
+$('btnFull').addEventListener('click', toggleFull);
+function toggleFull() {
+  const box = $('stageBox');
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (box.requestFullscreen) box.requestFullscreen();
+}
+function tlTime(e) {
+  const r = tl.getBoundingClientRect();
+  return clamp((e.clientX - r.left) / r.width) * DURATION;
+}
+let dragging = false, wasPlaying = false;
+tl.addEventListener('pointerdown', (e) => {
+  dragging = true; wasPlaying = playing; pause();
+  tl.setPointerCapture(e.pointerId);
+  seek(tlTime(e));
+});
+tl.addEventListener('pointermove', (e) => { if (dragging) seek(tlTime(e)); });
+tl.addEventListener('pointerup', () => { dragging = false; if (wasPlaying) play(); });
+function step(dir) { pause(); seek(Math.round(curT * S.fps + dir) / S.fps); }
+tl.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); step(e.key === 'ArrowRight' ? 1 : -1); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('select, input, textarea')) return;
+  if (e.key === ' ') { e.preventDefault(); playing ? pause() : play(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1); }
+  else if (e.key === 'f' || e.key === 'F') toggleFull();
+});
+
+/* =========================================================================
+   Export
+   ========================================================================= */
+let exporting = false, cancelExport = false;
+const btnExport = $('btnExport'), btnStill = $('btnStill');
+
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+function setProgress(p, text) {
+  $('progress').hidden = p == null;
+  if (p != null) $('progressBar').style.width = (p * 100).toFixed(1) + '%';
+  if (text != null) $('exportHint').textContent = text;
+}
+
+async function pickCodec(w, h, fps, bitrate) {
+  const mbs = Math.ceil(w / 16) * Math.ceil(h / 16);
+  const levels = [[0x1f, 108000, 3600], [0x28, 245760, 8192], [0x2a, 522240, 8704], [0x32, 589824, 22080], [0x33, 983040, 36864], [0x34, 2073600, 36864]];
+  const lv = levels.filter(([, mps, fs]) => mbs * fps <= mps && mbs <= fs).map(([l]) => l);
+  const hex = (n) => n.toString(16).padStart(2, '0').toUpperCase();
+  // H.264 first (plays and edits everywhere); VP9 / AV1 in MP4 only if this browser cannot encode H.264
+  const cands = [];
+  for (const l of lv.length ? lv : [0x34]) for (const p of ['64', '4D', '42']) cands.push(['avc', `avc1.${p}00${hex(l)}`]);
+  cands.push(['vp9', 'vp09.00.51.08'], ['vp9', 'vp09.00.41.08'], ['av1', 'av01.0.12M.08'], ['av1', 'av01.0.08M.08']);
+  for (const [mux, codec] of cands) {
+    for (const hw of ['no-preference', 'prefer-software']) {
+      const cfg = { codec, width: w, height: h, bitrate, framerate: fps, hardwareAcceleration: hw };
+      if (mux === 'avc') cfg.avc = { format: 'avc' };
+      try {
+        const r = await VideoEncoder.isConfigSupported(cfg);
+        if (r.supported) return { cfg, mux };
+      } catch { /* try next */ }
+    }
+  }
+  return null;
+}
+
+async function exportMp4() {
+  const s = settings();
+  const total = Math.round(DURATION * s.fps);
+  const bitrate = bitrateOf(s);
+  const pick = 'VideoEncoder' in window && window.Mp4Muxer ? await pickCodec(s.w, s.h, s.fps, bitrate) : null;
+  if (!pick) return exportRealtime(s, bitrate);
+  const { cfg, mux } = pick;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = s.w; canvas.height = s.h;
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const muxer = new Mp4Muxer.Muxer({
+    target: new Mp4Muxer.ArrayBufferTarget(),
+    video: { codec: mux, width: s.w, height: s.h, frameRate: s.fps },
+    fastStart: 'in-memory',
+    firstTimestampBehavior: 'offset',
+  });
+  let encErr = null;
+  const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { encErr = e; } });
+  enc.configure(cfg);
+  const started = performance.now();
+  for (let k = 0; k < total; k++) {
+    if (cancelExport) break;
+    if (encErr) throw encErr;
+    renderFrame(ctx, k / s.fps, s);
+    const vf = new VideoFrame(canvas, { timestamp: Math.round((k * 1e6) / s.fps), duration: Math.round(1e6 / s.fps) });
+    // one keyframe per 5 s: a 2 s cadence made the grain visibly "pulse" at every keyframe in a 4.5 s clip
+    enc.encode(vf, { keyFrame: k % (s.fps * 5) === 0 });
+    vf.close();
+    while (enc.encodeQueueSize > 4) await new Promise((r) => setTimeout(r, 2));
+    if (k % 3 === 0 || k === total - 1) {
+      octx.setTransform(1, 0, 0, 1, 0, 0);
+      octx.drawImage(canvas, 0, 0, out.width, out.height);
+      updateUI(k / s.fps);
+      const left = ((performance.now() - started) / (k + 1)) * (total - k - 1) / 1000;
+      setProgress((k + 1) / total, `正在渲染第 ${k + 1} / ${total} 帧（${mux === 'avc' ? 'H.264' : mux.toUpperCase()}）· 预计还需 ${Math.ceil(left)} 秒`);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+  if (cancelExport) { enc.close(); return false; }
+  await enc.flush();
+  enc.close();
+  muxer.finalize();
+  download(new Blob([muxer.target.buffer], { type: 'video/mp4' }), `beni-imaging-${s.w}x${s.h}-${s.fps}fps.mp4`);
+  return true;
+}
+
+// fallback for browsers without WebCodecs: record the preview canvas in real time
+async function exportRealtime(s, bitrate) {
+  if (!out.captureStream || !window.MediaRecorder) throw new Error('当前浏览器不支持视频导出，请使用最新版 Chrome、Edge 或 Safari');
+  const type = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
+  const stream = out.captureStream(s.fps);
+  const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: bitrate });
+  const chunks = [];
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const stopped = new Promise((r) => (rec.onstop = r));
+  setProgress(0, '此浏览器不支持逐帧编码，改为实时录制（画面需保持在前台）…');
+  rec.start(250);
+  const t00 = performance.now();
+  await new Promise((resolve) => {
+    const loopRec = (now) => {
+      const t = (now - t00) / 1000;
+      if (cancelExport || t >= DURATION) { resolve(); return; }
+      renderFrame(octx, Math.floor(t * s.fps) / s.fps, s);
+      updateUI(t);
+      setProgress(t / DURATION);
+      requestAnimationFrame(loopRec);
+    };
+    requestAnimationFrame(loopRec);
+  });
+  rec.stop();
+  await stopped;
+  if (cancelExport) return false;
+  const ext = type.includes('mp4') ? 'mp4' : 'webm';
+  download(new Blob(chunks, { type }), `beni-imaging-${s.w}x${s.h}-${s.fps}fps.${ext}`);
+  return true;
+}
+
+btnExport.addEventListener('click', async () => {
+  if (exporting) { cancelExport = true; return; }
+  pause();
+  exporting = true; cancelExport = false;
+  btnExport.textContent = '取消导出';
+  btnStill.disabled = true;
+  Object.values(ui).forEach((el) => (el.disabled = true));
+  setProgress(0, '准备编码器…');
+  try {
+    const ok = await exportMp4();
+    setProgress(null, ok ? '导出完成，文件已下载。' : '已取消导出。');
+  } catch (err) {
+    console.error(err);
+    setProgress(null, `导出失败：${err.message || err}`);
+  } finally {
+    exporting = false;
+    btnExport.textContent = '导出 MP4';
+    btnStill.disabled = false;
+    Object.values(ui).forEach((el) => (el.disabled = false));
+    draw(curT, true);
+  }
+});
+
+btnStill.addEventListener('click', () => {
+  const s = settings();
+  const c = document.createElement('canvas');
+  c.width = s.w; c.height = s.h;
+  const t = Math.round(curT * s.fps) / s.fps;
+  renderFrame(c.getContext('2d', { alpha: false }), t, s);
+  c.toBlob((blob) => blob && download(blob, `beni-imaging-${s.w}x${s.h}-${t.toFixed(2)}s.png`), 'image/png');
+});
+
+/* ---------- boot ---------- */
+applySettings();
+requestAnimationFrame(tick);
+loadAssets((p) => { $('loadingBar').style.width = (p * 100).toFixed(0) + '%'; })
+  .then(() => {
+    ready = true;
+    draw(curT, true);
+    $('loading').classList.add('done');
+  })
+  .catch((err) => {
+    console.error(err);
+    $('loading').classList.add('error');
+    $('loadingText').textContent = '画面素材载入失败：请确认 imaging-frames.js 与本页在同一文件夹';
+  });
+})();
+</script>
+</body>
+</html>
