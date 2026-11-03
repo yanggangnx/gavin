@@ -8,6 +8,8 @@
 //   node render.mjs --from 9 --to 12        → render only 9s–12s
 //   node render.mjs --still 21.6            → one PNG of the frame at 21.6s
 //   node render.mjs --format png            → lossless PNG frames (slower; default is JPEG q95)
+//   node render.mjs --page beni/index.html --size 3840x2160 --fps 60 --blur 16
+//                                           → another page; size / blur are passed to it as ?size= / ?blur=
 //
 // Needs ffmpeg on PATH (or set FFMPEG=/path/to/ffmpeg).
 
@@ -22,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const opts = { fps: 30, out: null, still: null, from: 0, to: null, crf: 18, format: 'jpeg', page: 'index.html' };
+const opts = { fps: 30, out: null, still: null, from: 0, to: null, crf: 18, format: 'jpeg', page: 'index.html', size: null, blur: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   const m = argv[i].match(/^--([^=]+)(?:=(.*))?$/);
@@ -33,8 +35,14 @@ for (let i = 0; i < argv.length; i++) {
     console.error(`未知参数 --${key}`);
     process.exit(1);
   }
-  opts[key] = ['fps', 'still', 'from', 'to', 'crf'].includes(key) ? Number(val) : val;
+  opts[key] = ['fps', 'still', 'from', 'to', 'crf', 'blur'].includes(key) ? Number(val) : val;
 }
+// pages in a sub-folder (e.g. beni/index.html) default to out/<folder>.mp4
+const pageDir = dirname(opts.page);
+const defaultOut = pageDir === '.' ? 'out/yaoqiu-yueduo.mp4' : `out/${pageDir.replace(/[\\/]/g, '-')}.mp4`;
+const query = new URLSearchParams({ fps: String(opts.fps) });
+if (opts.size) query.set('size', opts.size);
+if (opts.blur != null) query.set('blur', String(opts.blur));
 
 // ES modules (three.js) do not load from file://, so serve the folder locally.
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.css': 'text/css' };
@@ -77,7 +85,7 @@ const browser = await launch();
 try {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   page.on('pageerror', (err) => console.error(`页面错误：${err.message}`));
-  await page.goto(`${base}${opts.page}?render`, { waitUntil: 'networkidle' });
+  await page.goto(`${base}${opts.page}?render&${query}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__motion, null, { timeout: 60000 });
   await page.evaluate(() => window.__motion.ready);
   const { duration, width, height } = await page.evaluate(() => {
@@ -93,7 +101,7 @@ try {
     writeFileSync(out, await page.screenshot({ type: 'png' }));
     console.log(`已保存 ${out}`);
   } else {
-    const out = resolve(here, opts.out ?? 'out/yaoqiu-yueduo.mp4');
+    const out = resolve(here, opts.out ?? defaultOut);
     mkdirSync(dirname(out), { recursive: true });
     const from = Math.max(0, opts.from);
     const to = Math.min(duration, opts.to ?? duration);
