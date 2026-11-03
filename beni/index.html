@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Beni 运动性能</title>
-<meta name="description" content="Beni 跟拍机器人运动性能参数，16:9 一镜到底动态演示，可调分辨率与帧率并导出 MP4。">
+<title>Beni 运动性能一览</title>
+<meta name="description" content="Beni 跟拍机器人运动性能一览，16:9 一镜到底动态页面，可调分辨率与帧率并导出 MP4。">
 <script>if (/[?&]render\b/.test(location.search)) document.documentElement.classList.add('render');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -101,7 +101,7 @@ button, select, input { font: inherit; color: inherit; }
 .legend { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; background: var(--seg-hold); }
 .legend i.m { background: var(--seg-motion); }
-.icon-btn:focus-visible, select:focus-visible, input:focus-visible, .btn:focus-visible, .beats button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.icon-btn:focus-visible, select:focus-visible, input:focus-visible, .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 /* ---------- lower ---------- */
 .lower { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 32px; align-items: start; padding-top: 8px; }
@@ -129,29 +129,12 @@ h2 { margin: 0 0 14px; font: 600 17px/1.3 var(--ui); }
 .progress i { display: block; height: 100%; width: 0; background: var(--accent); }
 .hint { margin: 0; font-size: 12px; line-height: 1.6; color: var(--faint); }
 
-.notes { min-width: 0; display: flex; flex-direction: column; gap: 32px; }
+.notes { min-width: 0; display: flex; flex-direction: column; gap: 28px; }
 .notes p { margin: 0 0 12px; color: var(--muted); max-width: 68ch; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-tr:last-child td { border-bottom: 0; }
-th { font-weight: 500; font-size: 12px; color: var(--muted); background: var(--soft); white-space: nowrap; }
-td.k { color: var(--muted); white-space: nowrap; }
-td.v { font-family: var(--num); font-variant-numeric: tabular-nums; white-space: nowrap; }
-td.src { color: var(--faint); font-size: 12px; }
-tr.hl td.v { color: var(--accent); font-weight: 600; }
-.calc { font: 400 13px/1.8 var(--num); color: var(--muted); font-variant-numeric: tabular-nums; margin: 12px 0 0; }
-.beats { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.beats li { border-bottom: 1px solid var(--line); }
-.beats button {
-  width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; padding: 10px 8px; border: 0; border-radius: 8px;
-  background: transparent; text-align: left; cursor: pointer;
-}
-.beats button:hover, .beats li.on button { background: var(--soft); }
-.beats .bt { grid-row: span 2; font: 400 12px/1.9 var(--num); color: var(--faint); font-variant-numeric: tabular-nums; }
-.beats li.on .bt { color: var(--accent); }
-.beats .bc { font-weight: 600; font-size: 14px; }
-.beats .bd { font-size: 13px; color: var(--muted); }
+.notes ul { margin: 0; padding-left: 18px; color: var(--muted); max-width: 68ch; }
+.notes li { margin-bottom: 6px; }
+.notes b { color: var(--fg); font-weight: 600; }
+.notes code { font: 400 13px var(--num); }
 
 /* ---------- render mode: just the canvas, 1:1 ---------- */
 html.render, html.render body { margin: 0; padding: 0; background: #000; overflow: hidden; }
@@ -165,14 +148,14 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
   <header class="top">
     <div>
       <p class="kicker">Beni 系列跟拍机器人 · MONDO ROBOTICS</p>
-      <h1>运动性能参数</h1>
+      <h1>运动性能一览</h1>
     </div>
-    <p class="meta" id="meta">16:9 · 一镜到底 · 11 段 × (1.5 s 运动 + 3 s 静止)</p>
+    <p class="meta" id="meta">16:9 · 一镜到底 · 1.5 s 运动 + 3 s 静止</p>
   </header>
 
   <section class="player" aria-label="动态演示">
     <div class="stage-box" id="stageBox">
-      <canvas id="out" width="1920" height="1080" aria-label="Beni 运动性能动态演示画面"></canvas>
+      <canvas id="out" width="1920" height="1080" aria-label="Beni 运动性能一览动态画面"></canvas>
       <div class="loading" id="loading" role="status">
         <span id="loadingText">载入产品画面…</span>
         <span class="bar"><i id="loadingBar"></i></span>
@@ -182,11 +165,11 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
       <button class="icon-btn play" id="btnPlay" type="button">
         <svg viewBox="0 0 12 12" aria-hidden="true"><path id="playIcon" d="M2.5 1 L11 6 L2.5 11Z" fill="currentColor"/></svg><span id="playLabel">播放</span>
       </button>
-      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="时间轴" aria-valuemin="0" aria-valuemax="51" aria-valuenow="0">
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="时间轴" aria-valuemin="0" aria-valuemax="4.5" aria-valuenow="0">
         <div class="segs" id="segs"></div>
         <div class="head" id="head"></div>
       </div>
-      <output class="clock" id="clock">00:00.00 / 00:51.00</output>
+      <output class="clock" id="clock">00:00.00 / 00:04.50</output>
       <button class="icon-btn" id="btnLoop" type="button" aria-pressed="true" title="循环播放">循环</button>
       <button class="icon-btn" id="btnFull" type="button" title="全屏（F）">全屏</button>
     </div>
@@ -195,7 +178,7 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
       <span id="statusFps"></span>
       <span class="legend"><i class="m"></i>运动 1.5 s</span>
       <span class="legend"><i></i>静止 3 s</span>
-      <span>空格 播放/暂停 · ← → 逐帧 · Shift + ← → 跳段 · F 全屏</span>
+      <span>空格 播放/暂停 · ← → 逐帧 · F 全屏</span>
     </p>
   </section>
 
@@ -222,24 +205,24 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
       <label class="field"><span>运动模糊</span>
         <select id="optBlur">
           <option value="1">关</option>
-          <option value="4" selected>4 次采样</option>
-          <option value="8">8 次采样</option>
+          <option value="4">4 次采样</option>
+          <option value="8" selected>8 次采样</option>
           <option value="16">16 次采样 · 导出用</option>
         </select>
       </label>
       <label class="field"><span>快门角度</span>
         <select id="optShutter">
           <option value="90">90°</option>
-          <option value="180" selected>180° · 标准电影</option>
+          <option value="180">180° · 标准电影</option>
           <option value="270">270°</option>
-          <option value="360">360°</option>
+          <option value="360" selected>360° · 拖影更明显</option>
         </select>
       </label>
       <label class="field"><span>胶片颗粒</span>
-        <span class="range"><input id="optGrain" type="range" min="0" max="100" value="35"><output id="outGrain">35</output></span>
+        <span class="range"><input id="optGrain" type="range" min="0" max="100" value="30"><output id="outGrain">30</output></span>
       </label>
       <label class="field"><span>暗角</span>
-        <span class="range"><input id="optVig" type="range" min="0" max="100" value="60"><output id="outVig">60</output></span>
+        <span class="range"><input id="optVig" type="range" min="0" max="100" value="50"><output id="outVig">50</output></span>
       </label>
       <label class="field"><span>缓动曲线</span>
         <select id="optCurve"></select>
@@ -263,35 +246,21 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
       <button class="btn primary" id="btnExport" type="button">导出 MP4</button>
       <button class="btn" id="btnStill" type="button">导出当前帧 PNG</button>
       <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
-      <p class="hint" id="exportHint">按上面的分辨率、帧率逐帧渲染后编码为 H.264 MP4，不受电脑实时性能影响。产品画面源素材约 1440p，4K 输出为放大采样。</p>
+      <p class="hint" id="exportHint">按上面的分辨率和帧率逐帧渲染，再编码为 H.264 MP4，不受电脑实时性能影响。</p>
     </aside>
 
     <div class="notes">
       <section>
-        <h2>资料归纳</h2>
-        <p>Brief 里和“运动”相关的参数集中在卖点和参数对照表两处，Beni 与 Beni Lite 的运动性能完全相同，只有机身重量差 50 g。影像参数（4K60、10-bit、2 倍变焦等）不属于运动性能，本片不展开。时速是唯一在卖点、参数表和拍摄场景里反复出现的数字，所以给它两段：一段看数字，一段换算成能感知的距离和配速。</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>参数</th><th>Beni</th><th>Beni Lite</th><th>资料位置</th></tr></thead>
-            <tbody>
-              <tr class="hl"><td class="k">最高时速</td><td class="v">17.9 mph（28.8 km/h）</td><td class="v">相同</td><td class="src">卖点 4 / 3 · 参数表 · 跑步场景</td></tr>
-              <tr><td class="k">越障跳跃</td><td class="v">10 英寸（25 cm）</td><td class="v">相同</td><td class="src">卖点 5 / 4 · 参数表</td></tr>
-              <tr><td class="k">自动起身</td><td class="v">具备</td><td class="v">具备</td><td class="src">参数表 · Lite 卖点 6</td></tr>
-              <tr><td class="k">智能避障</td><td class="v">前置双广角视觉传感器</td><td class="v">相同</td><td class="src">卖点 6 / 5</td></tr>
-              <tr><td class="k">智能跟随</td><td class="v">深度多角度锁定</td><td class="v">相同</td><td class="src">卖点 3 / 2</td></tr>
-              <tr><td class="k">跟随运镜</td><td class="v">后向 · 侧向平行 · 360° 环绕</td><td class="v">—</td><td class="src">拍摄镜头指导</td></tr>
-              <tr><td class="k">电池续航</td><td class="v">1.5 h / 块，可插拔</td><td class="v">相同</td><td class="src">参数表</td></tr>
-              <tr><td class="k">机身重量</td><td class="v">1.8 kg</td><td class="v">1.75 kg</td><td class="src">参数表</td></tr>
-              <tr><td class="k">机身尺寸</td><td class="v">21.5 × 18 × 18 cm</td><td class="v">相同</td><td class="src">参数表</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="calc">换算：28.8 km/h ÷ 3.6 = 8.0 m/s　·　1 km ÷ 8.0 m/s = 125 s = 2′05″/km　·　17.9 mph × 1.609 ≈ 28.8 km/h</p>
-        <p>画面用的是官网同款产品序列帧（驶入、空翻、转身、推近镜头），PDF 里的产品图只有 538 px，放到 16:9 全屏会糊。</p>
+        <h2>画面</h2>
+        <ul>
+          <li><b>0–1.5 秒</b>：黑场亮起，镜头从右向左横移入画（运动模糊），参数行依次落位，最高时速从 0 计到 28.8。</li>
+          <li><b>1.5–4.5 秒</b>：版面完全静止，只有 Beni 在原地缓缓转头再看回镜头；4.5 秒正好转一个来回，循环播放无缝。</li>
+          <li><b>版式</b>：上下两条通栏线把整页框住，左边 8 行参数，右边 Beni 站在底线上；最高时速单独加高、加大、用强调色。</li>
+        </ul>
       </section>
       <section>
-        <h2>分镜 · 点击跳转</h2>
-        <ol class="beats" id="beats"></ol>
+        <h2>数据</h2>
+        <p>全部来自合作 Brief 的卖点和参数对照表。Beni 与 Beni Lite 运动性能一致，只有重量不同（1.8 kg / 1.75 kg）。产品画面是官网同款渲染序列帧（移动端版本，机身约 780 px 高），PDF 内的产品图分辨率不够全屏使用。</p>
       </section>
     </div>
   </section>
@@ -303,12 +272,13 @@ html.render .stage-box { border-radius: 0; box-shadow: none; aspect-ratio: auto;
 'use strict';
 
 /* =========================================================================
-   Timing: 11 beats. Each beat = 1.5 s of motion, then a 3 s still hold.
-   Everything on screen is a pure function of t, so any frame can be rendered
-   at any resolution / frame rate and comes out identical.
+   One page, one shot: 1.5 s of motion (camera trucks in, rows land, the
+   speed counts up), then a 3 s still hold. Beni keeps turning its head the
+   whole time. Every frame is a pure function of t, so it renders identically
+   at any resolution and frame rate.
    ========================================================================= */
 const DW = 1920, DH = 1080;               // design space; every resolution is a uniform scale of it
-const MOTION = 1.5, HOLD = 3.0, BEAT = MOTION + HOLD, TAIL = 1.5;
+const MOTION = 1.5, HOLD = 3.0, DURATION = MOTION + HOLD;
 const ACCENT = '#FF5F3A';
 const FONT = 'Inter, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
 const TAU = Math.PI * 2;
@@ -350,32 +320,23 @@ function bezier(x1, y1, x2, y2) {
   };
 }
 
-// cam: camera + product moves. in: copy entering. out: copy leaving.
+// cam: the camera truck-in. in: rows landing / lines drawing. num: the speed counter.
 const CURVES = {
-  cinema:   { label: '电影 · 默认', cam: [0.76, 0, 0.24, 1],  in: [0.16, 1, 0.3, 1],  out: [0.7, 0, 0.84, 0] },
-  apple:    { label: '标准',        cam: [0.65, 0, 0.35, 1],  in: [0.22, 1, 0.36, 1], out: [0.55, 0, 1, 0.45] },
-  soft:     { label: '柔和',        cam: [0.45, 0, 0.55, 1],  in: [0.33, 1, 0.68, 1], out: [0.32, 0, 0.67, 0] },
-  snappy:   { label: '利落',        cam: [0.87, 0, 0.13, 1],  in: [0.19, 1, 0.22, 1], out: [0.64, 0, 0.78, 0] },
+  cinema: { label: '电影 · 默认', cam: [0.76, 0, 0.24, 1], in: [0.16, 1, 0.3, 1] },
+  apple:  { label: '标准',        cam: [0.65, 0, 0.35, 1], in: [0.22, 1, 0.36, 1] },
+  soft:   { label: '柔和',        cam: [0.45, 0, 0.55, 1], in: [0.33, 1, 0.68, 1] },
+  snappy: { label: '利落',        cam: [0.87, 0, 0.13, 1], in: [0.19, 1, 0.22, 1] },
 };
 let E = null;
 function setCurves(key) {
   const c = CURVES[key] || CURVES.cinema;
-  E = { key, def: c, cam: bezier(...c.cam), in: bezier(...c.in), out: bezier(...c.out),
-        num: bezier(0.2, 0.9, 0.3, 1), fade: bezier(0.33, 0, 0.2, 1) };
+  E = { key, def: c, cam: bezier(...c.cam), in: bezier(...c.in), num: bezier(0.2, 0.9, 0.3, 1), fade: bezier(0.33, 0, 0.2, 1) };
 }
 setCurves('cinema');
-const SETTLE = bezier(0.2, 0.6, 0.35, 1); // landing settles
-const DIVE = bezier(0.55, 0, 0.8, 0.55);   // accelerate into the lens
-const PULL = bezier(0.15, 0.65, 0.25, 1);  // pull back out of the lens, settle
 
-/* ---------- product frame sequence (official 2880×1600 render, see tools/pack_frames.py) ---------- */
-// Frames 187–219 are the same still close-up; the "compressed" index skips them so moves never stall there.
-const cf = (f) => (f <= 186 ? f : f >= 220 ? f - 33 : 186);
-const rf = (v) => (v <= 186 ? v : v + 33);
+/* ---------- product frames (official render, see tools/pack_frames.py) ---------- */
 let AV = [], IMG = {}, RECT = {};
-
 function framePair(f) {
-  // nearest available frames below and above f, plus the blend weight
   let lo = AV[0], hi = AV[AV.length - 1];
   if (f <= lo) return [lo, lo, 0];
   if (f >= hi) return [hi, hi, 0];
@@ -384,209 +345,44 @@ function framePair(f) {
   lo = AV[a]; hi = AV[b];
   return [lo, hi, hi === lo ? 0 : (f - lo) / (hi - lo)];
 }
-
-/* ---------- copy styles (sizes in design px) ---------- */
-const ST = {
-  kicker:  { w: 500, size: 20,  tr: 0.34,  color: 'rgba(255,255,255,.5)' },
-  title:   { w: 600, size: 172, tr: -0.035, color: '#FFFFFF' },
-  titleCN: { w: 500, size: 46,  tr: 0.18,  color: 'rgba(255,255,255,.84)' },
-  tagline: { w: 400, size: 30,  tr: 0.08,  color: 'rgba(255,255,255,.7)' },
-  eyebrow: { w: 500, size: 28,  tr: 0.1,   color: 'rgba(255,255,255,.56)' },
-  hero:    { w: 600, size: 212, tr: -0.04, color: '#FFFFFF', tab: true },
-  unit:    { w: 500, size: 60,  tr: -0.01, color: 'rgba(255,255,255,.88)' },
-  unitHot: { w: 600, size: 60,  tr: -0.01, color: ACCENT },
-  word:    { w: 600, size: 124, tr: 0.03,  color: '#FFFFFF' },
-  strong:  { w: 500, size: 32,  tr: 0.02,  color: 'rgba(255,255,255,.9)' },
-  sub:     { w: 400, size: 28,  tr: 0.04,  color: 'rgba(255,255,255,.58)' },
-  tick:    { w: 400, size: 18,  tr: 0.02,  color: 'rgba(255,255,255,.4)', tab: true },
-  small:   { w: 400, size: 22,  tr: 0.06,  color: 'rgba(255,255,255,.5)' },
-  stat:    { w: 600, size: 112, tr: -0.035, color: '#FFFFFF', tab: true },
-  statU:   { w: 500, size: 40,  tr: 0,     color: 'rgba(255,255,255,.85)' },
-  statL:   { w: 400, size: 24,  tr: 0.05,  color: 'rgba(255,255,255,.56)' },
-  h2:      { w: 600, size: 60,  tr: 0.04,  color: '#FFFFFF' },
-  rowK:    { w: 400, size: 24,  tr: 0.08,  color: 'rgba(255,255,255,.52)' },
-  rowV:    { w: 500, size: 28,  tr: 0.02,  color: 'rgba(255,255,255,.92)' },
-  rowHot:  { w: 600, size: 34,  tr: -0.005, color: ACCENT },
-  modeN:   { w: 500, size: 32,  tr: 0.06,  color: '#FFFFFF' },
-  modeD:   { w: 400, size: 23,  tr: 0.04,  color: 'rgba(255,255,255,.52)' },
-};
+// Beni looks aside and back at the camera once per 4.5 s: front (150) → aside (114) → front.
+const robotFrame = (t) => 132 + 18 * Math.cos((TAU * t) / DURATION);
 
 /* =========================================================================
-   Beats. cam = where the product sits at the end of the beat's motion:
-   source point (ax, ay) in the 2880×1600 frame lands on screen (x, y) at scale k.
+   Layout (design px). Two full-width rules frame the page; 8 rows on the
+   left, Beni standing on the bottom rule on the right.
    ========================================================================= */
-const L = 160; // left text margin
-const PRE = { f: 30, ax: 1437, ay: 1056, x: 960, y: 846, k: 0.7 };
-const LENS = { f: 259, ax: 1440, ay: 800, x: 960, y: 540, k: 0.68 };
+const L = 160, R = 1760;             // outer margins
+const TITLE_Y = 186;                 // title baseline
+const TOP = 228, BOT = 942;          // header rule, floor rule
+const TR = 1000;                     // right edge of the table column
+const VX = 400;                      // value column
+const HOT_H = 140, ROW_H = (BOT - TOP - HOT_H) / 7;
+const ROBOT = { ax: 572, ay: 1446, x: 1414, y: BOT, k: 0.84 };   // source floor point (ax, ay) stands on (x, y)
 
-const BEATS = [
-  {
-    id: 'open', name: '开场', desc: '黑场亮起，远处的 Beni 正对镜头',
-    cam: { f: 30, ax: 1437, ay: 1056, x: 960, y: 846, k: 0.8 },
-    els: [
-      { t: 'text', x: 960, y: 300, s: 'kicker', text: 'MONDO ROBOTICS', align: 'center' },
-      { t: 'text', x: 960, y: 452, s: 'title', text: 'Beni', align: 'center' },
-      { t: 'text', x: 960, y: 532, s: 'titleCN', text: '运动性能', align: 'center' },
-    ],
-  },
-  {
-    id: 'speed', name: '最高时速 28.8 km/h', desc: 'Beni 迎面驶来，读数 0 → 28.8，背景拉出速度线',
-    cam: { f: 52, ax: 1435, ay: 1150, x: 1330, y: 905, k: 1.12 },
-    els: [
-      { t: 'text', x: L, y: 330, s: 'eyebrow', text: '最高时速' },
-      { t: 'num', x: L, y: 540, value: 28.8, dec: 1, unit: 'km/h', us: 'unitHot' },
-      { t: 'meter', x: L, y: 622, w: 600, value: 28.8, max: 30, ticks: [[0, '0'], [10, '10'], [20, '20'], [30, '30 km/h']] },
-      { t: 'text', x: L, y: 744, s: 'strong', text: '17.9 mph' },
-      { t: 'text', x: L, y: 792, s: 'sub', text: '稳稳跟上滑板、跑步等运动场景' },
-    ],
-  },
-  {
-    id: 'pace', name: '每秒 8 米', desc: 'Beni 转成侧身，时速换算成每秒距离和每公里配速',
-    cam: { f: 60, ax: 1380, ay: 1173, x: 1340, y: 905, k: 1.1 },
-    els: [
-      { t: 'text', x: L, y: 330, s: 'eyebrow', text: '折合每秒' },
-      { t: 'num', x: L, y: 540, value: 8, dec: 1, unit: 'm/s' },
-      { t: 'meter', x: L, y: 622, w: 600, value: 8, max: 8, ticks: [[0, '0'], [2, '2'], [4, '4'], [6, '6'], [8, '8 m']], head: '1 秒' },
-      { t: 'text', x: L, y: 744, s: 'strong', text: '1 公里只需 2 分 05 秒' },
-      { t: 'text', x: L, y: 792, s: 'sub', text: '在跑道上全速跟跑' },
-    ],
-  },
-  {
-    id: 'jump', name: '越障跳跃 25 cm', desc: 'Beni 起跳空翻，在最高点定格',
-    cam: { f: 70, ax: 1454, ay: 1173, x: 1350, y: 975, k: 0.94 },
-    // camera pulls back first; the leap plays at about real speed and freezes at the top of the flip
-    path: (lt, u, prev, cur) => ({ cam: camLerp(prev, cur, E.cam(u)), f: lerp(prev.f, cur.f, seg(lt, 0.7, 1.32)), alpha: 1 }),
-    els: [
-      { t: 'text', x: L, y: 330, s: 'eyebrow', text: '越障跳跃' },
-      { t: 'num', x: L, y: 540, value: 25, dec: 0, unit: 'cm' },
-      { t: 'meter', x: L, y: 622, w: 600, value: 25, max: 25, ticks: [[0, '0'], [5, '5'], [10, '10'], [15, '15'], [20, '20'], [25, '25 cm']] },
-      { t: 'text', x: L, y: 744, s: 'strong', text: '10 英寸' },
-      { t: 'text', x: L, y: 792, s: 'sub', text: '自动跃上最高 25 厘米的台阶或路肩' },
-    ],
-  },
-  {
-    id: 'righting', name: '自动起身', desc: '空翻落地站稳，配合“翻倒 → 起身 → 继续追踪”',
-    cam: { f: 86, ax: 1528, ay: 1167, x: 1350, y: 905, k: 1.1 },
-    // the freeze holds a beat, the flip completes and lands, then settles
-    path: (lt, u, prev, cur) => ({
-      cam: camLerp(prev, cur, E.cam(u)),
-      f: lt < 0.85 ? lerp(prev.f, 80, seg(lt, 0.22, 0.85)) : lerp(80, cur.f, SETTLE(seg(lt, 0.85, 1.3))),
-      alpha: 1,
-    }),
-    els: [
-      { t: 'text', x: L, y: 390, s: 'eyebrow', text: '坚固防撞' },
-      { t: 'text', x: L, y: 540, s: 'word', text: '自动起身' },
-      { t: 'lines', x: L, y: 622, s: 'sub', lh: 46, lines: ['高速运动中即使不慎翻倒，', '也能自动翻身站立，继续追踪'] },
-      { t: 'steps', x: L + 8, y: 770, w: 520, labels: ['意外翻倒', '自动翻身', '继续追踪'] },
-    ],
-  },
-  {
-    id: 'avoid', name: '智能避障', desc: 'Beni 原地转向，示意前置双广角视觉绕开障碍',
-    cam: { f: 150, ax: 1430, ay: 1176, x: 1350, y: 905, k: 1.1 },
-    els: [
-      { t: 'text', x: L, y: 390, s: 'eyebrow', text: '前置双广角视觉传感器' },
-      { t: 'text', x: L, y: 540, s: 'word', text: '智能避障' },
-      { t: 'lines', x: L, y: 622, s: 'sub', lh: 46, lines: ['实时检测运动环境，', '自主、轻巧地闪避障碍物'] },
-      { t: 'avoid', x: L + 8, y: 790, w: 560 },
-    ],
-  },
-  {
-    id: 'track', name: '智能跟随', desc: '推近到头部特写，镜头正对观众',
-    cam: { f: 186, ax: 1514, ay: 327, x: 1310, y: 262, k: 0.66 },
-    els: [
-      { t: 'text', x: L, y: 390, s: 'eyebrow', text: '追踪算法' },
-      { t: 'text', x: L, y: 540, s: 'word', text: '智能跟随' },
-      { t: 'lines', x: L, y: 622, s: 'sub', lh: 46, lines: ['深度多角度锁定，', '画面电影级平顺'] },
-    ],
-  },
-  {
-    id: 'modes', name: '三种跟随运镜', desc: '穿过镜头进入俯视示意：后向、侧向平行、360° 环绕',
-    cam: { ...LENS, alpha: 0 },
-    enter: 0.85, stagger: 0.03, dur: 0.5, exitDur: 0.3,
-    path: (lt, u, prev, cur) => ({
-      cam: camLerp(prev, cur, E.cam(seg(lt, 0, 0.8))),
-      f: rf(lerp(cf(186), cf(259), DIVE(seg(lt, 0, 0.95)))),
-      alpha: 1 - E.fade(seg(lt, 0.85, 1.25)),
-    }),
-    els: [
-      { t: 'text', x: 960, y: 170, s: 'eyebrow', text: '跟随模式', align: 'center' },
-      { t: 'text', x: 960, y: 244, s: 'h2', text: '三种跟随运镜', align: 'center' },
-      { t: 'mode', x: 470, y: 520, kind: 'rear', name: '后向跟随', desc: '稳定尾随在身后' },
-      { t: 'mode', x: 960, y: 520, kind: 'side', name: '侧向平行跟随', desc: '同速并行，视差更有电影感' },
-      { t: 'mode', x: 1450, y: 520, kind: 'orbit', name: '360° 环绕', desc: '一键 Orbit，以你为中心环绕' },
-      { t: 'legend', x: 960, y: 980 },
-    ],
-  },
-  {
-    id: 'body', name: '续航与机身', desc: '从镜头里退出来，回到 Beni 全身',
-    cam: { f: 150, ax: 1430, ay: 1176, x: 1400, y: 905, k: 1.1 },
-    enter: 0.7, stagger: 0.06, dur: 0.6, exitDur: 0.3,
-    path: (lt, u, prev, cur) => ({
-      cam: camLerp(LENS, cur, E.cam(seg(lt, 0.28, 1.5))),
-      f: rf(lerp(cf(259), cf(150), PULL(seg(lt, 0.12, 1.5)))),
-      alpha: E.fade(seg(lt, 0, 0.3)),
-    }),
-    els: [
-      { t: 'text', x: L, y: 268, s: 'eyebrow', text: '续航与机身' },
-      { t: 'stat', x: L, y: 420, value: 1.5, dec: 1, unit: 'h', label: '单块电池续航 · 可插拔快换' },
-      { t: 'stat', x: L, y: 640, value: 1.8, dec: 1, unit: 'kg', label: '机身重量 · Beni Lite 1.75 kg', line: true },
-      { t: 'stat', x: L, y: 860, text: '21.5 × 18 × 18', unit: 'cm', label: '机身尺寸', line: true },
-    ],
-  },
-  {
-    id: 'sheet', name: '运动性能一览', desc: '参数表逐行出现，最高时速单独高亮',
-    cam: { f: 118, ax: 1424, ay: 1175, x: 1480, y: 880, k: 0.86 },
-    enter: 0.4, stagger: 0.035, dur: 0.66,
-    els: [
-      { t: 'text', x: L, y: 196, s: 'h2', text: '运动性能一览' },
-      { t: 'text', x: L, y: 246, s: 'small', text: 'Beni 与 Beni Lite 运动性能一致，仅重量不同' },
-      { t: 'row', y: 330, k: '最高时速', v: '28.8 km/h', v2: '17.9 mph', hot: true },
-      { t: 'row', y: 402, k: '越障跳跃', v: '25 cm', v2: '10 英寸' },
-      { t: 'row', y: 474, k: '自动起身', v: '支持，翻倒后自动站立' },
-      { t: 'row', y: 546, k: '智能避障', v: '前置双广角视觉传感器' },
-      { t: 'row', y: 618, k: '跟随运镜', v: '后向 · 侧向平行 · 360° 环绕' },
-      { t: 'row', y: 690, k: '电池续航', v: '1.5 h / 块，可插拔' },
-      { t: 'row', y: 762, k: '机身重量', v: '1.8 kg', v2: 'Lite 1.75 kg' },
-      { t: 'row', y: 834, k: '机身尺寸', v: '21.5 × 18 × 18 cm', last: true },
-    ],
-  },
-  {
-    id: 'end', name: '收尾', desc: '镜头拉远，Beni 回到画面中央',
-    cam: { f: 100, ax: 1481, ay: 1171, x: 960, y: 900, k: 0.6 },
-    els: [
-      { t: 'text', x: 960, y: 262, s: 'kicker', text: 'MONDO ROBOTICS', align: 'center' },
-      { t: 'text', x: 960, y: 414, s: 'title', text: 'Beni', align: 'center' },
-      { t: 'text', x: 960, y: 492, s: 'tagline', text: '全球首款具备户外运动能力的智能跟拍机器人', align: 'center' },
-    ],
-  },
+const ROWS = [
+  { k: '最高时速', v: '28.8', unit: 'km/h', v2: '17.9 mph', hot: true },
+  { k: '越障跳跃', v: '25 cm', v2: '10 英寸' },
+  { k: '自动起身', v: '支持', v2: '翻倒后自动站立，继续追踪' },
+  { k: '智能避障', v: '前置双广角视觉传感器' },
+  { k: '跟随运镜', v: '后向 · 侧向平行 · 360° 环绕' },
+  { k: '电池续航', v: '1.5 h / 块', v2: '可插拔' },
+  { k: '机身重量', v: '1.8 kg', v2: 'Beni Lite 1.75 kg' },
+  { k: '机身尺寸', v: '21.5 × 18 × 18 cm' },
 ];
-const N = BEATS.length;
-const DURATION = N * BEAT + TAIL;
+const rowTop = (j) => (j === 0 ? TOP : TOP + HOT_H + (j - 1) * ROW_H);
+const rowH = (j) => (j === 0 ? HOT_H : ROW_H);
 
-function locate(t) {
-  const i = Math.max(0, Math.min(Math.floor(t / BEAT + 1e-9), N - 1));
-  return { i, lt: t - i * BEAT };
-}
-function camLerp(a, b, p) {
-  return {
-    ax: lerp(a.ax, b.ax, p), ay: lerp(a.ay, b.ay, p), x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p),
-    k: Math.exp(lerp(Math.log(a.k), Math.log(b.k), p)),
-  };
-}
-function robotAt(t) {
-  const { i, lt } = locate(t);
-  const cur = BEATS[i].cam, prev = i ? BEATS[i - 1].cam : PRE;
-  const u = clamp(lt / MOTION);
-  if (BEATS[i].path) return BEATS[i].path(lt, u, prev, cur);
-  const p = E.cam(u);
-  return { cam: camLerp(prev, cur, p), f: rf(lerp(cf(prev.f), cf(cur.f), p)), alpha: lerp(prev.alpha ?? 1, cur.alpha ?? 1, p) };
-}
-// true when the whole shutter interval is inside a still hold (no need for motion-blur samples)
-function isStill(t, half) {
-  const a = locate(Math.max(0, t - half)), b = locate(Math.min(DURATION, t + half));
-  if (t + half > N * BEAT) return false;
-  return a.i === b.i && a.lt >= MOTION;
-}
+const ST = {
+  title:   { w: 600, size: 64, tr: 0.04,  color: '#FFFFFF' },
+  note:    { w: 400, size: 22, tr: 0.06,  color: 'rgba(255,255,255,.5)' },
+  label:   { w: 400, size: 24, tr: 0.1,   color: 'rgba(255,255,255,.52)' },
+  labelHot:{ w: 500, size: 26, tr: 0.1,   color: 'rgba(255,255,255,.78)' },
+  value:   { w: 500, size: 30, tr: 0.02,  color: 'rgba(255,255,255,.94)' },
+  value2:  { w: 400, size: 23, tr: 0.04,  color: 'rgba(255,255,255,.45)' },
+  hot:     { w: 600, size: 84, tr: -0.035, color: ACCENT, tab: true },
+  hotUnit: { w: 600, size: 34, tr: 0,     color: ACCENT },
+};
 
 /* ---------- text with manual tracking (consistent in every browser) ---------- */
 const WC = new Map();
@@ -606,11 +402,11 @@ function measure(ctx, str, st) {
   for (const ch of chars) w += st.tab && isDigit(ch) ? cw(ctx, '0') : cw(ctx, ch);
   return w + (st.tr || 0) * st.size * (chars.length - 1);
 }
-function drawStr(ctx, str, x, y, st, align = 'left', color) {
+function drawStr(ctx, str, x, y, st, align = 'left') {
   const total = measure(ctx, str, st);
   const tr = (st.tr || 0) * st.size;
   let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
-  ctx.fillStyle = color || st.color;
+  ctx.fillStyle = st.color;
   for (const ch of Array.from(str)) {
     const adv = st.tab && isDigit(ch) ? cw(ctx, '0') : cw(ctx, ch);
     if (ch !== ' ') ctx.fillText(ch, st.tab && isDigit(ch) ? cx + (adv - cw(ctx, ch)) / 2 : cx, y);
@@ -619,95 +415,26 @@ function drawStr(ctx, str, x, y, st, align = 'left', color) {
   return total;
 }
 
-/* ---------- per-element enter / exit state ---------- */
-function elState(b, j, t) {
-  const { i, lt } = locate(t);
-  const B = BEATS[b];
-  if (i === b) {
-    const enter = B.enter ?? 0.4, dur = B.dur ?? 0.75, n = B.els.length;
-    const stagger = B.stagger ?? Math.min(0.08, (MOTION - enter - dur) / Math.max(1, n - 1));
-    const p = E.in(seg(lt, enter + j * stagger, enter + j * stagger + dur));
-    return { a: p, dy: (1 - p) * 34, blur: (1 - p) * 14, p, count: countFor(b), entering: true };
-  }
-  if (i === b + 1) {
-    const d = BEATS[i].exitDur ?? 0.5;
-    const q = seg(lt, j * 0.02, d + j * 0.02);
-    const p = E.out(q);
-    return { a: 1 - EXIT_FADE(q), dy: -p * 22, blur: p * 10, p: 1, count: 1, exit: p };
-  }
-  return null;
-}
-const EXIT_FADE = bezier(0.25, 0.1, 0.25, 1);
-// Numbers count from the frame's own time, not the motion-blur sample time, so digits never smear into each other.
-function countFor(b) {
-  const { i, lt } = locate(FRAME_T);
-  return i === b ? E.num(seg(lt, 0.25, MOTION)) : i > b ? 1 : 0;
-}
-
 /* =========================================================================
    Drawing
    ========================================================================= */
-let SCALE = 1; // device px per design px for the canvas currently being drawn
-let FRAME_T = 0; // centre time of the output frame being rendered (motion-blur samples spread around it)
-const HAS_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d'); return typeof c.filter === 'string'; } catch { return false; } })();
+let SCALE = 1;   // device px per design px for the canvas being drawn
+let FRAME_T = 0; // centre time of the output frame (motion-blur samples spread around it)
 
-function drawBackground(ctx, r) {
+// how far the camera still has to travel: everything slides in from the right, nearer layers further
+const TRUCK = 320;
+const truck = (t) => TRUCK * (1 - E.cam(seg(t, 0, MOTION)));
+
+function drawBackground(ctx, dx) {
   ctx.fillStyle = '#060708';
   ctx.fillRect(0, 0, DW, DH);
-  const gx = lerp(960, r.cam.x, 0.55), gy = 430;
-  const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1350);
-  g.addColorStop(0, '#2D2F34');
-  g.addColorStop(0.42, '#18191D');
+  const gx = 1180 + dx * 0.35, gy = 420;
+  const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1400);
+  g.addColorStop(0, '#2C2E33');
+  g.addColorStop(0.42, '#17181C');
   g.addColorStop(1, '#060708');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, DW, DH);
-}
-
-function floorSrcY(f) { return f < 30 ? 1057 : f < 60 ? lerp(1057, 1173, (f - 30) / 30) : 1173; }
-function drawFloor(ctx, r) {
-  const fade = clamp((168 - r.f) / 18) * r.alpha;
-  if (fade <= 0.001) return;
-  const sx = r.cam.x, sy = r.cam.y + (floorSrcY(r.f) - r.cam.ay) * r.cam.k;
-  const R = 560 * r.cam.k;
-  ctx.save();
-  ctx.translate(sx, sy);
-  ctx.scale(1, 0.15);
-  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-  g.addColorStop(0, `rgba(255,255,255,${0.11 * fade})`);
-  g.addColorStop(0.5, `rgba(255,255,255,${0.035 * fade})`);
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(-R, -R, 2 * R, 2 * R);
-  ctx.restore();
-}
-
-// seeded streaks for the speed beat: the world rushing past as Beni closes in
-const STREAKS = (() => {
-  let s = 7;
-  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  return Array.from({ length: 90 }, () => ({ ang: rnd() * TAU, r0: rnd() * 1500, spd: 0.7 + rnd() * 0.9, len: 90 + rnd() * 260, a: 0.06 + rnd() * 0.16, w: 1 + rnd() * 1.6 }));
-})();
-function drawStreaks(ctx, r, lt) {
-  const u = clamp(lt / MOTION);
-  const inten = Math.pow(Math.sin(Math.PI * clamp((u - 0.05) / 0.9)), 1.6);
-  if (inten < 0.004) return;
-  const vx = r.cam.x - 40, vy = r.cam.y - 230 * r.cam.k;
-  ctx.save();
-  ctx.lineCap = 'round';
-  for (const s of STREAKS) {
-    const d = 140 + ((s.r0 + lt * 1800 * s.spd) % 1500);
-    const len = s.len * (0.35 + 1.4 * inten);
-    const c = Math.cos(s.ang), sn = Math.sin(s.ang) * 0.6;
-    const a = s.a * inten * clamp((d - 140) / 260) * clamp((1640 - d) / 300);
-    if (a < 0.003) continue;
-    ctx.strokeStyle = `rgba(255,255,255,${a})`;
-    ctx.lineWidth = s.w;
-    ctx.beginPath();
-    ctx.moveTo(vx + c * d, vy + sn * d);
-    ctx.lineTo(vx + c * (d + len), vy + sn * (d + len));
-    ctx.stroke();
-  }
-  ctx.restore();
 }
 
 let layerCanvas = null;
@@ -723,22 +450,26 @@ function drawFrame(ctx, n, cam, a) {
   ctx.drawImage(img, cam.x + (rc[0] - cam.ax) * cam.k, cam.y + (rc[1] - cam.ay) * cam.k, rc[2] * cam.k, rc[3] * cam.k);
   ctx.globalAlpha = 1;
 }
-function drawRobot(ctx, r) {
-  if (r.alpha <= 0.002) return;
-  // Which product frame to show comes from the frame's centre time; motion-blur samples only move the camera.
-  // Neighbouring frames are cross-faded while the sequence plays slowly; when it plays fast (the flip, the dive
-  // into the lens) the fade tightens towards a clean cut, so two different poses never show as a double image.
-  const h = 1 / 240;
-  const fc = robotAt(FRAME_T).f;
-  const v = Math.abs(robotAt(Math.min(DURATION, FRAME_T + h)).f - robotAt(Math.max(0, FRAME_T - h)).f) / (2 * h);
-  const [lo, hi, w0] = framePair(fc);
-  const gain = Math.max(1, v / Math.max(1, hi - lo) / 4);
-  // the flip changes pose too much from frame to frame to blend at any speed: cut cleanly there
-  const w = fc > 59.5 && fc < 86.5 ? (w0 < 0.5 ? 0 : 1) : clamp((w0 - 0.5) * gain + 0.5);
+function drawRobot(ctx, t, dx, alpha) {
+  const cam = { ...ROBOT, x: ROBOT.x + dx };
+  // soft pool of light on the floor under Beni
+  ctx.save();
+  ctx.translate(cam.x, cam.y);
+  ctx.scale(1, 0.13);
+  const gr = 470;
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, gr);
+  g.addColorStop(0, `rgba(255,255,255,${0.12 * alpha})`);
+  g.addColorStop(0.5, `rgba(255,255,255,${0.035 * alpha})`);
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(-gr, -gr, 2 * gr, 2 * gr);
+  ctx.restore();
+
+  const [lo, hi, w] = framePair(robotFrame(t));
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  if (w < 0.02 || w > 0.98) { drawFrame(ctx, w > 0.98 ? hi : lo, r.cam, r.alpha); return; }
-  // exact crossfade between neighbouring frames: add premultiplied (1-w)·lo + w·hi on a clear layer
+  if (w < 0.01 || w > 0.99) { drawFrame(ctx, w > 0.99 ? hi : lo, cam, alpha); return; }
+  // exact crossfade of neighbouring frames: (1-w)·lo + w·hi added on a clear layer
   const cv = ctx.canvas, layer = layerFor(cv.width, cv.height), lc = layer.getContext('2d');
   lc.setTransform(1, 0, 0, 1, 0, 0);
   lc.clearRect(0, 0, layer.width, layer.height);
@@ -746,289 +477,59 @@ function drawRobot(ctx, r) {
   lc.imageSmoothingEnabled = true;
   lc.imageSmoothingQuality = 'high';
   lc.globalCompositeOperation = 'lighter';
-  drawFrame(lc, lo, r.cam, 1 - w);
-  drawFrame(lc, hi, r.cam, w);
+  drawFrame(lc, lo, cam, 1 - w);
+  drawFrame(lc, hi, cam, w);
   lc.globalCompositeOperation = 'source-over';
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = r.alpha;
+  ctx.globalAlpha = alpha;
   ctx.drawImage(layer, 0, 0);
   ctx.restore();
 }
 
-/* ---------- copy elements ---------- */
-function applyState(ctx, s) {
-  ctx.globalAlpha = s.a;
-  if (HAS_FILTER) ctx.filter = s.blur > 0.25 ? `blur(${(s.blur * SCALE).toFixed(2)}px)` : 'none';
-  ctx.translate(0, s.dy);
+function rule(ctx, x0, x1, y, p, alpha) {
+  if (p <= 0) return;
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  ctx.fillRect(x0, y - 0.5, (x1 - x0) * p, 1);
 }
-function resetState(ctx) {
+
+function drawPage(ctx, t) {
+  // header: title left, model note right, one full-width rule under both
+  const hp = E.in(seg(t, 0.05, 0.85));
+  const hx = truck(t) * 1.06;
+  ctx.globalAlpha = hp;
+  drawStr(ctx, '运动性能一览', L + hx, TITLE_Y, ST.title);
+  drawStr(ctx, 'Beni 与 Beni Lite 运动性能一致，仅重量不同', R + hx, TITLE_Y, ST.note, 'right');
   ctx.globalAlpha = 1;
-  if (HAS_FILTER) ctx.filter = 'none';
-}
+  rule(ctx, L + hx, R + hx, TOP, E.in(seg(t, 0.12, 1.2)), 0.22);
 
-function drawMeter(ctx, el, frac, s) {
-  const { x, y, w } = el;
-  ctx.fillStyle = 'rgba(255,255,255,.16)';
-  ctx.fillRect(x, y - 1, w, 2);
-  const fw = w * clamp(frac);
-  if (fw > 0.5) {
-    const g = ctx.createLinearGradient(x, 0, x + w, 0);
-    g.addColorStop(0, 'rgba(255,95,58,.15)');
-    g.addColorStop(1, ACCENT);
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y - 1.5, fw, 3);
-  }
-  for (const [v, label] of el.ticks) {
-    const tx = x + (w * v) / el.max;
-    ctx.fillStyle = 'rgba(255,255,255,.26)';
-    ctx.fillRect(tx - 0.75, y + 10, 1.5, 9);
-    drawStr(ctx, label, v === 0 ? tx : tx, y + 48, ST.tick, v === 0 ? 'left' : v === el.max ? 'right' : 'center');
-  }
-  // head
-  const hx = x + fw;
-  const glow = ctx.createRadialGradient(hx, y, 0, hx, y, 26);
-  glow.addColorStop(0, 'rgba(255,95,58,.55)');
-  glow.addColorStop(1, 'rgba(255,95,58,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(hx - 26, y - 26, 52, 52);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.beginPath(); ctx.arc(hx, y, 5, 0, TAU); ctx.fill();
-  if (el.head) drawStr(ctx, el.head, hx, y - 22, ST.tick, 'center', `rgba(255,255,255,${0.8 * clamp(frac * 4 - 3)})`);
-}
-
-function drawSteps(ctx, el, p) {
-  const { x, y, w, labels } = el;
-  const n = labels.length, gap = w / (n - 1);
-  ctx.fillStyle = 'rgba(255,255,255,.16)';
-  ctx.fillRect(x, y - 1, w, 2);
-  ctx.fillStyle = ACCENT;
-  ctx.fillRect(x, y - 1.5, w * p, 3);
-  for (let k = 0; k < n; k++) {
-    const nx = x + k * gap, on = p * (n - 1) >= k - 0.02;
-    ctx.fillStyle = on ? '#FFFFFF' : 'rgba(255,255,255,.3)';
-    ctx.beginPath(); ctx.arc(nx, y, on ? 6 : 4.5, 0, TAU); ctx.fill();
-    drawStr(ctx, labels[k], nx, y + 46, ST.small, k === 0 ? 'left' : k === n - 1 ? 'right' : 'center', on ? 'rgba(255,255,255,.72)' : 'rgba(255,255,255,.34)');
-  }
-}
-
-function wedge(ctx, x, y, dir, half, len, a) {
-  const g = ctx.createRadialGradient(x, y, 0, x, y, len);
-  g.addColorStop(0, `rgba(255,95,58,${0.34 * a})`);
-  g.addColorStop(1, 'rgba(255,95,58,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.arc(x, y, len, dir - half, dir + half);
-  ctx.closePath();
-  ctx.fill();
-}
-function beniDot(ctx, x, y) {
-  ctx.fillStyle = ACCENT;
-  ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,.9)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.stroke();
-}
-function subjectDot(ctx, x, y, dir) {
-  ctx.fillStyle = '#FFFFFF';
-  ctx.beginPath(); ctx.arc(x, y, 11, 0, TAU); ctx.fill();
-  if (dir != null) {
-    ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ctx.beginPath();
-    ctx.moveTo(x + Math.cos(dir) * 26, y + Math.sin(dir) * 26);
-    ctx.lineTo(x + Math.cos(dir + 2.6) * 17, y + Math.sin(dir + 2.6) * 17);
-    ctx.lineTo(x + Math.cos(dir - 2.6) * 17, y + Math.sin(dir - 2.6) * 17);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-function dashed(ctx, pts, prog, color, width = 2, dash = [2, 10]) {
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = 'round';
-  ctx.setLineDash(dash);
-  ctx.beginPath();
-  // draw the first prog fraction of the polyline
-  let total = 0;
-  const segs = [];
-  for (let k = 1; k < pts.length; k++) { const d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); segs.push(d); total += d; }
-  let left = total * clamp(prog);
-  ctx.moveTo(pts[0][0], pts[0][1]);
-  for (let k = 1; k < pts.length && left > 0; k++) {
-    const d = segs[k - 1], q = Math.min(1, left / d);
-    ctx.lineTo(lerp(pts[k - 1][0], pts[k][0], q), lerp(pts[k - 1][1], pts[k][1], q));
-    left -= d;
-  }
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawAvoid(ctx, el, p) {
-  const { x, y, w } = el;
-  const bx = x + 10, by = y;
-  const ox = x + w * 0.52, oy = y;
-  // two wide-angle sensor fans, looking ahead
-  wedge(ctx, bx, by, -0.26, 0.4, 190, 0.75 * p);
-  wedge(ctx, bx, by, 0.26, 0.4, 190, 0.75 * p);
-  // obstacle
-  ctx.strokeStyle = 'rgba(255,255,255,.55)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(ox - 22, oy - 22, 44, 44, 8); else ctx.rect(ox - 22, oy - 22, 44, 44);
-  ctx.stroke();
-  // path around it
-  const pts = [];
-  for (let k = 0; k <= 40; k++) {
-    const q = k / 40, px = lerp(bx, x + w, q);
-    const bump = Math.exp(-Math.pow((px - ox) / (w * 0.16), 2));
-    pts.push([px, by - 74 * bump]);
-  }
-  dashed(ctx, pts, p, 'rgba(255,95,58,.9)', 2.5, [2, 9]);
-  beniDot(ctx, bx, by);
-}
-
-const MODE_SCALE = 1.26;
-function drawMode(ctx, el, p, s) {
-  const { x, y, kind } = el;
-  const R = 150;
-  ctx.save();
-  ctx.translate(x, y);
-  const sc = (s.exit != null ? 1 - 0.06 * s.exit : 1 + 0.08 * (1 - s.p)) * MODE_SCALE;
-  ctx.scale(sc, sc);
-  ctx.strokeStyle = 'rgba(255,255,255,.09)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
-  const up = -Math.PI / 2;
-  if (kind === 'rear') {
-    dashed(ctx, [[0, 120], [0, -120]], 1, 'rgba(255,255,255,.22)');
-    const sy = lerp(20, -50, p), byy = sy + 112;
-    wedge(ctx, 0, byy, up, 0.36, 104, 1);
-    subjectDot(ctx, 0, sy, up);
-    beniDot(ctx, 0, byy);
-  } else if (kind === 'side') {
-    dashed(ctx, [[-46, 120], [-46, -120]], 1, 'rgba(255,255,255,.22)');
-    dashed(ctx, [[62, 120], [62, -120]], 1, 'rgba(255,95,58,.45)');
-    const sy = lerp(40, -30, p);
-    wedge(ctx, 62, sy, Math.PI, 0.36, 98, 1);
-    subjectDot(ctx, -46, sy, up);
-    beniDot(ctx, 62, sy);
-  } else {
-    const rr = 104;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,95,58,.5)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([2, 10]);
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU); ctx.stroke();
-    ctx.restore();
-    const a = lerp(up + 2.2, up + 2.2 + 3.4, p);
-    const bx = Math.cos(a) * rr, by = Math.sin(a) * rr;
-    // direction arrow ahead on the orbit
-    const ah = a + 0.42, hx = Math.cos(ah) * rr, hy = Math.sin(ah) * rr, td = ah + Math.PI / 2;
-    ctx.fillStyle = 'rgba(255,95,58,.85)';
-    ctx.beginPath();
-    ctx.moveTo(hx + Math.cos(td) * 11, hy + Math.sin(td) * 11);
-    ctx.lineTo(hx + Math.cos(td + 2.5) * 9, hy + Math.sin(td + 2.5) * 9);
-    ctx.lineTo(hx + Math.cos(td - 2.5) * 9, hy + Math.sin(td - 2.5) * 9);
-    ctx.closePath();
-    ctx.fill();
-    wedge(ctx, bx, by, a + Math.PI, 0.36, 92, 1);
-    subjectDot(ctx, 0, 0, null);
-    beniDot(ctx, bx, by);
-  }
-  ctx.restore();
-  drawStr(ctx, el.name, x, y + R * MODE_SCALE + 74, ST.modeN, 'center');
-  drawStr(ctx, el.desc, x, y + R * MODE_SCALE + 116, ST.modeD, 'center');
-}
-
-function drawLegend(ctx, el) {
-  const st = ST.small;
-  const a = measure(ctx, '拍摄对象', st), b = measure(ctx, 'Beni', st);
-  const total = 22 + a + 56 + 22 + b;
-  let x = el.x - total / 2;
-  ctx.fillStyle = '#FFFFFF';
-  ctx.beginPath(); ctx.arc(x + 7, el.y - 7, 7, 0, TAU); ctx.fill();
-  drawStr(ctx, '拍摄对象', x + 22, el.y, st);
-  x += 22 + a + 56;
-  ctx.fillStyle = ACCENT;
-  ctx.beginPath(); ctx.arc(x + 7, el.y - 7, 7, 0, TAU); ctx.fill();
-  drawStr(ctx, 'Beni', x + 22, el.y, st);
-}
-
-function drawEl(ctx, el, s) {
-  ctx.save();
-  applyState(ctx, s);
-  switch (el.t) {
-    case 'text':
-      drawStr(ctx, el.text, el.x, el.y, ST[el.s], el.align);
-      break;
-    case 'lines':
-      el.lines.forEach((line, k) => drawStr(ctx, line, el.x, el.y + k * el.lh, ST[el.s], el.align));
-      break;
-    case 'num': {
-      const st = ST.hero;
-      const full = measure(ctx, el.value.toFixed(el.dec), st);
-      drawStr(ctx, (el.value * s.count).toFixed(el.dec), el.x, el.y, st);
-      drawStr(ctx, el.unit, el.x + full + 22, el.y, ST[el.us || 'unit']);
-      break;
+  // rows: each lands a little later and from a little further, so the column settles top to bottom
+  const count = E.num(seg(FRAME_T, 0.25, MOTION));
+  ROWS.forEach((row, j) => {
+    const d0 = 0.16 + j * 0.055;
+    const p = E.in(seg(t, d0, d0 + 0.75));
+    const x = truck(t) * (1.05 + j * 0.035);
+    const top = rowTop(j), h = rowH(j), mid = top + h / 2;
+    ctx.globalAlpha = p;
+    if (row.hot) {
+      drawStr(ctx, row.k, L + x, mid + 10, ST.labelHot);
+      const full = measure(ctx, row.v, ST.hot);
+      drawStr(ctx, (Number(row.v) * count).toFixed(1), VX + x, mid + 30, ST.hot);
+      const uw = drawStr(ctx, row.unit, VX + x + full + 14, mid + 30, ST.hotUnit);
+      drawStr(ctx, row.v2, VX + x + full + 14 + uw + 28, mid + 30, ST.value2);
+    } else {
+      drawStr(ctx, row.k, L + x, mid + 9, ST.label);
+      const vw = drawStr(ctx, row.v, VX + x, mid + 11, ST.value);
+      if (row.v2) drawStr(ctx, row.v2, VX + x + vw + 22, mid + 11, ST.value2);
     }
-    case 'meter':
-      drawMeter(ctx, el, (el.value / el.max) * s.count, s);
-      break;
-    case 'steps':
-      drawSteps(ctx, el, s.p);
-      break;
-    case 'avoid':
-      drawAvoid(ctx, el, s.p);
-      break;
-    case 'mode':
-      drawMode(ctx, el, s.p, s);
-      break;
-    case 'legend':
-      drawLegend(ctx, el);
-      break;
-    case 'stat': {
-      if (el.line) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(el.x, el.y - 150, 760, 1); }
-      const str = el.text || (el.value * s.count).toFixed(el.dec);
-      const full = measure(ctx, el.text || el.value.toFixed(el.dec), ST.stat);
-      drawStr(ctx, str, el.x, el.y, ST.stat);
-      drawStr(ctx, el.unit, el.x + full + 16, el.y, ST.statU);
-      drawStr(ctx, el.label, el.x, el.y + 50, ST.statL);
-      break;
-    }
-    case 'row': {
-      const x = L, vx = L + 250;
-      drawStr(ctx, el.k, x, el.y, ST.rowK);
-      const vst = el.hot ? ST.rowHot : ST.rowV;
-      const w = drawStr(ctx, el.v, vx, el.y + (el.hot ? 2 : 0), vst);
-      if (el.v2) drawStr(ctx, el.v2, vx + w + 20, el.y, ST.rowK);
-      ctx.fillStyle = 'rgba(255,255,255,.1)';
-      ctx.fillRect(x, el.y + 26, 860, 1);
-      if (el.hot) {
-        ctx.fillStyle = ACCENT;
-        ctx.fillRect(x - 24, el.y - 22, 3, 30);
-      }
-      break;
-    }
-  }
-  resetState(ctx);
-  ctx.restore();
+    ctx.globalAlpha = 1;
+    if (j < ROWS.length - 1) rule(ctx, L + x, TR + x, top + h, p, 0.1);
+  });
+
+  // floor rule: full width, Beni stands on it
+  rule(ctx, L + truck(t), R + truck(t), BOT, E.in(seg(t, 0.3, 1.35)), 0.22);
 }
 
-function drawCopy(ctx, t) {
-  const { i } = locate(t);
-  for (const b of [i - 1, i]) {
-    if (b < 0) continue;
-    BEATS[b].els.forEach((el, j) => {
-      const s = elState(b, j, t);
-      if (s && s.a > 0.002) drawEl(ctx, el, s);
-    });
-  }
-}
-
-/* ---------- one frame of the scene (no post) ---------- */
 function renderScene(ctx, t) {
   const W = ctx.canvas.width;
   SCALE = W / DW;
@@ -1037,16 +538,11 @@ function renderScene(ctx, t) {
   ctx.globalCompositeOperation = 'source-over';
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
-  const { i, lt } = locate(t);
-  const r = robotAt(t);
-  drawBackground(ctx, r);
-  drawFloor(ctx, r);
-  if (i === 1) drawStreaks(ctx, r, lt);
-  drawRobot(ctx, r);
-  drawCopy(ctx, t);
-  let exposure = 1;
-  if (i === 0) exposure = E.fade(seg(lt, 0, MOTION));
-  if (t > N * BEAT) exposure = 1 - E.cam(seg(t, N * BEAT, DURATION));
+  const dx = truck(t);
+  drawBackground(ctx, dx);
+  drawPage(ctx, t);
+  drawRobot(ctx, t, dx, E.fade(seg(t, 0, 0.9)));
+  const exposure = E.fade(seg(t, 0, 0.9));
   if (exposure < 1) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = `rgba(0,0,0,${1 - exposure})`;
@@ -1054,7 +550,7 @@ function renderScene(ctx, t) {
   }
 }
 
-/* ---------- post: vignette + film grain ---------- */
+/* ---------- post: vignette + light film grain ---------- */
 const GRAIN = [];
 function grainTiles() {
   if (GRAIN.length) return GRAIN;
@@ -1111,7 +607,8 @@ function renderFrame(ctx, t, S) {
   const fps = S.fps;
   const n = S.blur | 0;
   const open = (S.shutter / 360) / fps;
-  if (n <= 1 || isStill(t, open / 2)) {
+  // in the hold only Beni moves, and slowly: one sample is enough there
+  if (n <= 1 || t - open / 2 >= MOTION) {
     renderScene(ctx, t);
   } else {
     const W = ctx.canvas.width, H = ctx.canvas.height;
@@ -1143,20 +640,9 @@ function loadScript(src) {
     document.head.appendChild(s);
   });
 }
-function allText() {
-  const out = new Set();
-  const walk = (o) => {
-    if (typeof o === 'string') { for (const ch of o) out.add(ch); return; }
-    if (Array.isArray(o)) { o.forEach(walk); return; }
-    if (o && typeof o === 'object') Object.values(o).forEach(walk);
-  };
-  BEATS.forEach((b) => walk(b.els));
-  walk('拍摄对象 Beni 0123456789.,·×°′″/%');
-  return Array.from(out).join('');
-}
 async function loadFonts() {
   if (!document.fonts || !document.fonts.load) return;
-  const text = allText();
+  const text = '运动性能一览 Beni 与 Beni Lite 运动性能一致，仅重量不同 0123456789.×·/° km/h mph cm kg' + ROWS.map((r) => Object.values(r).join('')).join('');
   const jobs = [];
   for (const w of [400, 500, 600]) {
     jobs.push(document.fonts.load(`${w} 40px Inter`, text));
@@ -1192,9 +678,9 @@ if (RENDER) {
   const S = {
     fps: Number(QS.get('fps')) || 30,
     blur: Number(QS.get('blur') ?? 8),
-    shutter: Number(QS.get('shutter')) || 180,
-    grain: (Number(QS.get('grain') ?? 35)) / 100,
-    vignette: (Number(QS.get('vignette') ?? 60)) / 100,
+    shutter: Number(QS.get('shutter')) || 360,
+    grain: (Number(QS.get('grain') ?? 30)) / 100,
+    vignette: (Number(QS.get('vignette') ?? 50)) / 100,
   };
   if (QS.get('curve')) setCurves(QS.get('curve'));
   out.width = w; out.height = h;
@@ -1223,7 +709,7 @@ for (const [k, c] of Object.entries(CURVES)) {
   o.textContent = c.label;
   ui.curve.appendChild(o);
 }
-const SKEY = 'beni-motion-settings-v1';
+const SKEY = 'beni-overview-settings-v2';
 try {
   const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
   if (saved) {
@@ -1255,8 +741,11 @@ function drawCurve() {
   $('cp1').setAttribute('cx', c[0] * 100); $('cp1').setAttribute('cy', 100 - c[1] * 100);
   $('cp2').setAttribute('cx', c[2] * 100); $('cp2').setAttribute('cy', 100 - c[3] * 100);
   const f = (a) => `cubic-bezier(${a.join(', ')})`;
-  $('curveCode').innerHTML = `镜头 ${f(E.def.cam)}<br>入场 ${f(E.def.in)}<br>出场 ${f(E.def.out)}`;
+  $('curveCode').innerHTML = `镜头 ${f(E.def.cam)}<br>落位 ${f(E.def.in)}`;
 }
+
+let ready = false, playing = false, loop = true, curT = 3.0, lastKey = '', t0 = 0, base = 0;
+let perfN = 0, perfT = performance.now();
 
 function applySettings() {
   S = settings();
@@ -1267,7 +756,7 @@ function applySettings() {
   const frames = Math.round(DURATION * S.fps);
   $('statusOut').textContent = `预览 ${S.w}×${S.h} · ${S.fps} fps${S.blur > 1 ? ` · 运动模糊 ${S.blur}× / ${S.shutter}°` : ''}`;
   $('outInfo').textContent = `输出 ${S.w}×${S.h} · ${S.fps} fps · ${frames} 帧 · ${DURATION.toFixed(1)} 秒 · H.264 约 ${(bitrateOf(S) / 1e6).toFixed(0)} Mbps`;
-  $('meta').textContent = `16:9 · 一镜到底 · ${N} 段 × (1.5 s 运动 + 3 s 静止) · ${DURATION.toFixed(1)} 秒`;
+  $('meta').textContent = `16:9 · 一镜到底 · 1.5 s 运动 + 3 s 静止 · ${DURATION.toFixed(1)} 秒`;
   drawCurve();
   try { localStorage.setItem(SKEY, JSON.stringify(Object.fromEntries(Object.entries(ui).map(([k, el]) => [k, el.value])))); } catch { /* ignore */ }
   if (ready) draw(curT, true);
@@ -1276,48 +765,23 @@ Object.values(ui).forEach((el) => el.addEventListener('input', applySettings));
 
 /* ---------- timeline ---------- */
 const tl = $('timeline'), segs = $('segs'), headEl = $('head');
-const segEls = [];
-for (let b = 0; b < N; b++) {
-  const m = document.createElement('div'); m.className = 'seg m'; m.style.flex = String(MOTION);
-  const h = document.createElement('div'); h.className = 'seg'; h.style.flex = String(HOLD);
-  segs.append(m, h);
-  segEls.push(m);
-}
-const tail = document.createElement('div'); tail.className = 'seg m'; tail.style.flex = String(TAIL);
-segs.append(tail);
-segEls.push(tail);
+const segM = document.createElement('div'); segM.className = 'seg m'; segM.style.flex = String(MOTION);
+const segH = document.createElement('div'); segH.className = 'seg'; segH.style.flex = String(HOLD);
+segs.append(segM, segH);
 tl.setAttribute('aria-valuemax', DURATION.toFixed(2));
 
-const beatsList = $('beats');
-BEATS.forEach((b, k) => {
-  const li = document.createElement('li');
-  const t0 = k * BEAT;
-  li.innerHTML = `<button type="button"><span class="bt">${fmt(t0, false)}</span><span class="bc">${String(k + 1).padStart(2, '0')} · ${b.name}</span><span class="bd">${b.desc}</span></button>`;
-  li.querySelector('button').addEventListener('click', () => { seek(t0); play(); });
-  beatsList.appendChild(li);
-});
-
-function fmt(t, cs = true) {
+function fmt(t) {
   const m = Math.floor(t / 60), s = t - m * 60;
-  return `${String(m).padStart(2, '0')}:${cs ? s.toFixed(2).padStart(5, '0') : String(Math.floor(s)).padStart(2, '0') + '.' + String(Math.round((s % 1) * 10))}`;
+  return `${String(m).padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
 }
-
-let ready = false, playing = false, loop = true, curT = 6.0, lastKey = '', t0 = 0, base = 0;
-let perfN = 0, perfT = performance.now();
-
 function updateUI(t) {
-  const frac = t / DURATION;
-  headEl.style.left = (frac * 100).toFixed(3) + '%';
+  headEl.style.left = ((t / DURATION) * 100).toFixed(3) + '%';
   const fi = Math.round(t * S.fps), total = Math.round(DURATION * S.fps);
   $('clock').textContent = `${fmt(t)} / ${fmt(DURATION)}`;
   tl.setAttribute('aria-valuenow', t.toFixed(2));
   tl.setAttribute('aria-valuetext', `${fmt(t)}，第 ${fi} / ${total} 帧`);
-  const { i, lt } = locate(t);
-  const inTail = t > N * BEAT;
-  segEls.forEach((el, k) => el.classList.toggle('on', inTail ? k === N : k === i && lt < MOTION));
-  [...beatsList.children].forEach((li, k) => li.classList.toggle('on', k === i));
+  segM.classList.toggle('on', t < MOTION);
 }
-
 function draw(t, force = false) {
   const fi = Math.round(t * S.fps);
   const key = fi + '|' + S.w + '|' + S.fps;
@@ -1327,7 +791,6 @@ function draw(t, force = false) {
   updateUI(t);
   perfN++;
 }
-
 function seek(t) {
   curT = clamp(t, 0, DURATION);
   if (playing) { base = curT; t0 = performance.now(); }
@@ -1370,7 +833,6 @@ function toggleFull() {
   if (document.fullscreenElement) document.exitFullscreen();
   else if (box.requestFullscreen) box.requestFullscreen();
 }
-
 function tlTime(e) {
   const r = tl.getBoundingClientRect();
   return clamp((e.clientX - r.left) / r.width) * DURATION;
@@ -1383,23 +845,14 @@ tl.addEventListener('pointerdown', (e) => {
 });
 tl.addEventListener('pointermove', (e) => { if (dragging) seek(tlTime(e)); });
 tl.addEventListener('pointerup', () => { dragging = false; if (wasPlaying) play(); });
+function step(dir) { pause(); seek(Math.round(curT * S.fps + dir) / S.fps); }
 tl.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); step(e.key === 'ArrowRight' ? 1 : -1, e.shiftKey); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); step(e.key === 'ArrowRight' ? 1 : -1); }
 });
-function step(dir, beat) {
-  pause();
-  if (beat) {
-    const { i } = locate(curT);
-    const target = dir > 0 ? (i + 1) * BEAT : (curT - i * BEAT > 0.05 ? i * BEAT : (i - 1) * BEAT);
-    seek(clamp(target, 0, DURATION));
-  } else {
-    seek(Math.round(curT * S.fps + dir) / S.fps);
-  }
-}
 document.addEventListener('keydown', (e) => {
   if (e.target.closest('select, input, textarea')) return;
   if (e.key === ' ') { e.preventDefault(); playing ? pause() : play(); }
-  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1, e.shiftKey); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1); }
   else if (e.key === 'f' || e.key === 'F') toggleFull();
 });
 
@@ -1488,7 +941,7 @@ async function exportMp4() {
   await enc.flush();
   enc.close();
   muxer.finalize();
-  download(new Blob([muxer.target.buffer], { type: 'video/mp4' }), `beni-motion-${s.w}x${s.h}-${s.fps}fps.mp4`);
+  download(new Blob([muxer.target.buffer], { type: 'video/mp4' }), `beni-overview-${s.w}x${s.h}-${s.fps}fps.mp4`);
   return true;
 }
 
@@ -1519,7 +972,7 @@ async function exportRealtime(s, bitrate) {
   await stopped;
   if (cancelExport) return false;
   const ext = type.includes('mp4') ? 'mp4' : 'webm';
-  download(new Blob(chunks, { type }), `beni-motion-${s.w}x${s.h}-${s.fps}fps.${ext}`);
+  download(new Blob(chunks, { type }), `beni-overview-${s.w}x${s.h}-${s.fps}fps.${ext}`);
   return true;
 }
 
@@ -1552,7 +1005,7 @@ btnStill.addEventListener('click', () => {
   c.width = s.w; c.height = s.h;
   const t = Math.round(curT * s.fps) / s.fps;
   renderFrame(c.getContext('2d', { alpha: false }), t, s);
-  c.toBlob((blob) => blob && download(blob, `beni-${s.w}x${s.h}-${t.toFixed(2)}s.png`), 'image/png');
+  c.toBlob((blob) => blob && download(blob, `beni-overview-${s.w}x${s.h}-${t.toFixed(2)}s.png`), 'image/png');
 });
 
 /* ---------- boot ---------- */
